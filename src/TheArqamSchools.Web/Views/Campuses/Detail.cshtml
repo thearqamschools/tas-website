@@ -1,0 +1,224 @@
+@model CampusPageViewModel
+@using TheArqamSchools.Web.Helpers
+@{
+    ViewBag.Meta = Model.Meta;
+    var c = Model.Campus;
+    var cover = Media.Url(c.CoverBucket, c.CoverPath);
+    var f = Model.Form ?? new CampusMessageForm { BranchId = c.Id, Type = "admissions" };
+    var errors = ViewData.ModelState;
+    Func<string, string> err = key => errors.ContainsKey(key) && errors[key].Errors.Count > 0 ? errors[key].Errors[0].ErrorMessage : null;
+    var hasErrors = !errors.IsValid;
+    var paragraphs = (c.Overview ?? "").Split(new[] { "\r\n\r\n", "\n\n" }, StringSplitOptions.RemoveEmptyEntries);
+    var facebook = "";
+    try
+    {
+        var links = Newtonsoft.Json.Linq.JArray.Parse(string.IsNullOrEmpty(c.SocialLinks) ? "[]" : c.SocialLinks);
+        var fb = links.FirstOrDefault(l => l.Value<string>("platform") == "facebook");
+        if (fb != null && Site.IsExternal(fb.Value<string>("url"))) { facebook = fb.Value<string>("url"); }
+    }
+    catch (Exception) { }
+    var stages = Model.Classes.Select(x => x.Stage).Distinct().ToList();
+    var typeLabels = new Dictionary<string, string> { { "admissions", "Admissions" }, { "general", "General question" }, { "careers", "Careers" }, { "feedback", "Feedback" }, { "media", "Media" }, { "other", "Something else" } };
+}
+<section class="campus-hero">
+    <div class="container campus-hero-grid">
+        <div>
+            @Html.Partial("_Breadcrumbs", Model.Breadcrumbs)
+            <span class="badge badge-@(c.AdmissionStatus ?? "contact_campus")">@c.AdmissionLabel</span>
+            <h1 class="h1">@c.Name</h1>
+            <p class="lead">@Icons.Svg("map-pin", 20) @c.Locality</p>
+            <div class="btn-row">
+                @if (!string.IsNullOrWhiteSpace(c.Phone))
+                {
+                    <a class="btn btn-primary" href="@Contact.TelUrl(c.Phone)">@Icons.Svg("phone", 18) Call @c.Phone</a>
+                }
+                @if (!string.IsNullOrWhiteSpace(c.Whatsapp))
+                {
+                    <a class="btn btn-outline" href="@Contact.WhatsAppUrl(c.Whatsapp)" target="_blank" rel="noopener">@Icons.Svg("whatsapp", 18) WhatsApp<span class="sr-only"> (opens in a new tab)</span></a>
+                }
+                <a class="btn btn-outline" href="#contact">Send a message</a>
+            </div>
+        </div>
+        @if (cover != null)
+        {
+            <figure class="media-frame ratio-4-3">
+                <img src="@cover" alt="@c.CoverAlt" width="800" height="600" fetchpriority="high" />
+            </figure>
+        }
+    </div>
+</section>
+
+<nav class="on-this-page" aria-label="On this page">
+    <div class="container">
+        <ul>
+            <li><a href="#overview">Overview</a></li>
+            <li><a href="#classes">Classes and admissions</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+    </div>
+</nav>
+
+<section class="section tone-white" id="overview" aria-labelledby="overview-h">
+    <div class="container campus-overview">
+        <div class="prose-lg">
+            <h2 class="h2" id="overview-h">About @c.Name</h2>
+            @foreach (var p in paragraphs) { <p>@p.Trim()</p> }
+            @if (!string.IsNullOrWhiteSpace(c.PrincipalMessage))
+            {
+                <blockquote class="quote">
+                    <p>@c.PrincipalMessage</p>
+                    @if (!string.IsNullOrWhiteSpace(c.PrincipalName)) { <footer>@c.PrincipalName@(string.IsNullOrWhiteSpace(c.PrincipalTitle) ? "" : ", " + c.PrincipalTitle)</footer> }
+                </blockquote>
+            }
+        </div>
+        <aside class="glance" aria-labelledby="glance-h">
+            <h2 class="h4" id="glance-h">At a glance</h2>
+            <dl>
+                @if (!string.IsNullOrWhiteSpace(c.FullAddress))
+                {
+                    <div><dt>@Icons.Svg("map-pin", 18) Address</dt><dd>@c.FullAddress
+                        @if (c.MapUrl != null) { <br /><a href="@c.MapUrl" target="_blank" rel="noopener">View on Google Maps<span class="sr-only"> (opens in a new tab)</span></a> }</dd></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(c.Phone) || !string.IsNullOrWhiteSpace(c.PhoneAlt))
+                {
+                    <div><dt>@Icons.Svg("phone", 18) Phone</dt><dd>
+                        @foreach (var p in new[] { c.Phone, c.PhoneAlt }.Where(x => !string.IsNullOrWhiteSpace(x)))
+                        {
+                            <a href="@Contact.TelUrl(p)">@p</a><br />
+                        }
+                    </dd></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(c.Whatsapp))
+                {
+                    <div><dt>@Icons.Svg("whatsapp", 18) WhatsApp</dt><dd><a href="@Contact.WhatsAppUrl(c.Whatsapp)" target="_blank" rel="noopener">@c.Whatsapp</a></dd></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(c.Email))
+                {
+                    <div><dt>@Icons.Svg("mail", 18) Email</dt><dd><a href="mailto:@c.Email">@c.Email</a></dd></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(c.Timings))
+                {
+                    <div><dt>@Icons.Svg("clock", 18) Timings</dt><dd>@c.Timings</dd></div>
+                }
+            </dl>
+            @if (!string.IsNullOrEmpty(facebook))
+            {
+                <p><a class="text-link" href="@facebook" target="_blank" rel="noopener">@Icons.Svg("facebook", 18) Follow this campus on Facebook<span class="sr-only"> (opens in a new tab)</span></a></p>
+            }
+        </aside>
+    </div>
+</section>
+
+<section class="section tone-grey" id="classes" aria-labelledby="classes-h">
+    <div class="container">
+        <div class="section-head section-head-row">
+            <h2 class="h2" id="classes-h">Classes and admissions</h2>
+            <a class="text-link" href="/academics#levels">About our academic levels @Icons.Svg("arrow-right", 18)</a>
+        </div>
+        <div class="admission-strip">
+            <p><strong>@c.AdmissionLabel</strong>@(string.IsNullOrWhiteSpace(c.AdmissionNote) ? "" : ". " + c.AdmissionNote)</p>
+            <a class="btn btn-primary btn-sm" href="/admissions?campus=@c.Id#inquiry">Send an admission inquiry</a>
+        </div>
+        @if (Model.Classes.Count == 0)
+        {
+            <p class="muted">The list of classes at this campus will be added soon. Please contact the campus for details.</p>
+        }
+        else
+        {
+            <ul class="levels levels-compact">
+                @foreach (var st in stages)
+                {
+                    <li class="level"><div class="card-body"><h3 class="h4">@st</h3>
+                        <p class="level-classes">@string.Join(", ", Model.Classes.Where(x => x.Stage == st).Select(x => x.Name + (x.IsAdmissionOpen ? " (admission open)" : "")))</p></div></li>
+                }
+            </ul>
+        }
+        @if (Model.Facilities.Count > 0)
+        {
+            <h3 class="h4 facilities-h">Facilities</h3>
+            <ul class="chips">@foreach (var fa in Model.Facilities) { <li>@fa</li> }</ul>
+        }
+    </div>
+</section>
+
+<section class="section tone-white" id="contact" aria-labelledby="contact-h">
+    <div class="container form-layout">
+        <div class="form-intro">
+            <h2 class="h2" id="contact-h">Contact @c.Name</h2>
+            <p class="lead">@c.FullAddress</p>
+            <p class="muted">Ask about classes, admission availability, fees or a visit. The campus team will reply by phone or email.</p>
+        </div>
+        <div class="form-card">
+            @if (Model.Sent)
+            {
+                <div class="alert alert-success" role="status" tabindex="-1" data-focus>
+                    @Icons.Svg("check-circle", 22)
+                    <p>Thank you. Your @(Model.SentAsAdmission ? "admission inquiry" : "message") has been received and the campus team will contact you soon.</p>
+                </div>
+                <p><a class="text-link" href="@c.Url#contact">Send another message</a></p>
+            }
+            else
+            {
+                if (Model.RateLimited)
+                {
+                    <div class="alert alert-error" role="alert" tabindex="-1" data-focus><p>You have sent several messages in a short time. Please wait a few minutes and try again, or call the campus.</p></div>
+                }
+                else if (hasErrors)
+                {
+                    <div class="alert alert-error" role="alert" tabindex="-1" data-focus><p>Please check the highlighted fields and try again.</p></div>
+                }
+                <form method="post" action="@c.Url/message#contact" novalidate>
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="BranchId" value="@c.Id" />
+                    <div class="hp" aria-hidden="true">
+                        <label for="cm-website">Website</label>
+                        <input id="cm-website" name="Website" type="text" tabindex="-1" autocomplete="off" />
+                    </div>
+                    <div class="field@(err("Type") != null ? " has-error" : "")">
+                        <label for="cm-type">What is your message about? <span class="req" aria-hidden="true">*</span></label>
+                        <select id="cm-type" name="Type" required>
+                            @foreach (var t in CampusMessageForm.Types)
+                            {
+                                <option value="@t" @(f.Type == t ? "selected" : "")>@typeLabels[t]</option>
+                            }
+                        </select>
+                        @if (err("Type") != null) { <p class="field-error">@err("Type")</p> }
+                    </div>
+                    <div class="field-row">
+                        <div class="field@(err("Name") != null ? " has-error" : "")">
+                            <label for="cm-name">Your name <span class="req" aria-hidden="true">*</span></label>
+                            <input id="cm-name" name="Name" type="text" value="@f.Name" maxlength="120" autocomplete="name" required @(err("Name") != null ? "aria-invalid=true aria-describedby=cm-name-err" : "") />
+                            @if (err("Name") != null) { <p class="field-error" id="cm-name-err">@err("Name")</p> }
+                        </div>
+                        <div class="field@(err("Phone") != null ? " has-error" : "")">
+                            <label for="cm-phone">Phone <span class="req" aria-hidden="true">*</span></label>
+                            <input id="cm-phone" name="Phone" type="tel" inputmode="tel" value="@f.Phone" maxlength="20" autocomplete="tel" required @(err("Phone") != null ? "aria-invalid=true aria-describedby=cm-phone-err" : "") />
+                            @if (err("Phone") != null) { <p class="field-error" id="cm-phone-err">@err("Phone")</p> }
+                        </div>
+                    </div>
+                    <div class="field@(err("Email") != null ? " has-error" : "")">
+                        <label for="cm-email">Email <span class="optional">(optional)</span></label>
+                        <input id="cm-email" name="Email" type="email" inputmode="email" value="@f.Email" maxlength="254" autocomplete="email" @(err("Email") != null ? "aria-invalid=true aria-describedby=cm-email-err" : "") />
+                        @if (err("Email") != null) { <p class="field-error" id="cm-email-err">@err("Email")</p> }
+                    </div>
+                    <div class="field@(err("Message") != null ? " has-error" : "")">
+                        <label for="cm-message">Message <span class="req" aria-hidden="true">*</span></label>
+                        <textarea id="cm-message" name="Message" rows="5" maxlength="2000" required @(err("Message") != null ? "aria-invalid=true aria-describedby=cm-message-err" : "")>@f.Message</textarea>
+                        @if (err("Message") != null) { <p class="field-error" id="cm-message-err">@err("Message")</p> }
+                    </div>
+                    <div class="field field-check@(err("Consent") != null ? " has-error" : "")">
+                        <label><input type="checkbox" name="Consent" value="true" @(f.Consent ? "checked" : "") required /> <span>I agree that The Arqam Schools may contact me about this message. <span class="req" aria-hidden="true">*</span></span></label>
+                        @if (err("Consent") != null) { <p class="field-error">@err("Consent")</p> }
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send message</button>
+                </form>
+            }
+        </div>
+    </div>
+</section>
+
+<div class="mobile-actions" aria-label="Quick contact">
+    @if (!string.IsNullOrWhiteSpace(c.Phone)) { <a href="@Contact.TelUrl(c.Phone)">@Icons.Svg("phone", 18) Call</a> }
+    @if (!string.IsNullOrWhiteSpace(c.Whatsapp)) { <a href="@Contact.WhatsAppUrl(c.Whatsapp)" target="_blank" rel="noopener">@Icons.Svg("whatsapp", 18) WhatsApp</a> }
+    <a href="#contact">@Icons.Svg("mail", 18) Enquire</a>
+</div>

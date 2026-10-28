@@ -1,0 +1,35 @@
+@model PageSection
+@using TheArqamSchools.Web.Helpers
+@{
+    var d = Model.Data;
+    var img = d["image"];
+    var imgUrl = Media.Url(img);
+    var left = Model.Text("image_side") == "left";
+    var body = d["body"];
+    var link = d["link"];
+}
+<section class="section tone-@Model.Tone("white")" @(Model.Anchor != null ? "id=" + Model.Anchor : "") aria-labelledby="h-@Model.Id">
+    <div class="container split@(left ? " split-image-left" : "")">
+        <div class="split-text">
+            @if (!string.IsNullOrEmpty(Model.Text("eyebrow"))) { <p class="eyebrow">@Model.Text("eyebrow")</p> }
+            <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
+            <div class="prose-lg">
+                @if (body is Newtonsoft.Json.Linq.JArray)
+                {
+                    foreach (var p in body) { <p>@((string)p)</p> }
+                }
+                else if (body != null)
+                {
+                    <p>@((string)body)</p>
+                }
+            </div>
+            @Html.Partial("_Button", link, new ViewDataDictionary { { "variant", "link" } })
+        </div>
+        @if (imgUrl != null)
+        {
+            <figure class="media-frame ratio-4-3">
+                <img src="@imgUrl" alt="@Media.Alt(img)" width="@(img.Value<int?>("width") ?? 800)" height="@(img.Value<int?>("height") ?? 600)" loading="lazy" decoding="async" />
+            </figure>
+        }
+    </div>
+</section>

@@ -1,0 +1,106 @@
+@using TheArqamSchools.Web.Data
+@using TheArqamSchools.Web.Helpers
+@{
+    var settings = SiteSettingsRepository.Public();
+    var cta = SiteSettingsRepository.Json(settings, "footer.cta") as Newtonsoft.Json.Linq.JObject;
+    var mission = SiteSettingsRepository.Text(settings, "footer.mission");
+    var tagline = SiteSettingsRepository.Text(settings, "site.tagline");
+    var quick = NavigationRepository.Menu("footer");
+    var offices = HeadOfficeRepository.Published();
+    var holder = SiteSettingsRepository.Text(settings, "legal.copyright_holder", "The Arqam Schools");
+}
+<footer class="site-footer">
+    @if (cta != null && !(ViewBag.HideFooterCta is bool && (bool)ViewBag.HideFooterCta))
+    {
+        <div class="footer-cta">
+            <div class="container footer-cta-inner">
+                <p class="h2">@(cta.Value<string>("heading"))</p>
+                <div class="btn-row">
+                    @Html.Partial("_Button", cta["primary_cta"], new ViewDataDictionary { { "variant", "primary" } })
+                    @Html.Partial("_Button", cta["secondary_cta"], new ViewDataDictionary { { "variant", "outline" } })
+                </div>
+            </div>
+        </div>
+    }
+    <div class="footer-main">
+        <div class="container footer-grid">
+            <div class="footer-identity">
+                <a class="brand brand-light" href="/" aria-label="The Arqam Schools, home">
+                    <img src="~/Content/brand/the-arqam-schools-logo-official.png" alt="" width="64" height="64" />
+                    <span>The Arqam Schools</span>
+                </a>
+                @if (!string.IsNullOrEmpty(mission)) { <p>@mission</p> }
+                @if (!string.IsNullOrEmpty(tagline)) { <p class="footer-tagline">@tagline</p> }
+                <a class="icon-link" href="https://www.facebook.com/TASHeadOffice" target="_blank" rel="noopener">@Icons.Svg("facebook", 20)<span class="sr-only">Facebook (opens in a new tab)</span></a>
+            </div>
+            @foreach (var group in quick)
+            {
+                <nav class="footer-links" aria-label="@group.Label">
+                    <h2>@group.Label</h2>
+                    <ul>
+                        @foreach (var l in group.Children)
+                        {
+                            <li><a href="@l.Url">@l.Label</a></li>
+                        }
+                    </ul>
+                </nav>
+            }
+            @foreach (var o in offices)
+            {
+                var dash = o.Name.IndexOf(" — ", StringComparison.Ordinal);
+                var mapUrl = !string.IsNullOrEmpty(o.GoogleMapsUrl) ? o.GoogleMapsUrl
+                    : (string.IsNullOrEmpty(o.Address) ? null : "https://www.google.com/maps/search/?api=1&query=" + Uri.EscapeDataString(o.Address));
+                <address class="footer-office">
+                    <h2>
+                        @if (dash > 0)
+                        {
+                            @o.Name.Substring(0, dash + 2)<br />@o.Name.Substring(dash + 3)
+                        }
+                        else
+                        {
+                            @o.Name
+                        }
+                    </h2>
+                    @if (!string.IsNullOrEmpty(o.Address))
+                    {
+                        <p>
+                            @if (mapUrl != null)
+                            {
+                                <a href="@mapUrl" target="_blank" rel="noopener">@o.Address</a>
+                            }
+                            else
+                            {
+                                @o.Address
+                            }
+                        </p>
+                    }
+                    <ul>
+                        @foreach (var p in new[] { o.Phone, o.PhoneAlt })
+                        {
+                            if (!string.IsNullOrEmpty(p))
+                            {
+                                <li><a href="@Contact.TelUrl(p)">@Icons.Svg("phone", 16) @p</a></li>
+                            }
+                        }
+                        @if (!string.IsNullOrEmpty(o.Whatsapp))
+                        {
+                            <li><a href="@Contact.WhatsAppUrl(o.Whatsapp)" target="_blank" rel="noopener">@Icons.Svg("whatsapp", 16) WhatsApp @o.Whatsapp</a></li>
+                        }
+                        @if (!string.IsNullOrEmpty(o.Email))
+                        {
+                            <li><a href="mailto:@o.Email">@Icons.Svg("mail", 16) @o.Email</a></li>
+                        }
+                        @if (mapUrl != null)
+                        {
+                            <li><a href="@mapUrl" target="_blank" rel="noopener">@Icons.Svg("map-pin", 16) View on Google Maps</a></li>
+                        }
+                    </ul>
+                </address>
+            }
+        </div>
+        <div class="container footer-bottom">
+            <p>&copy; @DateTime.Now.Year @holder. All rights reserved.</p>
+            <p><a href="/contact">Contact</a></p>
+        </div>
+    </div>
+</footer>

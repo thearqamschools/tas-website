@@ -1,0 +1,38 @@
+@model PageViewModel
+@using TheArqamSchools.Web.Helpers
+@{
+    ViewBag.Meta = Model.Meta;
+    var known = new HashSet<string> { "page_header", "split_feature", "values", "card_grid", "cta_band", "process_steps", "faq", "rich_text",
+                                      "vision_mission", "academic_levels", "info_list", "admission_inquiry", "campus_directory" };
+    var sections = Model.Sections.Where(s => known.Contains(s.Type)).ToList();
+    var custom = sections.FirstOrDefault(s => s.Type == "page_header");
+    var cityName = ViewBag.CityName as string;
+    // The footer has its own call to action; skip it when the page already ends with one.
+    var last = sections.LastOrDefault();
+    ViewBag.HideFooterCta = (last != null && last.Type == "cta_band") || sections.Any(x => x.Type == "admission_inquiry");
+}
+@if (custom != null && cityName == null)
+{
+    @Html.Partial("Sections/_page_header", custom, new ViewDataDictionary { { "page", Model } })
+}
+else
+{
+    <section class="page-header tone-warm">
+        <div class="container">
+            @Html.Partial("_Breadcrumbs", Model.Breadcrumbs)
+            <h1 class="h1">@(cityName != null ? "Campuses in " + cityName : Model.Page.Title)</h1>
+            @if (cityName == null && !string.IsNullOrWhiteSpace(Model.Page.Summary))
+            {
+                <p class="lead">@Model.Page.Summary</p>
+            }
+            else if (cityName != null)
+            {
+                <p class="lead">Addresses, phone numbers, WhatsApp and directions for The Arqam Schools campuses in @cityName.</p>
+            }
+        </div>
+    </section>
+}
+@foreach (var s in sections.Where(s => s.Type != "page_header"))
+{
+    @Html.Partial("Sections/_" + s.Type, s, new ViewDataDictionary { { "page", Model } })
+}

@@ -1,0 +1,33 @@
+@model PageSection
+@{
+    var v = Model.Data["vision"];
+    var m = Model.Data["mission"];
+    var points = m != null ? m["points"] as Newtonsoft.Json.Linq.JArray : null;
+}
+<section class="section tone-@Model.Tone("warm")" @(Model.Anchor != null ? "id=" + Model.Anchor : "") aria-labelledby="h-@Model.Id">
+    <div class="container">
+        <div class="section-head"><h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2></div>
+        <div class="vm-grid">
+            @if (v != null)
+            {
+                <article class="vm-card">
+                    <h3 class="h3">@(v.Value<string>("title"))</h3>
+                    <p>@(v.Value<string>("body"))</p>
+                </article>
+            }
+            @if (m != null)
+            {
+                <article class="vm-card">
+                    <h3 class="h3">@(m.Value<string>("title"))</h3>
+                    @if (!string.IsNullOrEmpty(m.Value<string>("intro"))) { <p>@(m.Value<string>("intro"))</p> }
+                    @if (points != null)
+                    {
+                        <ul class="check-list">
+                            @foreach (var p in points) { <li>@((string)p)</li> }
+                        </ul>
+                    }
+                </article>
+            }
+        </div>
+    </div>
+</section>

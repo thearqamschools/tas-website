@@ -1,0 +1,28 @@
+@model PageSection
+@using TheArqamSchools.Web.Helpers
+@{
+    var page = (PageViewModel)ViewData["page"];
+    var d = Model.Data;
+    var img = d["image"];
+    var imgUrl = Media.Url(img);
+}
+<section class="page-header page-header-feature tone-warm@(imgUrl != null ? " has-image" : "")">
+    <div class="container page-header-grid">
+        <div>
+            @Html.Partial("_Breadcrumbs", page.Breadcrumbs)
+            @if (!string.IsNullOrEmpty(Model.Text("eyebrow"))) { <p class="eyebrow">@Model.Text("eyebrow")</p> }
+            <h1 class="h1">@(string.IsNullOrEmpty(Model.Text("title")) ? page.Page.Title : Model.Text("title"))</h1>
+            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
+            <div class="btn-row">
+                @Html.Partial("_Button", d["primary_cta"], new ViewDataDictionary { { "variant", "primary" } })
+                @Html.Partial("_Button", d["secondary_cta"], new ViewDataDictionary { { "variant", "outline" } })
+            </div>
+        </div>
+        @if (imgUrl != null)
+        {
+            <figure class="media-frame ratio-4-3">
+                <img src="@imgUrl" alt="@Media.Alt(img)" width="@(img.Value<int?>("width") ?? 800)" height="@(img.Value<int?>("height") ?? 600)" fetchpriority="high" />
+            </figure>
+        }
+    </div>
+</section>

@@ -1,0 +1,104 @@
+@model PageSection
+@using TheArqamSchools.Web.Helpers
+@{
+    var page = (PageViewModel)ViewData["page"];
+    var vm = page.Inquiry;
+    var f = vm.Form ?? new AdmissionInquiryForm();
+    var errors = page.FormErrors;
+    Func<string, string> err = key => errors != null && errors.ContainsKey(key) && errors[key].Errors.Count > 0 ? errors[key].Errors[0].ErrorMessage : null;
+    var hasErrors = errors != null && !errors.IsValid;
+    var stages = vm.Classes.Select(c => c.Stage).Distinct().ToList();
+}
+<section class="section tone-@Model.Tone("white")" id="@(Model.Anchor ?? "inquiry")" aria-labelledby="h-@Model.Id">
+    <div class="container form-layout">
+        <div class="form-intro">
+            <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
+            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
+            <p class="muted">Prefer to call? Contact your nearest campus on the <a href="/campuses">Campuses page</a>.</p>
+        </div>
+        <div class="form-card">
+            @if (vm.Sent)
+            {
+                <div class="alert alert-success" role="status" tabindex="-1" data-focus>
+                    @Icons.Svg("check-circle", 22)
+                    <p>@(string.IsNullOrEmpty(Model.Text("success")) ? "Thank you. Your inquiry has been received." : Model.Text("success"))</p>
+                </div>
+                <p><a class="text-link" href="/admissions#inquiry">Send another inquiry</a></p>
+            }
+            else
+            {
+                if (vm.RateLimited)
+                {
+                    <div class="alert alert-error" role="alert" tabindex="-1" data-focus><p>You have sent several inquiries in a short time. Please wait a few minutes and try again, or call the campus.</p></div>
+                }
+                else if (hasErrors)
+                {
+                    <div class="alert alert-error" role="alert" tabindex="-1" data-focus><p>Please check the highlighted fields and try again.</p></div>
+                }
+                <form method="post" action="/admissions/inquiry#inquiry" novalidate>
+                    @Html.AntiForgeryToken()
+                    <div class="hp" aria-hidden="true">
+                        <label for="inq-website">Website</label>
+                        <input id="inq-website" name="Website" type="text" tabindex="-1" autocomplete="off" />
+                    </div>
+                    <div class="field-row">
+                        <div class="field@(err("BranchId") != null ? " has-error" : "")">
+                            <label for="inq-campus">Campus <span class="optional">(optional)</span></label>
+                            <select id="inq-campus" name="BranchId" @(err("BranchId") != null ? "aria-invalid=true aria-describedby=inq-campus-err" : "")>
+                                <option value="">Not sure yet / any campus</option>
+                                @foreach (var c in vm.Campuses)
+                                {
+                                    <option value="@c.Id" @(f.BranchId == c.Id ? "selected" : "")>@c.Name, @c.CityName</option>
+                                }
+                            </select>
+                            @if (err("BranchId") != null) { <p class="field-error" id="inq-campus-err">@err("BranchId")</p> }
+                        </div>
+                        <div class="field@(err("ClassLevelId") != null ? " has-error" : "")">
+                            <label for="inq-class">Class <span class="optional">(optional)</span></label>
+                            <select id="inq-class" name="ClassLevelId" @(err("ClassLevelId") != null ? "aria-invalid=true aria-describedby=inq-class-err" : "")>
+                                <option value="">Choose a class</option>
+                                @foreach (var st in stages)
+                                {
+                                    <optgroup label="@st">
+                                        @foreach (var c in vm.Classes.Where(x => x.Stage == st))
+                                        {
+                                            <option value="@c.Id" @(f.ClassLevelId == c.Id ? "selected" : "")>@c.Name</option>
+                                        }
+                                    </optgroup>
+                                }
+                            </select>
+                            @if (err("ClassLevelId") != null) { <p class="field-error" id="inq-class-err">@err("ClassLevelId")</p> }
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div class="field@(err("Name") != null ? " has-error" : "")">
+                            <label for="inq-name">Parent or guardian's name <span class="req" aria-hidden="true">*</span></label>
+                            <input id="inq-name" name="Name" type="text" value="@f.Name" maxlength="120" autocomplete="name" required @(err("Name") != null ? "aria-invalid=true aria-describedby=inq-name-err" : "") />
+                            @if (err("Name") != null) { <p class="field-error" id="inq-name-err">@err("Name")</p> }
+                        </div>
+                        <div class="field@(err("Phone") != null ? " has-error" : "")">
+                            <label for="inq-phone">Phone or WhatsApp <span class="req" aria-hidden="true">*</span></label>
+                            <input id="inq-phone" name="Phone" type="tel" inputmode="tel" value="@f.Phone" maxlength="20" autocomplete="tel" required placeholder="0300-1234567" @(err("Phone") != null ? "aria-invalid=true aria-describedby=inq-phone-err" : "") />
+                            @if (err("Phone") != null) { <p class="field-error" id="inq-phone-err">@err("Phone")</p> }
+                        </div>
+                    </div>
+                    <div class="field@(err("Email") != null ? " has-error" : "")">
+                        <label for="inq-email">Email <span class="optional">(optional)</span></label>
+                        <input id="inq-email" name="Email" type="email" inputmode="email" value="@f.Email" maxlength="254" autocomplete="email" @(err("Email") != null ? "aria-invalid=true aria-describedby=inq-email-err" : "") />
+                        @if (err("Email") != null) { <p class="field-error" id="inq-email-err">@err("Email")</p> }
+                    </div>
+                    <div class="field@(err("Message") != null ? " has-error" : "")">
+                        <label for="inq-message">Message <span class="optional">(optional)</span></label>
+                        <textarea id="inq-message" name="Message" rows="4" maxlength="2000" placeholder="For example, your child's age and current class" @(err("Message") != null ? "aria-invalid=true aria-describedby=inq-message-err" : "")>@f.Message</textarea>
+                        @if (err("Message") != null) { <p class="field-error" id="inq-message-err">@err("Message")</p> }
+                    </div>
+                    <div class="field field-check@(err("Consent") != null ? " has-error" : "")">
+                        <label><input type="checkbox" name="Consent" value="true" @(f.Consent ? "checked" : "") required @(err("Consent") != null ? "aria-invalid=true aria-describedby=inq-consent-err" : "") /> <span>I agree that The Arqam Schools may contact me about this inquiry. <span class="req" aria-hidden="true">*</span></span></label>
+                        @if (err("Consent") != null) { <p class="field-error" id="inq-consent-err">@err("Consent")</p> }
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send admission inquiry</button>
+                </form>
+            }
+        </div>
+    </div>
+</section>

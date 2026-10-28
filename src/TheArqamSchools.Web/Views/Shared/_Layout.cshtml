@@ -1,0 +1,54 @@
+@using TheArqamSchools.Web.Data
+@using TheArqamSchools.Web.Helpers
+@{
+    var meta = ViewBag.Meta as PageMeta ?? new PageMeta { Title = "The Arqam Schools" };
+    var settings = SiteSettingsRepository.Public();
+    var siteDescription = SiteSettingsRepository.Text(settings, "site.description");
+    var description = string.IsNullOrWhiteSpace(meta.Description) ? siteDescription : meta.Description;
+    var canonical = Site.Absolute(meta.CanonicalPath ?? Request.Path);
+    var ogImage = Site.Absolute(meta.ImageUrl ?? "/Content/brand/the-arqam-schools-logo-official.png");
+}
+<!DOCTYPE html>
+<html lang="en-PK">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@meta.Title</title>
+    @if (!string.IsNullOrWhiteSpace(description))
+    {
+        <meta name="description" content="@description" />
+    }
+    <link rel="canonical" href="@canonical" />
+    @if (meta.NoIndex)
+    {
+        <meta name="robots" content="noindex" />
+    }
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="The Arqam Schools" />
+    <meta property="og:title" content="@meta.Title" />
+    @if (!string.IsNullOrWhiteSpace(description))
+    {
+        <meta property="og:description" content="@description" />
+    }
+    <meta property="og:url" content="@canonical" />
+    <meta property="og:image" content="@ogImage" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#1e3a8a" />
+    <link rel="icon" type="image/png" href="~/Content/brand/the-arqam-schools-logo-official.png" />
+    <link rel="preload" href="~/Content/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="~/Content/site.css?v=20261024" />
+    @if (!string.IsNullOrEmpty(meta.StructuredDataJson))
+    {
+        <script type="application/ld+json">@Html.Raw(meta.StructuredDataJson)</script>
+    }
+</head>
+<body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    @Html.Partial("_Header")
+    <main id="main" tabindex="-1">
+        @RenderBody()
+    </main>
+    @Html.Partial("_Footer")
+    <script src="~/Scripts/site.js?v=20261024" defer></script>
+</body>
+</html>

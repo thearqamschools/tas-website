@@ -1,0 +1,18 @@
+@model PageSection
+@{
+    var items = Model.Data["items"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
+}
+<section class="section tone-@Model.Tone("white")" @(Model.Anchor != null ? "id=" + Model.Anchor : "") aria-labelledby="h-@Model.Id">
+    <div class="container faq">
+        <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
+        <div class="faq-list">
+            @foreach (var it in items)
+            {
+                <details class="faq-item">
+                    <summary>@(it.Value<string>("question"))</summary>
+                    <p>@(it.Value<string>("answer"))</p>
+                </details>
+            }
+        </div>
+    </div>
+</section>

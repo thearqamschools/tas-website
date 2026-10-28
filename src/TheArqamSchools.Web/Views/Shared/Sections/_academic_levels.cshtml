@@ -1,0 +1,47 @@
+@model PageSection
+@using TheArqamSchools.Web.Data
+@using TheArqamSchools.Web.Helpers
+@{
+    var d = Model.Data;
+    var items = d["items"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
+    var compact = d.Value<bool?>("compact") ?? false;
+    // Class names come from dbo.class_levels, grouped by stage, so they always match the admission form.
+    var levels = ClassLevelRepository.All();
+}
+<section class="section tone-@Model.Tone("white")" @(Model.Anchor != null ? "id=" + Model.Anchor : "") aria-labelledby="h-@Model.Id">
+    <div class="container">
+        <div class="section-head">
+            <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
+            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
+        </div>
+        <ul class="levels@(compact ? " levels-compact" : "")">
+            @foreach (var it in items)
+            {
+                var stage = it.Value<string>("stage");
+                var classes = levels.Where(l => l.Stage == stage).Select(l => l.Name).ToList();
+                var img = it["image"];
+                var imgUrl = compact ? null : Media.Url(img);
+                <li class="level">
+                    @if (imgUrl != null)
+                    {
+                        <div class="media-frame ratio-4-3 card-media">
+                            <img src="@imgUrl" alt="@Media.Alt(img)" width="@(img.Value<int?>("width") ?? 400)" height="@(img.Value<int?>("height") ?? 300)" loading="lazy" decoding="async" />
+                        </div>
+                    }
+                    <div class="card-body">
+                        <h3 class="h4">@(it.Value<string>("title"))</h3>
+                        @if (classes.Count > 0 && !(classes.Count == 1 && classes[0] == it.Value<string>("title")))
+                        {
+                            <p class="level-classes">@(classes.Count > 3 ? classes.First() + " to " + classes.Last() : string.Join(", ", classes))</p>
+                        }
+                        @if (!string.IsNullOrEmpty(it.Value<string>("summary"))) { <p>@(it.Value<string>("summary"))</p> }
+                    </div>
+                </li>
+            }
+        </ul>
+        @if (d["link"] != null)
+        {
+            <p class="section-foot">@Html.Partial("_Button", d["link"], new ViewDataDictionary { { "variant", "link" } })</p>
+        }
+    </div>
+</section>

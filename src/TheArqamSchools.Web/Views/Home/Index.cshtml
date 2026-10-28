@@ -1,0 +1,31 @@
+@using TheArqamSchools.Web.Helpers
+@{
+    ViewBag.Meta = ViewBag.Meta as PageMeta;
+}
+<section class="page-header page-header-feature tone-warm has-image">
+    <div class="container page-header-grid">
+        <div>
+            <p class="eyebrow">The Arqam Schools</p>
+            <h1 class="h1">Knowledge with values. Education with purpose.</h1>
+            <p class="lead">Modern education rooted in Islamic values, from Play Group to Matric, with Hifz classes, at 350+ campuses across Pakistan.</p>
+            <div class="btn-row">
+                <a class="btn btn-primary" href="/admissions">Admissions</a>
+                <a class="btn btn-outline" href="/campuses">Find a campus</a>
+            </div>
+        </div>
+        <figure class="media-frame ratio-4-3">
+            <img src="/media/public-media/network/content/hero-students-classroom--20261014075037.jpg" alt="Students learning together in a classroom" width="1365" height="1024" fetchpriority="high" />
+        </figure>
+    </div>
+</section>
+<section class="section tone-white" aria-labelledby="explore-h">
+    <div class="container">
+        <div class="section-head"><h2 class="h2" id="explore-h">Explore The Arqam Schools</h2></div>
+        <ul class="card-grid cols-4">
+            <li><article class="card card-link"><div class="card-body"><span class="icon-badge">@Icons.Svg("users", 22)</span><h3 class="h4"><a href="/about">About Us</a></h3><p>Who we are, our vision and mission, and our values.</p></div></article></li>
+            <li><article class="card card-link"><div class="card-body"><span class="icon-badge">@Icons.Svg("book-open", 22)</span><h3 class="h4"><a href="/academics">Academics</a></h3><p>Teaching, academic levels and student development.</p></div></article></li>
+            <li><article class="card card-link"><div class="card-body"><span class="icon-badge">@Icons.Svg("graduation-cap", 22)</span><h3 class="h4"><a href="/admissions">Admissions</a></h3><p>The admission process and an online inquiry form.</p></div></article></li>
+            <li><article class="card card-link"><div class="card-body"><span class="icon-badge">@Icons.Svg("map-pin", 22)</span><h3 class="h4"><a href="/campuses">Campuses</a></h3><p>Find a campus by name, city, district or area.</p></div></article></li>
+        </ul>
+    </div>
+</section>

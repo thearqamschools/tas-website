@@ -1,0 +1,18 @@
+@model Newtonsoft.Json.Linq.JToken
+@using TheArqamSchools.Web.Helpers
+@{
+    var href = Model != null && Model.Type == Newtonsoft.Json.Linq.JTokenType.Object ? Model.Value<string>("href") : null;
+    var label = Model != null && Model.Type == Newtonsoft.Json.Linq.JTokenType.Object ? Model.Value<string>("label") : null;
+    var variant = (ViewData["variant"] as string) ?? "primary";
+}
+@if (Site.IsSafeHref(href) && !string.IsNullOrWhiteSpace(label))
+{
+    if (variant == "link")
+    {
+        <a class="text-link" href="@href" @(Site.IsExternal(href) ? "target=_blank rel=noopener" : "")>@label @Icons.Svg("arrow-right", 18)</a>
+    }
+    else
+    {
+        <a class="btn btn-@variant" href="@href" @(Site.IsExternal(href) ? "target=_blank rel=noopener" : "")>@label</a>
+    }
+}

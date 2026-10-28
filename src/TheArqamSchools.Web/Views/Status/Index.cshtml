@@ -1,0 +1,30 @@
+@model TheArqamSchools.Web.Models.StatusViewModel
+@{
+    ViewBag.Title = "Status";
+}
+<h1>Installation status</h1>
+<p>Visible only on the server itself (localhost).</p>
+<table>
+    <tr><th>Database connection</th><td class="@(Model.DatabaseConnected ? "ok" : "bad")">@(Model.DatabaseConnected ? "Connected" : "Not connected")</td></tr>
+    @if (!Model.DatabaseConnected)
+    {
+        <tr><th>Error</th><td>@Model.DatabaseError</td></tr>
+    }
+    else
+    {
+        <tr><th>SQL Server</th><td>@Model.ServerVersion</td></tr>
+        <tr><th>Compatibility level</th><td class="@(Model.CompatibilityLevel >= 170 ? "ok" : "bad")">@Model.CompatibilityLevel @(Model.CompatibilityLevel >= 170 ? "" : "(needs 170: run 00_create_database.sql)")</td></tr>
+        <tr><th>REGEXP_LIKE available</th><td class="@(Model.RegexSupported ? "ok" : "bad")">@(Model.RegexSupported ? "Yes" : "No")</td></tr>
+        <tr><th>Full-Text Search</th><td>@(Model.FullTextInstalled ? "Installed" : "Not installed (search uses LIKE)")</td></tr>
+    }
+</table>
+@if (Model.DatabaseConnected)
+{
+    <h2>Rows per table</h2>
+    <table>
+        @foreach (var c in Model.Counts)
+        {
+            <tr><td>@c.Key</td><td>@c.Value</td></tr>
+        }
+    </table>
+}

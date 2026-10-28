@@ -1,0 +1,8 @@
+@model PageSection
+@using TheArqamSchools.Web.Helpers
+<section class="section tone-@Model.Tone("white")" @(Model.Anchor != null ? "id=" + Model.Anchor : "") aria-labelledby="h-@Model.Id">
+    <div class="container@(Model.Text("layout") == "card" ? " rich-card" : "")">
+        @if (!string.IsNullOrEmpty(Model.Text("heading"))) { <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2> }
+        <div class="prose">@RichText.Render(Model.Data["body"])</div>
+    </div>
+</section>

@@ -1,0 +1,9 @@
+# Visual Studio / NuGet build output
+[Bb]in/
+[Oo]bj/
+src/packages/
+.vs/
+*.user
+*.suo
+*.log
+__pycache__/

@@ -1,0 +1,32 @@
+@model PageSection
+@using TheArqamSchools.Web.Helpers
+@{
+    var d = Model.Data;
+    var items = d["items"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
+    var quote = d["quote"];
+}
+<section class="section tone-@Model.Tone("warm")" @(Model.Anchor != null ? "id=" + Model.Anchor : "") aria-labelledby="h-@Model.Id">
+    <div class="container values">
+        <div class="values-intro">
+            <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
+            @if (!string.IsNullOrEmpty(Model.Text("body"))) { <p class="lead">@Model.Text("body")</p> }
+            @if (quote != null && quote.Type == Newtonsoft.Json.Linq.JTokenType.Object)
+            {
+                <blockquote class="quote">
+                    <p>“@(quote.Value<string>("text"))”</p>
+                    @if (!string.IsNullOrEmpty(quote.Value<string>("source"))) { <footer>@(quote.Value<string>("source"))</footer> }
+                </blockquote>
+            }
+        </div>
+        <ul class="values-grid@(items.Count == 4 ? " values-grid-4" : "")">
+            @foreach (var it in items)
+            {
+                <li>
+                    <span class="icon-badge">@Icons.Svg(it.Value<string>("icon"), 24)</span>
+                    <h3 class="h4">@(it.Value<string>("title"))</h3>
+                    <p>@(it.Value<string>("description"))</p>
+                </li>
+            }
+        </ul>
+    </div>
+</section>

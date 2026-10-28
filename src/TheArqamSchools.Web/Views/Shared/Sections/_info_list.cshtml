@@ -1,0 +1,19 @@
+@model PageSection
+@using TheArqamSchools.Web.Helpers
+@{
+    var items = Model.Data["items"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
+}
+<section class="section tone-@Model.Tone("white")" @(Model.Anchor != null ? "id=" + Model.Anchor : "") aria-labelledby="h-@Model.Id">
+    <div class="container info-list">
+        <div>
+            <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
+            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
+        </div>
+        <div class="info-card">
+            <ul class="check-list">
+                @foreach (var it in items) { <li>@((string)it)</li> }
+            </ul>
+            @if (!string.IsNullOrEmpty(Model.Text("note"))) { <p class="note">@Model.Text("note")</p> }
+        </div>
+    </div>
+</section>

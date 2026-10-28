@@ -1,0 +1,49 @@
+@model PageSection
+@using TheArqamSchools.Web.Helpers
+@{
+    var d = Model.Data;
+    var items = d["items"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
+    var cols = d.Value<int?>("columns") ?? (items.Count == 4 || items.Count > 6 ? 4 : 3);
+}
+<section class="section tone-@Model.Tone("grey")" @(Model.Anchor != null ? "id=" + Model.Anchor : "") aria-labelledby="h-@Model.Id">
+    <div class="container">
+        <div class="section-head">
+            <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
+            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
+        </div>
+        <ul class="card-grid cols-@cols">
+            @foreach (var it in items)
+            {
+                var href = it.Value<string>("href");
+                var img = it["image"];
+                var imgUrl = Media.Url(img);
+                var icon = it.Value<string>("icon");
+                <li>
+                    <article class="card@(Site.IsSafeHref(href) ? " card-link" : "")">
+                        @if (imgUrl != null)
+                        {
+                            <div class="media-frame ratio-4-3 card-media">
+                                <img src="@imgUrl" alt="@Media.Alt(img)" width="@(img.Value<int?>("width") ?? 400)" height="@(img.Value<int?>("height") ?? 300)" loading="lazy" decoding="async" />
+                            </div>
+                        }
+                        <div class="card-body">
+                            @if (!string.IsNullOrEmpty(icon) && imgUrl == null) { <span class="icon-badge">@Icons.Svg(icon, 22)</span> }
+                            @if (!string.IsNullOrEmpty(it.Value<string>("meta"))) { <p class="card-meta">@(it.Value<string>("meta"))</p> }
+                            <h3 class="h4">
+                                @if (Site.IsSafeHref(href))
+                                {
+                                    <a href="@href">@(it.Value<string>("title"))</a>
+                                }
+                                else
+                                {
+                                    @(it.Value<string>("title"))
+                                }
+                            </h3>
+                            @if (!string.IsNullOrEmpty(it.Value<string>("summary"))) { <p>@(it.Value<string>("summary"))</p> }
+                        </div>
+                    </article>
+                </li>
+            }
+        </ul>
+    </div>
+</section>

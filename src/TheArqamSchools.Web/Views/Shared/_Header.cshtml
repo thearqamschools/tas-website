@@ -1,0 +1,146 @@
+@using TheArqamSchools.Web.Data
+@using TheArqamSchools.Web.Helpers
+@{
+    var settings = SiteSettingsRepository.Public();
+    var main = NavigationRepository.Menu("header");
+    var utility = NavigationRepository.Menu("utility");
+    var phone = SiteSettingsRepository.Text(settings, "contact.phone");
+    var path = Request.Path;
+    var apply = SiteSettingsRepository.Json(settings, "header.cta_apply");
+    var applyHref = apply != null && apply.Type == Newtonsoft.Json.Linq.JTokenType.Object ? apply.Value<string>("href") : "/admissions";
+    var applyLabel = apply != null && apply.Type == Newtonsoft.Json.Linq.JTokenType.Object ? apply.Value<string>("label") : "Admissions";
+    var campusCta = SiteSettingsRepository.Json(settings, "header.cta_branch");
+    var campusHref = campusCta != null && campusCta.Type == Newtonsoft.Json.Linq.JTokenType.Object ? campusCta.Value<string>("href") : "/campuses";
+    var campusLabel = campusCta != null && campusCta.Type == Newtonsoft.Json.Linq.JTokenType.Object ? campusCta.Value<string>("label") : "Find a campus";
+    var facebook = "https://www.facebook.com/TASHeadOffice";
+}
+<header class="site-header" data-header>
+    <div class="topbar">
+        <div class="container topbar-inner">
+            @if (!string.IsNullOrEmpty(phone))
+            {
+                <a class="topbar-link" href="@Contact.TelUrl(phone)">@Icons.Svg("phone", 16) @phone</a>
+            }
+            <div class="topbar-right">
+                <nav aria-label="Utility">
+                    <ul class="topbar-menu">
+                        @foreach (var u in utility)
+                        {
+                            <li><a href="@u.Url">@u.Label</a></li>
+                        }
+                    </ul>
+                </nav>
+                <a class="icon-link" href="@facebook" target="_blank" rel="noopener">@Icons.Svg("facebook", 18)<span class="sr-only">Facebook (opens in a new tab)</span></a>
+            </div>
+        </div>
+    </div>
+    <div class="container header-bar">
+        <a class="brand" href="/" aria-label="The Arqam Schools, home">
+            <img src="~/Content/brand/the-arqam-schools-logo-official.png" alt="" width="52" height="52" />
+            <span>The Arqam Schools</span>
+        </a>
+        <nav class="main-nav" aria-label="Main">
+            <ul>
+                @foreach (var item in main)
+                {
+                    var current = Site.IsCurrent(item.Url, path) || item.Children.Any(c => Site.IsCurrent(c.Url, path));
+                    <li class="@(item.HasChildren ? "has-dropdown" : null)">
+                        @if (item.HasChildren)
+                        {
+                            <button type="button" class="nav-link@(current ? " is-current" : "")" aria-expanded="false" aria-controls="dd-@item.Id" data-dropdown>
+                                @item.Label @Icons.Svg("chevron-down", 16, "icon chevron")
+                            </button>
+                            <div class="dropdown" id="dd-@item.Id" hidden>
+                                <div class="container dropdown-inner">
+                                    <ul class="dropdown-links">
+                                        @foreach (var c in item.Children)
+                                        {
+                                            <li>
+                                                <a href="@c.Url" @(Site.IsCurrent(c.Url, path) && c.Url.TrimEnd('/') == path.TrimEnd('/') ? "aria-current=page" : "")>
+                                                    <span class="dd-title">@c.Label</span>
+                                                    @if (!string.IsNullOrEmpty(c.Description))
+                                                    {
+                                                        <span class="dd-desc">@c.Description</span>
+                                                    }
+                                                </a>
+                                            </li>
+                                        }
+                                    </ul>
+                                    @if (!string.IsNullOrEmpty(item.Description))
+                                    {
+                                        <div class="dropdown-aside">
+                                            <p>@item.Description</p>
+                                            <a class="text-link" href="@item.Url">@item.Label @Icons.Svg("arrow-right", 18)</a>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <a class="nav-link@(current ? " is-current" : "")" href="@item.Url" @(current ? "aria-current=page" : "")>@item.Label</a>
+                        }
+                    </li>
+                }
+            </ul>
+        </nav>
+        <div class="header-actions">
+            <a class="btn btn-primary btn-sm header-cta" href="@applyHref">@applyLabel</a>
+            <button type="button" class="menu-button" aria-controls="mobile-menu" aria-expanded="false" data-menu-open>
+                @Icons.Svg("menu", 24)<span class="sr-only">Open menu</span>
+            </button>
+        </div>
+    </div>
+    <dialog class="mobile-menu" id="mobile-menu" aria-label="Menu">
+        <div class="mobile-menu-head">
+            <a class="brand" href="/" aria-label="The Arqam Schools, home">
+                <img src="~/Content/brand/the-arqam-schools-logo-official.png" alt="" width="44" height="44" />
+                <span>The Arqam Schools</span>
+            </a>
+            <button type="button" class="menu-button" data-menu-close>@Icons.Svg("x", 24)<span class="sr-only">Close menu</span></button>
+        </div>
+        <div class="mobile-menu-body">
+            <nav aria-label="Main">
+                <ul class="mobile-nav">
+                    @foreach (var item in main)
+                    {
+                        var current = Site.IsCurrent(item.Url, path);
+                        <li>
+                            @if (item.HasChildren)
+                            {
+                                <details>
+                                    <summary>@item.Label @Icons.Svg("chevron-down", 20, "icon chevron")</summary>
+                                    <ul>
+                                        <li><a class="mobile-sub mobile-sub-overview" href="@item.Url">@item.Label overview</a></li>
+                                        @foreach (var c in item.Children.Where(c => c.Url != item.Url))
+                                        {
+                                            <li><a class="mobile-sub" href="@c.Url">@c.Label</a></li>
+                                        }
+                                    </ul>
+                                </details>
+                            }
+                            else
+                            {
+                                <a class="mobile-link@(current ? " is-current" : "")" href="@item.Url" @(current ? "aria-current=page" : "")>@item.Label</a>
+                            }
+                        </li>
+                    }
+                </ul>
+            </nav>
+            <ul class="mobile-utility">
+                @foreach (var u in utility)
+                {
+                    <li><a href="@u.Url">@u.Label</a></li>
+                }
+            </ul>
+            @if (!string.IsNullOrEmpty(phone))
+            {
+                <p class="mobile-phone"><a href="@Contact.TelUrl(phone)">@Icons.Svg("phone", 18) @phone</a></p>
+            }
+        </div>
+        <div class="mobile-menu-foot">
+            <a class="btn btn-outline" href="@campusHref">@campusLabel</a>
+            <a class="btn btn-primary" href="@applyHref">@applyLabel</a>
+        </div>
+    </dialog>
+</header>

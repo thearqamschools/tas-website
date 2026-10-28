@@ -1,0 +1,22 @@
+@model System.Web.Mvc.HandleErrorInfo
+@{
+    ViewBag.Meta = new PageMeta { Title = "Something went wrong | The Arqam Schools", NoIndex = true };
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en-PK">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Something went wrong | The Arqam Schools</title>
+    <link rel="stylesheet" href="~/Content/site.css?v=20261024" />
+</head>
+<body>
+    <main class="container" style="padding:64px 16px">
+        <h1 class="h1">Something went wrong</h1>
+        <p class="lead">Please try again in a few minutes, or call us on 041-2660265.</p>
+        <p><a class="btn btn-primary" href="/">Go to the homepage</a></p>
+    </main>
+</body>
+</html>
