@@ -143,7 +143,7 @@ jobs:
         if: always()
         run: |
           $hits = Get-ChildItem $env:LOGS -File -ErrorAction SilentlyContinue |
-            Select-String -Pattern '(?i)(password\s*=|pwd\s*=|token\s*[=:]|secret\s*[=:]|ghs_|ghp_|github_pat_|bearer\s)'
+            Select-String -Pattern '(?i)(password\s*=|pwd\s*=|(?<!PublicKey)token\s*[=:]|secret\s*[=:]|ghs_|ghp_|github_pat_|bearer\s)'
           if ($hits) {
             "Possible credential text found; logs will not be uploaded:"
             $hits | ForEach-Object { "$($_.Filename):$($_.LineNumber)" }
