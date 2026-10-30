@@ -4,7 +4,10 @@
     var href = Model != null && Model.Type == Newtonsoft.Json.Linq.JTokenType.Object ? Model.Value<string>("href") : null;
     var label = Model != null && Model.Type == Newtonsoft.Json.Linq.JTokenType.Object ? Model.Value<string>("label") : null;
     var variant = (ViewData["variant"] as string) ?? "primary";
+    // Only styled variants are allowed in the class name; anything else falls back to the quiet outline button.
+    if (Array.IndexOf(new[] { "primary", "outline", "light", "outline-light", "link" }, variant) < 0) { variant = "outline"; }
 }
+@* Keep this show/hide rule in step with hasCta in Sections/_page_header.cshtml. *@
 @if (Site.IsSafeHref(href) && !string.IsNullOrWhiteSpace(label))
 {
     if (variant == "link")

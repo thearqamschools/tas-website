@@ -16,6 +16,17 @@
   --r-sm: 6px; --r-md: 12px; --r-lg: 20px;
   --shadow: 0 8px 24px rgba(15, 23, 42, .08), 0 2px 6px rgba(15, 23, 42, .05);
   --header-h: 64px; --topbar-h: 40px;
+  /* Phase 10 shared foundations. Motion: one ease-out curve, transform and opacity only, 120-360 ms. */
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
+  /* Fluid type scale (px at 320 / 768 / 1440): h1 32 / 38.6 / 44 (the homepage hero sets its own larger size); h2 28 / 33.1 / 38;
+     h3 20 / 21.5 / 22; h4 and lead 18 / 18 / 19; eyebrow 14 / 14.3 / 15. Body 16, small text 15, nothing visible below 14. */
+  --fs-h1: clamp(2rem, 1.5rem + 1.9vw, 2.75rem);
+  --fs-h2: clamp(1.75rem, 1.4rem + 1.4vw, 2.375rem);
+  --fs-h3: clamp(1.25rem, 1.15rem + .4vw, 1.375rem);
+  --fs-h4: clamp(1.125rem, .9375rem + .39vw, 1.1875rem);
+  --fs-lead: clamp(1.125rem, .9375rem + .39vw, 1.1875rem);
+  --fs-eyebrow: clamp(.875rem, .8rem + .2vw, .9375rem);
+  --fs-small: .9375rem;
 }
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: calc(var(--header-h) + 16px); }
@@ -32,22 +43,25 @@ ul[class], ol[class], .site-header ul, .site-footer ul, .breadcrumbs ol, .on-thi
 .skip-link { position: absolute; left: 16px; top: -48px; z-index: 100; background: var(--ink); color: #fff; padding: 10px 16px; border-radius: var(--r-sm); }
 .skip-link:focus { top: 8px; }
 main:focus { outline: none; }
+/* Touch: no double-tap-zoom delay on controls. Tap highlight is replaced by each control's own :active state. */
+a, button, summary, [role="button"] { touch-action: manipulation; }
+/* Keyboard focus on a dark band: white ring (red on navy would be about 1.9:1). White on blue is 10.4:1. */
+.tone-navy :focus-visible { outline-color: #fff; }
 
 .container { width: 100%; max-width: calc(1200px + 4rem); margin-inline: auto; padding-inline: 16px; }
 @media (min-width: 48rem) { .container { padding-inline: 2rem; } }
 
 /* Type */
-.h1 { font-family: var(--serif); font-weight: 600; letter-spacing: -.01em; font-size: 2rem; line-height: 1.2; text-wrap: balance; }
-.h2 { font-family: var(--serif); font-weight: 600; letter-spacing: -.01em; font-size: 1.625rem; line-height: 1.25; text-wrap: balance; }
-.h3 { font-weight: 600; font-size: 1.25rem; line-height: 1.4; }
-.h4 { font-weight: 600; font-size: 1.125rem; line-height: 1.45; }
-.lead { font-size: 1.125rem; line-height: 1.6; color: var(--muted); max-width: 46rem; }
-.eyebrow { text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; font-weight: 600; color: var(--blue); margin-bottom: .75rem; }
+/* Fluid scale, tokens in :root. Running text: 16 px body, 18-19 px lead, line height about 1.6, measure 60-72 characters. */
+.h1 { font-family: var(--serif); font-weight: 600; letter-spacing: -.01em; font-size: var(--fs-h1); line-height: 1.15; text-wrap: balance; overflow-wrap: break-word; }
+.h2 { font-family: var(--serif); font-weight: 600; letter-spacing: -.01em; font-size: var(--fs-h2); line-height: 1.2; text-wrap: balance; overflow-wrap: break-word; }
+.h3 { font-weight: 600; font-size: var(--fs-h3); line-height: 1.35; overflow-wrap: break-word; }
+.h4 { font-weight: 600; font-size: var(--fs-h4); line-height: 1.45; }
+.lead { font-size: var(--fs-lead); line-height: 1.6; color: var(--muted); max-width: 38rem; }
+.eyebrow { text-transform: uppercase; letter-spacing: .08em; font-size: var(--fs-eyebrow); font-weight: 600; line-height: 1.4; color: var(--blue); margin-bottom: .75rem; }
+.text-sm { font-size: var(--fs-small); line-height: 1.55; }
 .muted { color: var(--muted); }
-@media (min-width: 64rem) {
-  .h1 { font-size: 2.75rem; } .h2 { font-size: 2.125rem; } .h3 { font-size: 1.375rem; } .h4 { font-size: 1.1875rem; }
-  .lead { font-size: 1.1875rem; } .eyebrow { font-size: .8125rem; }
-}
+.prose, .prose-lg { max-width: 72ch; }
 .prose > * + *, .prose-lg > * + * { margin-top: 1rem; }
 .prose-lg { font-size: 1.0625rem; line-height: 1.75; color: var(--muted); }
 .prose h2, .prose h3 { color: var(--ink); margin-top: 1.75rem; font-weight: 600; }
@@ -55,17 +69,30 @@ main:focus { outline: none; }
 .prose li + li { margin-top: .375rem; }
 
 /* Buttons */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 12px 22px; border-radius: var(--r-sm); font-weight: 600; line-height: 1.2; text-decoration: none; border: 1px solid transparent; cursor: pointer; white-space: nowrap; transition: background-color .15s, color .15s, border-color .15s; }
+/* Heights: 48 px for buttons (primary calls to action included), 44 px for .btn-sm; the homepage hero and search use 52 px.
+   Press feedback is for every input type (scale .97, 120 ms); hover is for mouse only; reduced motion removes both movements. */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 12px 22px; border-radius: var(--r-sm); font-weight: 600; line-height: 1.2; text-decoration: none; border: 1px solid transparent; cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; transition: background-color .15s ease-out, color .15s ease-out, border-color .15s ease-out, transform 120ms var(--ease-out); }
 .btn:hover { text-decoration: none; }
+.btn:active { transform: scale(.97); }
 .btn-sm { min-height: 44px; padding: 10px 16px; font-size: .9375rem; }
 .btn-primary { background: var(--red); color: #fff; }
-.btn-primary:hover { background: var(--red-700); color: #fff; }
+.btn-primary:active { background: var(--red-700); color: #fff; }
 .btn-outline { border-color: var(--blue); color: var(--blue); background: transparent; }
-.btn-outline:hover { background: var(--blue); color: #fff; }
+.btn-outline:active { background: var(--blue-50); }
 .btn-light { background: #fff; color: var(--blue); }
-.btn-light:hover { background: var(--warm); }
+.btn-light:active { background: var(--warm); }
 .btn-outline-light { border-color: rgba(255,255,255,.7); color: #fff; }
-.btn-outline-light:hover { background: rgba(255,255,255,.12); color: #fff; }
+.btn-outline-light:active { background: rgba(255,255,255,.12); color: #fff; }
+/* Opt-in arrow nudge: put .btn-arrow on a button that ends with an arrow icon. */
+.btn-arrow .icon { transition: transform 160ms var(--ease-out); }
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover { background: var(--red-700); color: #fff; }
+  .btn-outline:hover { background: var(--blue); color: #fff; }
+  .btn-light:hover { background: var(--warm); }
+  .btn-outline-light:hover { background: rgba(255,255,255,.12); color: #fff; }
+  .btn-arrow:hover .icon { transform: translateX(3px); }
+}
+@media (prefers-reduced-motion: reduce) { .btn:active, .btn-arrow:hover .icon { transform: none; } }
 .btn-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 1.75rem; }
 .btn-row:empty { display: none; }
 .text-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-weight: 600; color: var(--blue); }
@@ -150,25 +177,43 @@ ul.mobile-utility { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; mar
 .mobile-menu-foot .btn { padding-inline: 12px; }
 
 /* Breadcrumbs and page header */
-.breadcrumbs { font-size: .875rem; margin-bottom: 20px; }
-.breadcrumbs ol { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
-.breadcrumbs li { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); }
-.breadcrumbs a { display: inline-flex; align-items: center; min-height: 24px; color: var(--muted); }
-.breadcrumbs [aria-current] { color: var(--ink); }
-.page-header { padding-block: 40px; }
-.page-header .lead { margin-top: 14px; }
-.page-header-grid { display: grid; gap: 32px; align-items: center; }
+/* Breadcrumbs: 14 px text, every link has a 44 px tall tap area (the row is pulled up 6 px so the header stays compact).
+   Muted on warm 6.85:1, ink on warm 16.2:1, blue on warm 9.4:1. The current page is bold ink and carries aria-current. */
+.breadcrumbs { font-size: .875rem; line-height: 1.5; margin: -6px 0 6px; }
+.breadcrumbs ol { display: flex; flex-wrap: wrap; align-items: center; }
+.breadcrumbs li { display: inline-flex; align-items: center; gap: 4px; min-width: 0; min-height: 44px; color: var(--muted); }
+.breadcrumbs li + li { margin-left: 4px; }
+.breadcrumbs a { display: inline-flex; align-items: center; min-height: 44px; padding-inline: 4px; margin-inline: -4px; border-radius: var(--r-sm); color: var(--muted); }
+.breadcrumbs [aria-current] { color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
+@media (hover: hover) and (pointer: fine) { .breadcrumbs a:hover { color: var(--blue); } }
+
+/* Page header (Direction A): warm band, serif h1, lead, comfortable but not tall. */
+.page-header { padding-block: 28px 36px; border-bottom: 1px solid var(--sand); }
+.page-header .eyebrow { margin-bottom: 8px; }
+.page-header .lead { margin-top: 16px; }
+.page-header .btn-row { gap: 12px; margin-top: 24px; }
+.page-header .btn-row .btn { flex: 1 1 100%; }
+.page-header-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: center; }
+.page-header-grid > * { min-width: 0; }
+.page-header .media-frame { aspect-ratio: 16 / 10; }
+@media (min-width: 30rem) { .page-header .btn-row .btn { flex: 0 0 auto; } }
+@media (min-width: 48rem) { .page-header { padding-block: 40px 48px; } .page-header-grid { gap: 32px; } }
 @media (min-width: 64rem) {
-  .page-header { padding-block: 56px; }
-  .page-header-feature.has-image .page-header-grid { grid-template-columns: 7fr 5fr; gap: 56px; }
+  .page-header { padding-block: 48px 56px; }
+  .page-header .media-frame { aspect-ratio: 4 / 3; }
+  .page-header-feature.has-image .page-header-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 56px; }
 }
 
 /* Sections */
-.section { padding-block: 56px; }
-@media (min-width: 64rem) { .section { padding-block: 80px; } }
+/* Section rhythm (every page): 48 px top and bottom on phones, 64 px from 768 px, 72 px from 1024 px.
+   Heading to content: 24 px, 32 px from 768 px. */
+.section { padding-block: 48px; }
+@media (min-width: 48rem) { .section { padding-block: 64px; } }
+@media (min-width: 64rem) { .section { padding-block: 72px; } }
 .tone-white { background: #fff; } .tone-grey { background: var(--grey); } .tone-warm { background: var(--warm); }
 .tone-navy { background: var(--blue); color: #fff; } .tone-navy .lead { color: rgba(255,255,255,.85); }
-.section-head { max-width: 46rem; margin-bottom: 32px; }
+.section-head { max-width: 40rem; margin-bottom: 24px; }
+@media (min-width: 48rem) { .section-head { margin-bottom: 32px; } }
 .section-head .lead { margin-top: 12px; }
 .section-head-row { max-width: none; display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 24px; }
 .section-foot { margin-top: 24px; }
@@ -208,7 +253,7 @@ ul.mobile-utility { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; mar
 .card-media { border-radius: 0; }
 .card-body { padding: 20px; display: flex; flex-direction: column; gap: 8px; }
 .card-body p { color: var(--muted); font-size: .9375rem; }
-.card-meta { font-size: .8125rem !important; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--blue) !important; }
+.card-meta { font-size: .875rem !important; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--blue) !important; }
 .card-link h3 a { color: var(--ink); text-decoration: none; }
 .card-link h3 a::after { content: ""; position: absolute; inset: 0; }
 .card-link h3 a:focus-visible { outline: none; }
@@ -317,11 +362,11 @@ ul.mobile-utility { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; mar
 .campus-card-head .h4 a { color: var(--ink); }
 .campus-locality { display: flex; align-items: center; gap: 6px; color: var(--muted); margin: 4px 0 10px; }
 .campus-facts { display: grid; gap: 8px; font-size: .9375rem; }
-.campus-facts dt { font-weight: 600; font-size: .8125rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.campus-facts dt { font-weight: 600; font-size: .875rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 .campus-facts dd { margin: 0; }
 .campus-facts dd a { display: inline-block; padding-block: 3px; }
 .campus-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
-.badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: .8125rem; font-weight: 600; background: var(--grey); color: var(--ink); }
+.badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: .875rem; font-weight: 600; background: var(--grey); color: var(--ink); }
 .badge-open { background: #ecfdf5; color: var(--success); }
 .badge-waiting_list, .badge-opening_soon { background: #fffbeb; color: #92400e; }
 .badge-closed { background: #fef2f2; color: var(--error); }
@@ -358,6 +403,9 @@ ul.mobile-utility { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; mar
 .footer-cta-inner { display: flex; flex-direction: column; gap: 20px; padding-block: 44px; }
 .footer-cta-inner .btn-row { margin-top: 0; }
 @media (min-width: 48rem) { .footer-cta-inner { flex-direction: row; align-items: center; justify-content: space-between; } .footer-cta-inner .h2 { flex: 1 1 0; min-width: 0; } }
+/* The footer CTA heading keeps its approved Phase 9 size (it sits beside two buttons), not the larger section h2. */
+.footer-cta-inner .h2 { font-size: 1.625rem; line-height: 1.25; }
+@media (min-width: 64rem) { .footer-cta-inner .h2 { font-size: 2.125rem; } }
 .footer-main { background: var(--ink); color: rgba(255,255,255,.72); }
 .footer-main a { color: rgba(255,255,255,.85); }
 .footer-main a:hover { color: #fff; }
@@ -376,20 +424,10 @@ ul.mobile-utility { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; mar
 @media (min-width: 40rem) { .footer-grid { grid-template-columns: 1fr 1fr; } .footer-identity { grid-column: 1 / -1; } }
 @media (min-width: 80rem) { .footer-grid { grid-template-columns: 1fr .55fr 1.2fr 1.2fr; } .footer-identity { grid-column: auto; } }
 
-/* Homepage (phase 9 prototype, refined). Everything below is scoped to .home or a home-/ph- class, so other pages are unchanged.
-   Type scale: body 16 px / 1.6; lead 18-20 px; card text 16 px; smallest visible text 14 px.
-   Section rhythm: 48 px (phones), 64 px (768+), 72 px (1024+) top and bottom; heading to content 24 / 32 px.
+/* Homepage (phase 9 prototype, refined). Everything below is scoped to a home-/ph- class, so other pages are unaffected.
+   Type scale, section rhythm, button press/hover and touch-action now live in the shared rules at the top of this file
+   (phase 10 batch 1): .h1-.h4, .lead, .section, .section-head, .btn, .btn-arrow. Only homepage-specific layout is left here.
    Motion: transform and opacity only, 120-360 ms, ease-out; hover effects only for mouse; none under reduced motion. */
-.home { --home-ease: cubic-bezier(.23, 1, .32, 1); }
-.home a, .home button { touch-action: manipulation; }
-.home .section { padding-block: 48px; }
-.home .section-head { max-width: 40rem; margin-bottom: 24px; }
-.home .h2 { font-size: clamp(1.75rem, 1.4rem + 1.4vw, 2.375rem); line-height: 1.2; }
-.home .lead { max-width: 38rem; line-height: 1.6; }
-.home .btn { transition: background-color .15s, color .15s, border-color .15s, transform 120ms var(--home-ease); }
-.home .btn:active { transform: scale(.97); }
-@media (min-width: 48rem) { .home .section { padding-block: 64px; } .home .section-head { margin-bottom: 32px; } }
-@media (min-width: 64rem) { .home .section { padding-block: 72px; } }
 
 /* Hero */
 .home-hero { padding-block: 32px 40px; }
@@ -399,7 +437,6 @@ ul.mobile-utility { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; mar
 .home-hero .lead { max-width: 36rem; margin-top: 16px; font-size: clamp(1.125rem, 1.07rem + .3vw, 1.25rem); }
 .home-hero .btn-row { gap: 12px; margin-top: 28px; }
 .home-hero .btn { flex: 1 1 100%; min-height: 52px; padding: 14px 26px; font-size: 1rem; }
-.home-hero .btn .icon { transition: transform 160ms var(--home-ease); }
 @media (min-width: 30rem) { .home-hero .btn { flex: 0 0 auto; } }
 @media (min-width: 48rem) { .home-hero { padding-block: 48px 56px; } .home-hero-grid { gap: 32px; } }
 @media (min-width: 64rem) {
@@ -444,7 +481,7 @@ ul.mobile-utility { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; mar
 /* Icon chip: white on blue 10.4:1, white on red-700 6.5:1. Text: ink on blue-50 about 17:1, muted on blue-50 6.8:1, muted on red-50 6.6:1. */
 .home-tiles { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
 @media (min-width: 48rem) { .home-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } }
-.home-tile { position: relative; display: flex; align-items: center; gap: 16px; height: 100%; padding: 20px 18px; border-radius: var(--r-md); background: var(--blue-50); box-shadow: inset 0 0 0 1px rgba(30, 58, 138, .14); transition: transform 180ms var(--home-ease), box-shadow 150ms ease-out; }
+.home-tile { position: relative; display: flex; align-items: center; gap: 16px; height: 100%; padding: 20px 18px; border-radius: var(--r-md); background: var(--blue-50); box-shadow: inset 0 0 0 1px rgba(30, 58, 138, .14); transition: transform 180ms var(--ease-out), box-shadow 150ms ease-out; }
 @media (min-width: 30rem) { .home-tile { gap: 18px; padding: 24px 22px; } }
 .home-tile-action { background: var(--red-50); box-shadow: inset 0 0 0 1px rgba(185, 28, 28, .2); }
 .home-tile-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 52px; height: 52px; border-radius: var(--r-md); background: var(--blue); color: #fff; }
@@ -459,7 +496,7 @@ ul.mobile-utility { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; mar
 .home-tile-text h3 a:focus-visible { outline: none; }
 .home-tile-text h3 a:focus-visible::after { outline: 3px solid var(--red); outline-offset: 2px; }
 .home-tile-text p { margin-top: 4px; color: var(--muted); font-size: 1rem; line-height: 1.5; }
-.home-tile-arrow { display: inline-flex; flex-shrink: 0; color: var(--blue); transition: transform 180ms var(--home-ease); }
+.home-tile-arrow { display: inline-flex; flex-shrink: 0; color: var(--blue); transition: transform 180ms var(--ease-out); }
 @media (max-width: 20.99rem) { .home-tile-arrow { display: none; } }
 .home-tile:active, .home-campus:active { transform: scale(.985); }
 /* Keyboard focus gets the same cue as mouse hover (arrow nudge, blue title) plus the red ring above. */
@@ -491,12 +528,12 @@ ul.home-points { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px
 @media (min-width: 40rem) { .home-search { grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 16px; } }
 .home-cities { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); }
 ul.home-city-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
-.home-city { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 18px; border-radius: 22px; background: var(--blue-50); color: var(--blue); font-weight: 600; text-decoration: none; overflow-wrap: anywhere; transition: background-color .15s, color .15s, transform 120ms var(--home-ease); }
+.home-city { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 18px; border-radius: 22px; background: var(--blue-50); color: var(--blue); font-weight: 600; text-decoration: none; overflow-wrap: anywhere; transition: background-color .15s, color .15s, transform 120ms var(--ease-out); }
 .home-city:active { transform: scale(.97); }
 .home-city-count { font-size: .875rem; font-weight: 400; color: var(--muted); white-space: nowrap; }
 ul.home-campus-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 17.5rem), 1fr)); gap: 16px; margin-top: 20px; }
 @media (min-width: 48rem) { ul.home-campus-grid { gap: 20px; } }
-.home-campus { position: relative; display: flex; flex-direction: column; gap: 6px; height: 100%; min-width: 0; padding: 20px 22px; background: #fff; border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--line); transition: transform 180ms var(--home-ease), box-shadow 150ms ease-out; }
+.home-campus { position: relative; display: flex; flex-direction: column; gap: 6px; height: 100%; min-width: 0; padding: 20px 22px; background: #fff; border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--line); transition: transform 180ms var(--ease-out), box-shadow 150ms ease-out; }
 .home-campus h3 a { color: var(--ink); text-decoration: none; overflow-wrap: anywhere; }
 .home-campus h3 a::after { content: ""; position: absolute; inset: 0; border-radius: var(--r-md); }
 .home-campus h3 a:focus-visible { outline: none; }
@@ -520,18 +557,17 @@ ul.home-campus-grid { display: grid; grid-template-columns: repeat(auto-fill, mi
   .home-campus:hover { box-shadow: inset 0 0 0 1px var(--line), var(--shadow); }
   .home-city:hover { background: var(--blue); color: #fff; text-decoration: none; }
   .home-city:hover .home-city-count { color: rgba(255, 255, 255, .85); }
-  .home-hero .btn:hover .icon { transform: translateX(3px); }
 }
 
 /* Scroll reveal: only when site.js sets js-reveal on <html>. Without JS, or under reduced motion, everything is simply visible. */
-.js-reveal .home-reveal { opacity: 0; transform: translateY(14px); transition: opacity 360ms var(--home-ease), transform 360ms var(--home-ease); }
+.js-reveal .home-reveal { opacity: 0; transform: translateY(14px); transition: opacity 360ms var(--ease-out), transform 360ms var(--ease-out); }
 .js-reveal .home-reveal.is-in, .js-reveal .home-reveal:focus-within { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) {
-  .home *, .home *::before, .home *::after { transition: none !important; }
+  /* Transitions are already off for everything (top of this file); here the transforms go too. */
   .js-reveal .home-reveal { opacity: 1; transform: none; }
   /* No movement at all: colour and shadow cues stay, transforms are off. */
-  .home-tile:hover, .home-campus:hover, .home-tile:active, .home-campus:active, .home-city:active, .home .btn:active,
-  .home-tile:hover .home-tile-arrow, .home-tile:focus-within .home-tile-arrow, .home-hero .btn:hover .icon { transform: none; }
+  .home-tile:hover, .home-campus:hover, .home-tile:active, .home-campus:active, .home-city:active,
+  .home-tile:hover .home-tile-arrow, .home-tile:focus-within .home-tile-arrow { transform: none; }
 }
 
 @media print { .js-reveal .home-reveal { opacity: 1; transform: none; } }
