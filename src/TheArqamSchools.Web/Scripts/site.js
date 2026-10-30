@@ -48,6 +48,39 @@
   var msg = document.querySelector("[data-focus]");
   if (msg) msg.focus({ preventScroll: true });
 
+  // Homepage scroll reveal: a one-time fade and 14px rise for blocks below the first screen.
+  // Content is fully visible without JS: CSS only hides blocks once js-reveal is on <html>, and that happens only here.
+  // Skipped for reduced motion, Save-Data, a #hash in the URL, or browsers without IntersectionObserver.
+  (function () {
+    var items = document.querySelectorAll(".home-reveal");
+    if (!items.length || !("IntersectionObserver" in window)) return;
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var saveData = navigator.connection && navigator.connection.saveData;
+    if (reduce || saveData || window.location.hash) return;
+
+    var seen = new IntersectionObserver(function (entries) {
+      var step = 0;
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        var el = entry.target;
+        seen.unobserve(el);
+        el.style.transitionDelay = Math.min(step, 3) * 60 + "ms"; // small stagger, at most 3 steps
+        step += 1;
+        el.classList.add("is-in");
+        window.setTimeout(function () { el.style.transitionDelay = ""; }, 700);
+      });
+    }, { threshold: 0, rootMargin: "0px 0px -8% 0px" });
+
+    // Read first, then write: blocks already on screen stay as they are, the rest wait for the observer.
+    var vh = window.innerHeight || document.documentElement.clientHeight;
+    var below = [];
+    items.forEach(function (el) {
+      if (el.getBoundingClientRect().top < vh * 0.92) el.classList.add("is-in"); else below.push(el);
+    });
+    document.documentElement.classList.add("js-reveal");
+    below.forEach(function (el) { seen.observe(el); });
+  })();
+
   // Required consent checkboxes: browsers check them before sending; the server checks everything again.
   document.querySelectorAll("form[novalidate]").forEach(function (f) {
     f.addEventListener("submit", function (e) {

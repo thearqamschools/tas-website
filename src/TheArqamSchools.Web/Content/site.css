@@ -9,6 +9,8 @@
   --blue: #1e3a8a; --blue-700: #1b3479; --red: #dc2626; --red-700: #b91c1c;
   --ink: #0f172a; --muted: #475569; --line: #e2e8f0; --grey: #f1f5f9; --warm: #f8f3e9; --white: #fff;
   --success: #047857; --error: #b91c1c;
+  /* Phase 9 tints and shades, derived from the existing blue, red and warm hues (all WCAG AA with the text colours used on them). */
+  --navy-900: #172554; --blue-50: #eef2fb; --red-50: #fdecec; --sand: #efe6d2;
   --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
   --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
   --r-sm: 6px; --r-md: 12px; --r-lg: 20px;
@@ -374,4 +376,165 @@ ul.mobile-utility { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; mar
 @media (min-width: 40rem) { .footer-grid { grid-template-columns: 1fr 1fr; } .footer-identity { grid-column: 1 / -1; } }
 @media (min-width: 80rem) { .footer-grid { grid-template-columns: 1fr .55fr 1.2fr 1.2fr; } .footer-identity { grid-column: auto; } }
 
+/* Homepage (phase 9 prototype, refined). Everything below is scoped to .home or a home-/ph- class, so other pages are unchanged.
+   Type scale: body 16 px / 1.6; lead 18-20 px; card text 16 px; smallest visible text 14 px.
+   Section rhythm: 48 px (phones), 64 px (768+), 72 px (1024+) top and bottom; heading to content 24 / 32 px.
+   Motion: transform and opacity only, 120-360 ms, ease-out; hover effects only for mouse; none under reduced motion. */
+.home { --home-ease: cubic-bezier(.23, 1, .32, 1); }
+.home a, .home button { touch-action: manipulation; }
+.home .section { padding-block: 48px; }
+.home .section-head { max-width: 40rem; margin-bottom: 24px; }
+.home .h2 { font-size: clamp(1.75rem, 1.4rem + 1.4vw, 2.375rem); line-height: 1.2; }
+.home .lead { max-width: 38rem; line-height: 1.6; }
+.home .btn { transition: background-color .15s, color .15s, border-color .15s, transform 120ms var(--home-ease); }
+.home .btn:active { transform: scale(.97); }
+@media (min-width: 48rem) { .home .section { padding-block: 64px; } .home .section-head { margin-bottom: 32px; } }
+@media (min-width: 64rem) { .home .section { padding-block: 72px; } }
+
+/* Hero */
+.home-hero { padding-block: 32px 40px; }
+.home-hero-grid { display: grid; gap: 28px; align-items: center; }
+.home-hero-text, .home-hero-art { min-width: 0; }
+.home-hero .h1 { font-size: clamp(2.125rem, 1.4rem + 2.2vw, 3.375rem); line-height: 1.1; letter-spacing: -.015em; }
+.home-hero .lead { max-width: 36rem; margin-top: 16px; font-size: clamp(1.125rem, 1.07rem + .3vw, 1.25rem); }
+.home-hero .btn-row { gap: 12px; margin-top: 28px; }
+.home-hero .btn { flex: 1 1 100%; min-height: 52px; padding: 14px 26px; font-size: 1rem; }
+.home-hero .btn .icon { transition: transform 160ms var(--home-ease); }
+@media (min-width: 30rem) { .home-hero .btn { flex: 0 0 auto; } }
+@media (min-width: 48rem) { .home-hero { padding-block: 48px 56px; } .home-hero-grid { gap: 32px; } }
+@media (min-width: 64rem) {
+  .home-hero { padding-block: 56px 64px; }
+  .home-hero-grid { grid-template-columns: 7fr 5fr; gap: 48px; }
+}
+@media (min-width: 80rem) { .home-hero-grid { gap: 64px; } }
+
+/* Labelled placeholder panel: a stand-in for a real TAS photograph, never presented as one.
+   The dashed border at 65% blue is about 3.6:1 on the sand fill (UI boundary, needs 3:1). */
+.home-ph { position: relative; overflow: hidden; border-radius: var(--r-lg); background: var(--sand); border: 2px dashed rgba(30, 58, 138, .65); }
+.home-ph-hero, .home-ph-split { aspect-ratio: 16 / 11; }
+@media (min-width: 48rem) { .home-ph-hero, .home-ph-split { aspect-ratio: 2 / 1; } }
+@media (min-width: 64rem) { .home-ph-hero, .home-ph-split { aspect-ratio: 4 / 3; } }
+.home-ph-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ph-window { fill: var(--blue-50); }
+.ph-pane { fill: none; stroke: #fff; stroke-width: 4; }
+.ph-shelf { fill: var(--blue); opacity: .3; }
+.ph-book-a rect { fill: var(--blue); fill-opacity: .22; }
+.ph-book-b rect { fill: var(--red); fill-opacity: .2; }
+.ph-book-c rect { fill: #fff; }
+.ph-desk { fill: var(--warm); }
+.home-ph-label { position: absolute; left: 12px; bottom: 12px; max-width: calc(100% - 24px); padding: 8px 12px; border-radius: var(--r-sm); background: #fff; color: var(--ink); font-size: .875rem; font-weight: 600; line-height: 1.35; }
+
+/* Figures band: the three approved figures as plain text on navy (white 14.7:1, warm 13.3:1). */
+.home-figures { background: var(--navy-900); color: #fff; padding-block: 4px; }
+.home-figures-list { display: grid; }
+.home-figures-list li { display: flex; align-items: baseline; gap: 12px; padding-block: 16px; border-top: 1px solid rgba(255, 255, 255, .16); }
+.home-figures-list li:first-child { border-top: 0; }
+.home-fig { font-family: var(--serif); font-weight: 600; font-size: 2rem; line-height: 1.1; white-space: nowrap; font-variant-numeric: lining-nums tabular-nums; }
+.home-fig-label { color: var(--warm); font-size: 1.125rem; }
+@media (min-width: 48rem) {
+  .home-figures { padding-block: 0; }
+  .home-figures-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+  .home-figures-list li { display: block; padding-block: 36px; border-top: 0; }
+  .home-figures-list li + li { padding-left: 24px; border-left: 1px solid rgba(255, 255, 255, .16); }
+  .home-fig { display: block; font-size: clamp(2.25rem, 1.2rem + 2.6vw, 3.5rem); }
+  .home-fig-label { display: block; margin-top: 6px; font-size: 1.125rem; }
+}
+
+/* Explore tiles: whole tile is the link (same stretched-link pattern as .card-link). */
+/* Icon chip: white on blue 10.4:1, white on red-700 6.5:1. Text: ink on blue-50 about 17:1, muted on blue-50 6.8:1, muted on red-50 6.6:1. */
+.home-tiles { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+@media (min-width: 48rem) { .home-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } }
+.home-tile { position: relative; display: flex; align-items: center; gap: 16px; height: 100%; padding: 20px 18px; border-radius: var(--r-md); background: var(--blue-50); box-shadow: inset 0 0 0 1px rgba(30, 58, 138, .14); transition: transform 180ms var(--home-ease), box-shadow 150ms ease-out; }
+@media (min-width: 30rem) { .home-tile { gap: 18px; padding: 24px 22px; } }
+.home-tile-action { background: var(--red-50); box-shadow: inset 0 0 0 1px rgba(185, 28, 28, .2); }
+.home-tile-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 52px; height: 52px; border-radius: var(--r-md); background: var(--blue); color: #fff; }
+@media (min-width: 30rem) { .home-tile-icon { width: 56px; height: 56px; } }
+.home-tile-action .home-tile-icon { background: var(--red-700); }
+.home-tile-action .home-tile-arrow { color: var(--red-700); }
+.home-tile-text { flex: 1; min-width: 0; }
+.home-tile-text h3 { font-size: 1.1875rem; line-height: 1.3; }
+@media (min-width: 48rem) { .home-tile-text h3 { font-size: 1.25rem; } }
+.home-tile-text h3 a { color: var(--ink); text-decoration: none; overflow-wrap: anywhere; }
+.home-tile-text h3 a::after { content: ""; position: absolute; inset: 0; border-radius: var(--r-md); }
+.home-tile-text h3 a:focus-visible { outline: none; }
+.home-tile-text h3 a:focus-visible::after { outline: 3px solid var(--red); outline-offset: 2px; }
+.home-tile-text p { margin-top: 4px; color: var(--muted); font-size: 1rem; line-height: 1.5; }
+.home-tile-arrow { display: inline-flex; flex-shrink: 0; color: var(--blue); transition: transform 180ms var(--home-ease); }
+@media (max-width: 20.99rem) { .home-tile-arrow { display: none; } }
+.home-tile:active, .home-campus:active { transform: scale(.985); }
+/* Keyboard focus gets the same cue as mouse hover (arrow nudge, blue title) plus the red ring above. */
+.home-tile:focus-within .home-tile-arrow { transform: translateX(4px); }
+.home-tile:focus-within h3 a { color: var(--blue); }
+
+/* Values and learning split. Points: one column beside the photo, two columns when the split is stacked on tablets. */
+.home-split { display: grid; gap: 28px; align-items: center; }
+.home-split-text, .home-split-art { min-width: 0; }
+@media (min-width: 64rem) { .home-split { grid-template-columns: 1fr 1fr; gap: 64px; } }
+.home-split-lead { margin-top: 16px; max-width: 36rem; font-size: 1.125rem; line-height: 1.6; color: var(--muted); }
+ul.home-points { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; margin: 24px 0 8px; }
+@media (min-width: 48rem) and (max-width: 63.999rem) { ul.home-points { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 32px; } }
+.home-points li { display: flex; align-items: flex-start; gap: 16px; }
+.home-points li > div { min-width: 0; }
+.home-point-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 48px; height: 48px; border-radius: var(--r-md); background: #fff; color: var(--blue); box-shadow: inset 0 0 0 1px rgba(30, 58, 138, .2); }
+.home-points h3 { font-size: 1.0625rem; line-height: 1.35; }
+.home-points p { margin-top: 2px; max-width: 32rem; color: var(--muted); font-size: 1rem; line-height: 1.55; }
+
+/* Campus finder */
+/* One white panel: the search row (field and button both 52 px high, one row from 640 px, stacked on phones), then the city links. */
+.home-finder { padding: 20px; background: #fff; border-radius: var(--r-lg); box-shadow: inset 0 0 0 1px var(--line); }
+@media (min-width: 40rem) { .home-finder { padding: 28px; } }
+.home-search { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.home-search .field { margin-bottom: 0; }
+.home-search .field label { font-size: 1rem; }
+.home-search .field input[type=search] { min-height: 52px; font-size: 1rem; }
+.home-search .btn { min-height: 52px; font-size: 1rem; }
+@media (min-width: 40rem) { .home-search { grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 16px; } }
+.home-cities { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); }
+ul.home-city-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.home-city { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 18px; border-radius: 22px; background: var(--blue-50); color: var(--blue); font-weight: 600; text-decoration: none; overflow-wrap: anywhere; transition: background-color .15s, color .15s, transform 120ms var(--home-ease); }
+.home-city:active { transform: scale(.97); }
+.home-city-count { font-size: .875rem; font-weight: 400; color: var(--muted); white-space: nowrap; }
+ul.home-campus-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 17.5rem), 1fr)); gap: 16px; margin-top: 20px; }
+@media (min-width: 48rem) { ul.home-campus-grid { gap: 20px; } }
+.home-campus { position: relative; display: flex; flex-direction: column; gap: 6px; height: 100%; min-width: 0; padding: 20px 22px; background: #fff; border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--line); transition: transform 180ms var(--home-ease), box-shadow 150ms ease-out; }
+.home-campus h3 a { color: var(--ink); text-decoration: none; overflow-wrap: anywhere; }
+.home-campus h3 a::after { content: ""; position: absolute; inset: 0; border-radius: var(--r-md); }
+.home-campus h3 a:focus-visible { outline: none; }
+.home-campus h3 a:focus-visible::after { outline: 3px solid var(--red); outline-offset: 2px; }
+.home-campus:focus-within h3 a { color: var(--blue); }
+.home-campus-place { display: flex; align-items: flex-start; gap: 6px; color: var(--muted); }
+.home-campus-place .icon { margin-top: .35em; }
+.home-campus-address { color: var(--muted); overflow-wrap: anywhere; }
+.home-campus-phone { margin-top: auto; padding-top: 4px; }
+.home-campus-phone a { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.home-finder-foot { margin-top: 12px; }
+.home-finder-foot .text-link { margin: 0; }
+
+/* Hover effects are for mouse users only (touch keeps the press feedback above). */
+@media (hover: hover) and (pointer: fine) {
+  .home-tile:hover, .home-campus:hover { transform: translateY(-2px); }
+  .home-tile:hover { box-shadow: inset 0 0 0 1px rgba(30, 58, 138, .32), var(--shadow); }
+  .home-tile-action:hover { box-shadow: inset 0 0 0 1px rgba(185, 28, 28, .4), var(--shadow); }
+  .home-tile:hover .home-tile-arrow { transform: translateX(4px); }
+  .home-tile:hover h3 a, .home-campus:hover h3 a { color: var(--blue); }
+  .home-campus:hover { box-shadow: inset 0 0 0 1px var(--line), var(--shadow); }
+  .home-city:hover { background: var(--blue); color: #fff; text-decoration: none; }
+  .home-city:hover .home-city-count { color: rgba(255, 255, 255, .85); }
+  .home-hero .btn:hover .icon { transform: translateX(3px); }
+}
+
+/* Scroll reveal: only when site.js sets js-reveal on <html>. Without JS, or under reduced motion, everything is simply visible. */
+.js-reveal .home-reveal { opacity: 0; transform: translateY(14px); transition: opacity 360ms var(--home-ease), transform 360ms var(--home-ease); }
+.js-reveal .home-reveal.is-in, .js-reveal .home-reveal:focus-within { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .home *, .home *::before, .home *::after { transition: none !important; }
+  .js-reveal .home-reveal { opacity: 1; transform: none; }
+  /* No movement at all: colour and shadow cues stay, transforms are off. */
+  .home-tile:hover, .home-campus:hover, .home-tile:active, .home-campus:active, .home-city:active, .home .btn:active,
+  .home-tile:hover .home-tile-arrow, .home-tile:focus-within .home-tile-arrow, .home-hero .btn:hover .icon { transform: none; }
+}
+
+@media print { .js-reveal .home-reveal { opacity: 1; transform: none; } }
 @media print { .site-header, .site-footer, .mobile-actions, .on-this-page { display: none; } }
+/* From 480px each sentence of the hero tagline starts on its own line; phones wrap naturally. */
+@media (min-width: 30rem) { .home-h1-line { display: block; } }
