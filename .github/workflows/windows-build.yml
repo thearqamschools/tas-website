@@ -8,11 +8,14 @@
 name: Windows build check
 
 on:
-  # Runs only when this branch is pushed. A workflow file that is not on the
-  # default branch (main) can only start from a push or pull_request event.
+  # Runs only when one of these branches is pushed. A workflow file that is not
+  # on the default branch (main) can only start from a push or pull_request event.
+  # claude/phase10-design was added so every Phase 10 batch gets a Windows build
+  # and Razor compile check.
   push:
     branches:
       - claude/windows-build-check
+      - claude/phase10-design
   # Lets someone start it by hand later, but only once this file is on main.
   workflow_dispatch:
 
