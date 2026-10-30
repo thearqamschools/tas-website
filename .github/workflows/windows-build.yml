@@ -1,0 +1,162 @@
+# Phase 8 Stage A: build and Razor compile check only.
+#
+# What it does: on a Windows runner, restores NuGet packages, builds the
+# solution with MSBuild (.NET Framework 4.8), and precompiles every Razor
+# view with aspnet_compiler into a temporary folder. Nothing is deployed,
+# no database is used, no secrets are read, and no repository file is changed.
+
+name: Windows build check
+
+on:
+  # Runs only when this branch is pushed. A workflow file that is not on the
+  # default branch (main) can only start from a push or pull_request event.
+  push:
+    branches:
+      - claude/windows-build-check
+  # Lets someone start it by hand later, but only once this file is on main.
+  workflow_dispatch:
+
+# Least privilege: read the code, nothing else.
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: pwsh
+
+concurrency:
+  group: windows-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: MSBuild + Razor precompile (no deploy)
+    # Pinned image: Visual Studio 2022 (17.x) with the ASP.NET workload and
+    # .NET Framework 4.8 targeting pack, as listed in the runner image docs.
+    runs-on: windows-2022
+    timeout-minutes: 30
+    env:
+      SLN: src\TheArqamSchools.sln
+      WEB: src\TheArqamSchools.Web
+      LOGS: ${{ github.workspace }}\ci-logs
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      NUGET_XMLDOC_MODE: skip
+
+    steps:
+      - name: Check out code (read-only token, not kept on disk)
+        # actions/checkout, pinned by full commit SHA (tag v4.4.0).
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Record tool versions and prerequisites
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:LOGS | Out-Null
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $msbuild = & $vswhere -latest -version "[17.0,18.0)" -requires Microsoft.Component.MSBuild -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
+          if (-not $msbuild) { throw "MSBuild 17 (Visual Studio 2022) not found on runner" }
+          $vsInfo   = & $vswhere -latest -version "[17.0,18.0)" -format json | ConvertFrom-Json
+          $refAsm   = "${env:ProgramFiles(x86)}\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8"
+          $webTgts  = Join-Path $vsInfo[0].installationPath "MSBuild\Microsoft\VisualStudio\v17.0\WebApplications\Microsoft.WebApplication.targets"
+          $aspnetc  = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\aspnet_compiler.exe"
+          $report = @(
+            "Runner image:          $env:ImageOS $env:ImageVersion",
+            "Windows:               $([Environment]::OSVersion.VersionString)",
+            "Visual Studio:         $($vsInfo[0].displayName) $($vsInfo[0].catalog.productDisplayVersion)",
+            "MSBuild:               $(& $msbuild -version -nologo | Select-Object -Last 1)  ($msbuild)",
+            "NuGet:                 $((nuget help | Select-Object -First 1))",
+            ".NET 4.8 ref asm:      $(Test-Path $refAsm)",
+            "WebApplication.targets:$(Test-Path $webTgts)",
+            "aspnet_compiler:       $(Test-Path $aspnetc)"
+          )
+          $report | Tee-Object -FilePath "$env:LOGS\00-environment.txt"
+          if (-not (Test-Path $refAsm))  { throw ".NET Framework 4.8 targeting pack missing" }
+          if (-not (Test-Path $webTgts)) { throw "Microsoft.WebApplication.targets missing (ASP.NET workload)" }
+          if (-not (Test-Path $aspnetc)) { throw "aspnet_compiler.exe missing" }
+          "MSBUILD=$msbuild" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "ASPNETC=$aspnetc" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Restore NuGet packages (packages.config -> src\packages)
+        # Separate step on purpose: the csproj imports the Roslyn CodeDom props
+        # from src\packages at evaluation time, so packages must exist first.
+        run: |
+          nuget restore $env:SLN -PackagesDirectory src\packages -NonInteractive -Verbosity normal 2>&1 |
+            Tee-Object -FilePath "$env:LOGS\01-nuget-restore.log"
+          if ($LASTEXITCODE -ne 0) { throw "NuGet restore failed ($LASTEXITCODE)" }
+
+      - name: Build solution (Release, Any CPU)
+        run: |
+          & $env:MSBUILD $env:SLN /nologo /m /t:Build `
+            /p:Configuration=Release "/p:Platform=Any CPU" `
+            /p:MvcBuildViews=false `
+            /clp:Summary`;Verbosity=minimal `
+            "/flp:LogFile=$env:LOGS\02-msbuild.log;Verbosity=normal" `
+            "/flp1:LogFile=$env:LOGS\02-msbuild-warnings.log;WarningsOnly" `
+            "/flp2:LogFile=$env:LOGS\02-msbuild-errors.log;ErrorsOnly"
+          if ($LASTEXITCODE -ne 0) { throw "MSBuild failed ($LASTEXITCODE)" }
+          if (-not (Test-Path "$env:WEB\bin\TheArqamSchools.Web.dll")) { throw "Web assembly not produced" }
+          # The DotNetCompilerPlatform props copy Roslyn to $(OutputPath)\roslyn after
+          # CopyFilesToOutputDirectory, so this is expected on a command-line build too.
+          if (-not (Test-Path "$env:WEB\bin\roslyn\csc.exe")) {
+            Get-ChildItem "$env:WEB\bin" -Recurse -Filter csc.exe | Format-Table FullName
+            throw "bin\roslyn\csc.exe missing: Razor views cannot compile at runtime"
+          }
+
+      - name: Precompile all Razor views (aspnet_compiler, temporary output only)
+        # Same check that MvcBuildViews=true would run in Visual Studio, done
+        # without editing the csproj. Output goes to RUNNER_TEMP and is thrown away.
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP "precompiled"
+          $web = (Resolve-Path $env:WEB).Path
+          Remove-Item -Recurse -Force $out -ErrorAction SilentlyContinue
+          & $env:ASPNETC -v /TheArqamSchools -p $web -c -errorstack $out 2>&1 |
+            Tee-Object -FilePath "$env:LOGS\03-aspnet-compiler.log"
+          if ($LASTEXITCODE -ne 0) { throw "Razor view precompilation failed ($LASTEXITCODE)" }
+          $views = (Get-ChildItem -Path $env:WEB\Views -Recurse -Filter *.cshtml).Count
+          "Views in project: $views" | Tee-Object -FilePath "$env:LOGS\03-aspnet-compiler.log" -Append
+
+      - name: Write job summary
+        if: always()
+        run: |
+          function Count($file, $pattern) { if (Test-Path $file) { (Select-String -Path $file -Pattern $pattern).Count } else { 'n/a' } }
+          $w = Count "$env:LOGS\02-msbuild-warnings.log" ': warning '
+          $e = Count "$env:LOGS\02-msbuild-errors.log" ': error '
+          $v = Count "$env:LOGS\03-aspnet-compiler.log" ': error '
+          @(
+            "## Windows build check",
+            "",
+            "| Check | Result |",
+            "|---|---|",
+            "| Commit | ``$env:GITHUB_SHA`` |",
+            "| Job status | ${{ job.status }} |",
+            "| MSBuild warning / error lines (approximate) | $w / $e |",
+            "| aspnet_compiler error lines | $v |",
+            "",
+            "Not covered here: IIS / IIS Express, database, security headers, browsers. See the Windows/IIS testing guide.",
+            "",
+            '```',
+            (Get-Content "$env:LOGS\00-environment.txt" -ErrorAction SilentlyContinue),
+            '```'
+          ) | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+
+      - name: Check logs contain no credentials before upload
+        if: always()
+        run: |
+          $hits = Get-ChildItem $env:LOGS -File -ErrorAction SilentlyContinue |
+            Select-String -Pattern '(?i)(password\s*=|pwd\s*=|(?<!PublicKey)token\s*[=:]|secret\s*[=:]|ghs_|ghp_|github_pat_|bearer\s)'
+          if ($hits) {
+            "Possible credential text found; logs will not be uploaded:"
+            $hits | ForEach-Object { "$($_.Filename):$($_.LineNumber)" }
+            Remove-Item -Recurse -Force $env:LOGS
+            throw "Log scrub failed"
+          }
+
+      - name: Upload text logs (7 days)
+        if: always()
+        # actions/upload-artifact, pinned by full commit SHA (tag v4.6.2).
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: windows-build-logs
+          path: ci-logs/*
+          retention-days: 7
+          if-no-files-found: warn
