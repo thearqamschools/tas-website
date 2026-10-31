@@ -5,6 +5,11 @@
     var d = Model.Data;
     var img = d["image"];
     var imgUrl = Media.Url(img);
+    // Render the button row only when at least one button will actually show, so an empty row adds no space.
+    // Same rule as _Button.cshtml; change both together.
+    Func<Newtonsoft.Json.Linq.JToken, bool> hasCta = t => t != null && t.Type == Newtonsoft.Json.Linq.JTokenType.Object
+        && Site.IsSafeHref(t.Value<string>("href")) && !string.IsNullOrWhiteSpace(t.Value<string>("label"));
+    var showCtas = hasCta(d["primary_cta"]) || hasCta(d["secondary_cta"]);
 }
 <section class="page-header page-header-feature tone-warm@(imgUrl != null ? " has-image" : "")">
     <div class="container page-header-grid">
@@ -13,10 +18,13 @@
             @if (!string.IsNullOrEmpty(Model.Text("eyebrow"))) { <p class="eyebrow">@Model.Text("eyebrow")</p> }
             <h1 class="h1">@(string.IsNullOrEmpty(Model.Text("title")) ? page.Page.Title : Model.Text("title"))</h1>
             @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
-            <div class="btn-row">
-                @Html.Partial("_Button", d["primary_cta"], new ViewDataDictionary { { "variant", "primary" } })
-                @Html.Partial("_Button", d["secondary_cta"], new ViewDataDictionary { { "variant", "outline" } })
-            </div>
+            @if (showCtas)
+            {
+                <div class="btn-row">
+                    @Html.Partial("_Button", d["primary_cta"], new ViewDataDictionary { { "variant", "primary" } })
+                    @Html.Partial("_Button", d["secondary_cta"], new ViewDataDictionary { { "variant", "outline" } })
+                </div>
+            }
         </div>
         @if (imgUrl != null)
         {
