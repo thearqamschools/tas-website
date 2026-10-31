@@ -46,6 +46,12 @@ namespace TheArqamSchools.Web
                 new { id = new GuidRouteConstraint(), httpMethod = new HttpMethodConstraint("POST") });
             routes.MapRoute("AdminUserEdit", "admin/users/{id}", new { controller = "AdminUsers", action = "Edit" },
                 new { id = new GuidRouteConstraint() });
+            routes.MapRoute("AdminCampuses", "admin/campuses", new { controller = "AdminCampuses", action = "Index" });
+            routes.MapRoute("AdminCampusNew", "admin/campuses/new", new { controller = "AdminCampuses", action = "New" });
+            routes.MapRoute("AdminCampusArchive", "admin/campuses/{id}/archive", new { controller = "AdminCampuses", action = "Archive" },
+                new { id = new GuidRouteConstraint(), httpMethod = new HttpMethodConstraint("POST") });
+            routes.MapRoute("AdminCampusEdit", "admin/campuses/{id}", new { controller = "AdminCampuses", action = "Edit" },
+                new { id = new GuidRouteConstraint() });
             routes.MapRoute("AdminInboxExport", "admin/{kind}/export.csv", new { controller = "AdminInbox", action = "Export" },
                 new { kind = "inquiries|messages" });
             routes.MapRoute("AdminInboxStatus", "admin/{kind}/{id}/status", new { controller = "AdminInbox", action = "Status" },

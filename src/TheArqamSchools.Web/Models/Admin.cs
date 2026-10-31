@@ -243,4 +243,103 @@ namespace TheArqamSchools.Web.Models
         /// <summary>Shown once, right after creating the user or resetting the password.</summary>
         public string TemporaryPassword { get; set; }
     }
+
+    public class CampusListRow
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public string Code { get; set; }
+        public string Slug { get; set; }
+        public string Area { get; set; }
+        public string Status { get; set; }
+        public string AdmissionStatus { get; set; }
+        public bool IsPublished { get; set; }
+        public DateTimeOffset? ArchivedAt { get; set; }
+        public DateTimeOffset UpdatedAt { get; set; }
+        public string CityName { get; set; }
+        public string CitySlug { get; set; }
+    }
+
+    public class CityOption
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public string Slug { get; set; }
+    }
+
+    /// <summary>Campus (dbo.branches) edit form. Lengths and formats match the database checks.</summary>
+    public class CampusEditForm
+    {
+        public Guid Id { get; set; }
+        public Guid CityId { get; set; }
+
+        /// <summary>Only on the form: a city not yet in the list, created on save.</summary>
+        [StringLength(100)]
+        public string NewCityName { get; set; }
+
+        [Required(ErrorMessage = "Please enter the campus name.")]
+        [StringLength(150, MinimumLength = 2, ErrorMessage = "Please enter the campus name (2 to 150 characters).")]
+        public string Name { get; set; }
+
+        [StringLength(120)]
+        [RegularExpression(@"^[a-z0-9]+(-[a-z0-9]+)*$", ErrorMessage = "Use lowercase letters, digits and hyphens only, for example model-town.")]
+        public string Slug { get; set; }
+
+        [StringLength(20)]
+        [RegularExpression(@"^[A-Z0-9-]{2,20}$", ErrorMessage = "Use 2 to 20 capital letters, digits or hyphens, for example FSD-001.")]
+        public string Code { get; set; }
+
+        [StringLength(120)] public string Area { get; set; }
+        [StringLength(300)] public string AddressLine { get; set; }
+
+        [StringLength(20)]
+        [RegularExpression(@"^\+?[0-9 ()-]{7,20}$", ErrorMessage = "Please enter a valid phone number, for example 041-2660265.")]
+        public string Phone { get; set; }
+
+        [StringLength(20)]
+        [RegularExpression(@"^\+?[0-9 ()-]{7,20}$", ErrorMessage = "Please enter a valid phone number.")]
+        public string PhoneAlt { get; set; }
+
+        [StringLength(20)]
+        [RegularExpression(@"^\+?[0-9 ()-]{7,20}$", ErrorMessage = "Please enter a valid WhatsApp number, for example 0339-2406479.")]
+        public string Whatsapp { get; set; }
+
+        [StringLength(254)]
+        [RegularExpression(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", ErrorMessage = "Please enter a valid email address.")]
+        public string Email { get; set; }
+
+        [StringLength(200)] public string Timings { get; set; }
+
+        [StringLength(500)]
+        [RegularExpression(@"^https://(www\.)?(google\.[a-z.]+/maps|maps\.google\.[a-z.]+|maps\.app\.goo\.gl/|goo\.gl/maps/).*$",
+            ErrorMessage = "Please paste a Google Maps link (it starts with https://maps.app.goo.gl/ or https://www.google.com/maps).")]
+        public string GoogleMapsUrl { get; set; }
+
+        [Range(-90, 90, ErrorMessage = "Latitude must be between -90 and 90.")] public decimal? Latitude { get; set; }
+        [Range(-180, 180, ErrorMessage = "Longitude must be between -180 and 180.")] public decimal? Longitude { get; set; }
+
+        [StringLength(5000)] public string Overview { get; set; }
+        [StringLength(120)] public string PrincipalName { get; set; }
+        [StringLength(120)] public string PrincipalTitle { get; set; }
+        [StringLength(3000)] public string PrincipalMessage { get; set; }
+
+        public string Status { get; set; }
+        public string AdmissionStatus { get; set; }
+        [StringLength(200)] public string AdmissionNote { get; set; }
+        public bool IsPublished { get; set; }
+        [Range(0, 100000)] public int SortOrder { get; set; }
+        public bool IsArchived { get; set; }
+    }
+
+    public class CampusEditViewModel
+    {
+        public CampusEditForm Form { get; set; }
+        public IList<CityOption> Cities { get; set; }
+        public bool IsNew { get; set; }
+        public bool CanEdit { get; set; }
+        public bool CanPublish { get; set; }
+        public bool CanArchive { get; set; }
+        public string Notice { get; set; }
+        public string PublicUrl { get; set; }
+    }
 }

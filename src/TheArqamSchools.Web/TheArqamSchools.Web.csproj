@@ -95,6 +95,7 @@
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Controllers\AdmissionsController.cs" />
     <Compile Include="Controllers\AdminAccountController.cs" />
+    <Compile Include="Controllers\AdminCampusesController.cs" />
     <Compile Include="Controllers\AdminDashboardController.cs" />
     <Compile Include="Controllers\AdminInboxController.cs" />
     <Compile Include="Controllers\AdminUsersController.cs" />
@@ -106,6 +107,7 @@
     <Compile Include="Controllers\StatusController.cs" />
     <Compile Include="Data\Cache.cs" />
     <Compile Include="Data\AdminUserRepository.cs" />
+    <Compile Include="Data\CampusAdminRepository.cs" />
     <Compile Include="Data\CampusRepository.cs" />
     <Compile Include="Data\ClassLevelRepository.cs" />
     <Compile Include="Data\Db.cs" />
@@ -158,6 +160,8 @@
     <Content Include="Views\Admin\Account\Login.cshtml" />
     <Content Include="Views\Admin\Account\Password.cshtml" />
     <Content Include="Views\Admin\Account\Setup.cshtml" />
+    <Content Include="Views\Admin\Campuses\Edit.cshtml" />
+    <Content Include="Views\Admin\Campuses\Index.cshtml" />
     <Content Include="Views\Admin\Dashboard\Index.cshtml" />
     <Content Include="Views\Admin\Inbox\Detail.cshtml" />
     <Content Include="Views\Admin\Inbox\Index.cshtml" />
