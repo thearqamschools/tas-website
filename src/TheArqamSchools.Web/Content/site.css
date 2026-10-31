@@ -559,59 +559,168 @@ ul.check-list { margin-top: 14px; }
   background: linear-gradient(#fff, #fff) 50% 4px / 3px 9px no-repeat, linear-gradient(#fff, #fff) 50% 16px / 3px 3px no-repeat, var(--error); }
 
 /* Campuses */
-.finder { display: grid; gap: 0 16px; background: var(--grey); border-radius: var(--r-md); padding: 20px; }
-.finder .field { margin-bottom: 14px; }
-.finder-actions { display: flex; align-items: center; gap: 16px; }
-@media (min-width: 48rem) { .finder { grid-template-columns: 2fr 1fr 1fr; align-items: end; } .finder-actions { grid-column: 1 / -1; } }
-@media (min-width: 64rem) { .finder { grid-template-columns: 2fr 1fr 1fr auto; } .finder-actions { grid-column: auto; margin-bottom: 14px; } }
-.results-count { margin: 20px 0 16px; color: var(--muted); font-size: .9375rem; }
-.campus-grid { display: grid; gap: 20px; }
-@media (min-width: 48rem) { .campus-grid { grid-template-columns: 1fr 1fr; } }
-@media (min-width: 80rem) { .campus-grid { grid-template-columns: repeat(3, 1fr); } }
-.campus-card { display: flex; flex-direction: column; gap: 16px; height: 100%; padding: 22px; background: #fff; border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--line); }
-.campus-card-head .h4 a { color: var(--ink); }
-.campus-locality { display: flex; align-items: center; gap: 6px; color: var(--muted); margin: 4px 0 10px; }
-.campus-facts { display: grid; gap: 8px; font-size: .9375rem; }
-.campus-facts dt { font-weight: 600; font-size: .875rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
-.campus-facts dd { margin: 0; }
-.campus-facts dd a { display: inline-block; padding-block: 3px; }
-.campus-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
-.badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: .875rem; font-weight: 600; background: var(--grey); color: var(--ink); }
-.badge-open { background: #ecfdf5; color: var(--success); }
-.badge-waiting_list, .badge-opening_soon { background: #fffbeb; color: #92400e; }
-.badge-closed { background: #fef2f2; color: var(--error); }
-.badge-contact_campus { background: #eff6ff; color: var(--blue); }
-.empty-state { padding: 32px; border-radius: var(--r-md); background: var(--warm); }
-.empty-state .btn { margin-top: 12px; }
+/* Campus directory (phase 10, batch 4). Finder = the homepage finder language: one white panel, 52 px controls, stacked on phones.
+   Field look = batch 3 (border #64748b 4.76:1 on white, focus --blue ring 10.4:1, custom select arrow), scoped to .finder only.
+   Cards = tinted card language (--blue-50, 14% blue border); the name link is stretched over the whole card, and the phone links and
+   buttons sit above it (z-index 1), so they stay separately clickable and focusable. Hover is mouse only; reduced motion removes transforms. */
+.finder { --field-border: #64748b; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 20px; background: #fff; border-radius: var(--r-lg); box-shadow: inset 0 0 0 1px var(--line), 0 1px 2px rgba(15, 23, 42, .04); }
+/* The wrapper div of the Search button and the Clear link takes no box: its children are grid items, so Clear can sit on its own row. */
+.finder-actions { display: contents; }
+.finder-actions .text-link { grid-column: 1 / -1; justify-self: start; margin-top: -4px; }
+/* Same grid-stretch defect batch 3 fixed in .form-card: without align-content the surplus height of a stretched field is shared between label and control. */
+.finder .field { gap: 8px; margin-bottom: 0; align-content: start; }
+.finder .field label { font-size: 1rem; line-height: 1.4; color: var(--ink); }
+.finder .field :is(input[type=search], select) { -webkit-appearance: none; appearance: none; width: 100%; min-height: 52px; padding: 11px 14px; font-size: 1rem; line-height: 1.4; color: var(--ink);
+  background-color: #fff; border: 1px solid var(--field-border); border-radius: var(--r-sm); transition: border-color .15s ease-out, box-shadow .15s ease-out, background-color .15s ease-out; }
+.finder .field select { padding-right: 44px; cursor: pointer; text-overflow: ellipsis; white-space: nowrap;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 6 5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center; background-size: 16px 16px; }
+.finder .input-icon .icon { pointer-events: none; }
+.finder .field input::placeholder { color: var(--field-border); opacity: 1; }
+@media (hover: hover) and (pointer: fine) { .finder .field :is(input[type=search], select):hover { border-color: var(--muted); } }
+.finder .field :is(input[type=search], select):focus { outline: 3px solid var(--blue); outline-offset: 2px; border-color: var(--blue); box-shadow: inset 0 0 0 1px var(--blue); }
+.finder .field :is(input[type=search], select):disabled { background-color: var(--grey); border-color: var(--line); box-shadow: none; color: var(--muted); cursor: not-allowed; }
+.finder .btn { min-height: 52px; font-size: 1rem; }
+@media (forced-colors: active) { .finder .field select { -webkit-appearance: auto; appearance: auto; padding-right: 14px; background-image: none; } }
+@media (max-width: 22.4375rem) { .finder { padding: 16px; } .finder .field select { padding-left: 12px; padding-right: 32px; background-position: right 10px center; } }
+/* From 640 px: row 1 the search field; row 2 City, District, Search (aligned at the bottom edge); then Clear. From 1024 px all in one row. */
+@media (min-width: 40rem) {
+  .finder { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 16px; padding: 28px; align-items: end; }
+  .finder-q { grid-column: 1 / -1; }
+  .finder .btn { min-width: 8rem; padding-inline: 28px; }
+}
+@media (min-width: 64rem) { .finder { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto; } .finder-q { grid-column: auto; } }
+/* City page (city locked): no selects, so the search field and the button share the row. */
+@media (min-width: 40rem) { .finder.finder-locked { grid-template-columns: minmax(0, 1fr) auto; } .finder-locked .finder-q { grid-column: auto; } }
+.results-count { margin: 24px 0 16px; color: var(--ink); font-size: 1rem; font-weight: 600; line-height: 1.5; }
 
+ul.campus-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.campus-grid > li { min-width: 0; }
+@media (min-width: 48rem) { ul.campus-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } }
+@media (min-width: 80rem) { ul.campus-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.campus-card { position: relative; display: flex; flex-direction: column; height: 100%; min-width: 0; padding: 20px 20px 18px; background: var(--blue-50); border: 1px solid rgba(30, 58, 138, .14); border-radius: var(--r-md); color: var(--ink);
+  transition: transform 180ms var(--ease-out), border-color .15s ease-out, box-shadow .15s ease-out; }
+@media (min-width: 40rem) { .campus-card { padding: 24px 24px 22px; } }
+.campus-card-head { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
+.campus-card-head .h4 { font-size: 1.1875rem; line-height: 1.35; }
+.campus-card-head .h4 a { color: var(--ink); text-decoration: none; overflow-wrap: anywhere; }
+.campus-card-head .h4 a::after { content: ""; position: absolute; inset: 0; border-radius: var(--r-md); }
+.campus-card-head .h4 a:focus-visible { outline: none; }
+.campus-card-head .h4 a:focus-visible::after { outline: 3px solid var(--red); outline-offset: 2px; }
+.campus-card:focus-within .campus-card-head .h4 a { color: var(--blue); }
+.campus-locality { display: flex; align-items: flex-start; gap: 6px; color: var(--muted); overflow-wrap: anywhere; }
+.campus-locality .icon { margin-top: .3em; }
+.campus-facts { font-size: .9375rem; line-height: 1.5; }
+.campus-facts > div:first-child { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(30, 58, 138, .14); }
+.campus-facts > div + div { margin-top: 10px; }
+.campus-facts dt { font-weight: 600; font-size: .875rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.campus-facts dd { margin: 2px 0 0; overflow-wrap: anywhere; }
+.campus-facts dd a { position: relative; z-index: 1; display: inline-flex; align-items: center; min-height: 44px; margin-block: -10px; font-weight: 600; font-variant-numeric: tabular-nums; }
+/* Actions: View details on its own full row; Call and WhatsApp share the next row (one alone fills it). Fits 246 px of card text at 320 px. */
+.campus-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 16px; }
+.campus-actions .btn { position: relative; z-index: 1; flex: 1 1 6rem; }
+.campus-actions .btn-primary { flex-basis: 100%; }
+@media (hover: hover) and (pointer: fine) {
+  .campus-card:hover { transform: translateY(-2px); border-color: rgba(30, 58, 138, .32); box-shadow: var(--shadow); }
+  .campus-card:hover .campus-card-head .h4 a { color: var(--blue); }
+}
+.campus-card:active { transform: scale(.985); }
+/* Pressing a button or phone link inside the card presses that control only (browsers without :has() scale the card as well). */
+.campus-card:has(.campus-actions :active, .campus-facts a:active):active { transform: none; }
+@media (prefers-reduced-motion: reduce) { .campus-card:hover, .campus-card:active { transform: none; } }
+
+/* Admission status badges: a hairline border in the text colour family keeps each badge visible on the tinted card (text pairs unchanged:
+   --success on #ecfdf5 5.2:1, #92400e on #fffbeb 7.1:1, --error on #fef2f2 5.9:1, --blue on #fff 10.4:1, --ink on --grey 16:1). */
+.badge { display: inline-flex; align-items: center; max-width: 100%; padding: 4px 10px; border: 1px solid var(--line); border-radius: 14px; font-size: .875rem; line-height: 1.35; font-weight: 600; background: var(--grey); color: var(--ink); }
+.badge-open { background: #ecfdf5; border-color: rgba(4, 120, 87, .28); color: var(--success); }
+.badge-waiting_list, .badge-opening_soon { background: #fffbeb; border-color: rgba(146, 64, 14, .28); color: #92400e; }
+.badge-closed { background: #fef2f2; border-color: rgba(185, 28, 28, .28); color: var(--error); }
+.badge-contact_campus { background: #eff6ff; border-color: rgba(30, 58, 138, .22); color: var(--blue); }
+.campus-card .badge-contact_campus { background: #fff; }
+.empty-state { padding: 24px 20px; border-radius: var(--r-md); background: var(--blue-50); border: 1px solid rgba(30, 58, 138, .14); color: var(--ink); }
+@media (min-width: 40rem) { .empty-state { padding: 32px 28px; } }
+.empty-state p:first-child { max-width: 40rem; font-size: 1.125rem; line-height: 1.55; }
+.empty-state p + p { margin-top: 16px; }
+.empty-state .btn { white-space: normal; text-align: center; }
+@media (max-width: 29.9375rem) { .empty-state .btn { width: 100%; } }
+
+/* Campus detail page (phase 10, batch 4). */
 .campus-hero { background: var(--warm); padding-block: 40px; }
 .campus-hero .badge { margin-bottom: 12px; }
-.campus-hero .lead { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
-.campus-hero-grid { display: grid; gap: 32px; align-items: center; }
-@media (min-width: 64rem) { .campus-hero { padding-block: 56px; } .campus-hero-grid { grid-template-columns: 7fr 5fr; gap: 56px; } }
+.campus-hero .lead { display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; overflow-wrap: anywhere; }
+.campus-hero .lead .icon { margin-top: .25em; }
+.campus-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; align-items: center; }
+.campus-hero-grid > * { min-width: 0; }
+.campus-hero .media-frame { box-shadow: 0 0 0 1px rgba(30, 58, 138, .14); }
+/* Phones: the hero buttons fill the width, one per row, and may wrap their label. */
+@media (max-width: 29.9375rem) { .campus-hero .btn-row .btn { flex: 1 1 100%; white-space: normal; text-align: center; } }
+@media (min-width: 64rem) { .campus-hero { padding-block: 56px; } .campus-hero-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 56px; } }
+/* "On this page": sticky bar, exactly 49 px high (48 px links + 1 px rule); the scroll-padding rules below depend on that. Links shrink and wrap
+   on phones instead of scrolling; hover (mouse only) draws a 3 px blue underline bar; focus is an inset red ring so the scroll box cannot clip it. */
 .on-this-page { position: sticky; top: var(--header-h); z-index: 20; background: #fff; border-bottom: 1px solid var(--line); }
-.on-this-page ul { display: flex; gap: 8px; overflow-x: auto; }
-.on-this-page a { display: inline-flex; align-items: center; min-height: 48px; padding: 0 12px; color: var(--ink); font-weight: 600; white-space: nowrap; }
-.campus-overview { display: grid; gap: 32px; }
+.on-this-page ul { display: flex; gap: 4px; margin-inline: -12px; overflow-x: auto; scrollbar-width: none; }
+.on-this-page li { flex: 0 1 auto; min-width: 0; }
+.on-this-page a { display: flex; align-items: center; min-height: 48px; padding: 4px 12px; color: var(--ink); font-size: .9375rem; font-weight: 600; line-height: 1.25; text-decoration: none; -webkit-tap-highlight-color: transparent; transition: color .15s ease-out, background-color .15s ease-out, box-shadow .15s ease-out; }
+/* Under 360 px the three links need slimmer padding to fit without scrolling. */
+@media (max-width: 22.4375rem) { .on-this-page ul { gap: 0; margin-inline: -8px; } .on-this-page a { padding-inline: 8px; } }
+@media (min-width: 40rem) { .on-this-page ul { gap: 8px; } .on-this-page a { padding-inline: 16px; font-size: 1rem; } }
+.on-this-page a:focus-visible { outline: 3px solid var(--red); outline-offset: -3px; }
+.on-this-page a:active { background: var(--blue-50); color: var(--blue); }
+@media (hover: hover) and (pointer: fine) { .on-this-page a:hover { color: var(--blue); box-shadow: inset 0 -3px 0 var(--blue); text-decoration: none; } }
+.campus-overview { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+.campus-overview > * { min-width: 0; }
 .campus-overview .prose-lg > h2 { color: var(--ink); }
-@media (min-width: 64rem) { .campus-overview { grid-template-columns: 7fr 5fr; gap: 64px; align-items: start; } }
-.glance { background: var(--grey); border-radius: var(--r-md); padding: 24px; }
-.glance dl { display: grid; gap: 16px; margin: 16px 0; }
-.glance dt { display: flex; align-items: center; gap: 8px; font-weight: 600; }
-.glance dd { margin: 4px 0 0 26px; color: var(--muted); overflow-wrap: anywhere; }
-.glance dd a { display: inline-block; padding-block: 3px; }
-.admission-strip { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; padding: 18px 20px; margin-bottom: 20px; background: #fff; border-radius: var(--r-md); }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.chips li { padding: 6px 12px; border-radius: 999px; background: #fff; font-size: .9375rem; }
+@media (min-width: 64rem) { .campus-overview { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 64px; align-items: start; } }
+/* No "At a glance" data at all: the aside is not rendered and the text takes the full width. */
+.campus-overview.campus-overview-solo { grid-template-columns: minmax(0, 1fr); }
+/* At a glance: tinted card, rows split by hairlines, each label has a solid blue chip with a white icon (white on --blue 10.4:1).
+   Text: --ink on --blue-50 17:1, --muted 6.8:1, links --blue 9.2:1. Links are 44 px targets (negative block margin keeps the rows compact). */
+.glance { min-width: 0; padding: 22px 20px; background: var(--blue-50); border: 1px solid rgba(30, 58, 138, .14); border-radius: var(--r-md); color: var(--ink); }
+@media (min-width: 40rem) { .glance { padding: 28px; } }
+.glance dl { margin: 16px 0 0; }
+.glance dl > div + div { margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(30, 58, 138, .14); }
+.glance dt { display: flex; align-items: center; gap: 12px; font-weight: 600; color: var(--ink); }
+.glance dt .icon { box-sizing: content-box; width: 18px; height: 18px; padding: 7px; border-radius: var(--r-sm); background: var(--blue); color: #fff; }
+.glance dd { margin: 6px 0 0 44px; color: var(--muted); overflow-wrap: anywhere; }
+.glance dd a { display: inline-flex; align-items: center; max-width: 100%; min-height: 44px; margin-block: -10px; font-weight: 600; }
+.glance > p { margin-top: 14px; }
+/* Several phone numbers: one link per line, each a full 44 px row with no overlap (instead of inline links split by <br>). */
+.glance dd a.glance-stack { display: flex; width: fit-content; margin-block: 0; }
+/* No overview text: the heading and the glance card stack in one column, so no empty column sits beside the card. */
+.campus-overview-solo .glance { max-width: 44rem; }
+.campus-overview.campus-overview-solo { gap: 32px; }
+.admission-strip { display: flex; flex-direction: column; align-items: stretch; gap: 14px; padding: 18px 20px; margin-bottom: 20px; background: #fff; border: 1px solid rgba(30, 58, 138, .14); border-left: 4px solid var(--blue); border-radius: var(--r-md); }
+.admission-strip p { min-width: 0; color: var(--muted); overflow-wrap: anywhere; }
+.admission-strip p strong { color: var(--ink); }
+.admission-strip .btn { text-align: center; white-space: normal; }
+@media (min-width: 40rem) { .admission-strip { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; } .admission-strip .btn { white-space: nowrap; } }
+/* The "classes will be added soon" note (no classes): a dashed outline, so it reads as a placeholder and not as a missing card. */
+.admission-strip + p.muted { padding: 16px 20px; border: 1px dashed rgba(30, 58, 138, .35); border-radius: var(--r-md); }
+ul.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chips li { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; padding: 8px 14px; border: 1px solid rgba(30, 58, 138, .14); border-radius: 999px; background: #fff; color: var(--ink); font-size: .9375rem; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
+.chips li::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--blue); }
 .facilities-h { margin-top: 28px; }
-.mobile-actions { position: sticky; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(3, 1fr); background: #fff; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
-.mobile-actions a { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 52px; font-weight: 600; color: var(--blue); }
+/* Sticky quick-contact bar (phones and tablets): 52 px links plus the 1 px rule = 53 px, the value the scroll-padding calc below uses. The last
+   link (Enquire) is the filled action: white on --red 4.83:1 (15 px semibold), pressed --red-700 6.5:1. Other links --blue on white 10.4:1. */
+.mobile-actions { position: sticky; bottom: 0; z-index: 30; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); background: #fff; border-top: 1px solid var(--line); box-shadow: 0 -6px 16px rgba(15, 23, 42, .06); padding-bottom: env(safe-area-inset-bottom); }
+.mobile-actions a { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 52px; padding-inline: 4px; font-size: .9375rem; font-weight: 600; line-height: 1.2; color: var(--blue); text-decoration: none; -webkit-tap-highlight-color: transparent; transition: background-color .15s ease-out; }
+.mobile-actions a + a { box-shadow: inset 1px 0 0 var(--line); }
+.mobile-actions a:last-child { background: var(--red); color: #fff; box-shadow: none; }
+.mobile-actions a:focus-visible { outline: 3px solid var(--red); outline-offset: -4px; }
+.mobile-actions a:last-child:focus-visible { outline-color: #fff; }
+.mobile-actions a:active { background: var(--blue-50); }
+.mobile-actions a:last-child:active { background: var(--red-700); }
+@media (hover: hover) and (pointer: fine) {
+  .mobile-actions a:hover { background: var(--blue-50); text-decoration: none; }
+  .mobile-actions a:last-child:hover { background: var(--red-700); }
+}
 @media (min-width: 64rem) { .mobile-actions { display: none; } }
 /* The sticky Call / WhatsApp / Enquire bar is about 53 px high. Keep focused fields, their error text and the Send button clear of it
    when the keyboard or the browser scrolls them into view (WCAG 2.2 focus not obscured). Browsers without :has() keep the old behaviour. */
 @media (max-width: 63.9375rem) {
   html:has(.mobile-actions) { scroll-padding-bottom: calc(53px + 56px + env(safe-area-inset-bottom)); }
   /* Same at the top: the sticky "On this page" bar (about 49 px) sits under the header, so Shift+Tab must stop below both. */
+  /* 49 px assumes default text size; at large text zoom the bar can wrap taller and the 16 px slack absorbs only part of it. */
   html:has(.on-this-page) { scroll-padding-top: calc(var(--header-h) + 49px + 16px); }
   /* The consent text and an error message sit below the control, so those controls ask for extra room under them. */
   .form-card .field-check input[type="checkbox"] { scroll-margin-bottom: 72px; }
