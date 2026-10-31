@@ -221,100 +221,173 @@ ul.mobile-utility { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; mar
 .media-frame img { width: 100%; height: 100%; object-fit: cover; }
 .ratio-4-3 { aspect-ratio: 4 / 3; }
 
-.split { display: grid; gap: 32px; align-items: center; }
+/* Phase 10, batch 2: content sections share the homepage card language.
+   Card: blue-50 tint, 1px blue-tinted border, solid blue icon chip with a white icon, whole-card link, 2px lift on mouse hover only,
+   press scale .985. Colours (computed by hand): ink on blue-50 about 17:1, muted on blue-50 6.8:1, blue on blue-50 9.2:1,
+   white on blue 10.4:1, red focus ring on blue-50 4.3:1 (needs 3:1). Card text is 16 px, card meta and class lists 14-15 px. */
+
+/* Split feature: text and photo. With no image (class split-solo) the text simply uses one column. */
+.split { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; align-items: center; }
+.split > * { min-width: 0; }
 .split .text-link { margin-top: 12px; }
 .split-text .prose-lg { margin-top: 20px; }
+.split-solo .split-text { max-width: 44rem; }
+.tone-navy .split-text .eyebrow, .tone-navy .split-text .text-link { color: #fff; }
+.tone-navy .split-text .prose-lg { color: rgba(255, 255, 255, .88); }
+@media (min-width: 48rem) { .split { gap: 40px; } }
 @media (min-width: 64rem) {
-  .split { grid-template-columns: 1fr 1fr; gap: 64px; }
+  .split { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 64px; }
+  .split.split-solo { grid-template-columns: minmax(0, 1fr); }
   .split-image-left .split-text { order: 2; }
 }
 
-.values { display: grid; gap: 32px; }
+/* Values: intro beside a stack of tinted rows (icon chip, title, text). Rows are not links, so no hover or press. */
+.values { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
+.values > * { min-width: 0; }
 .values-intro .lead { margin-top: 16px; }
-.values-grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
-.values-grid li p { color: var(--muted); font-size: .9375rem; margin-top: 4px; }
-.values-grid .h4 { margin-top: 12px; }
-.icon-badge { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: #fff; color: var(--blue); box-shadow: inset 0 0 0 1px var(--line); }
-.tone-white .icon-badge { background: var(--warm); box-shadow: none; }
+.values-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.values-grid li { display: flex; align-items: flex-start; gap: 16px; min-width: 0; padding: 20px 18px; border-radius: var(--r-md); background: var(--blue-50); border: 1px solid rgba(30, 58, 138, .14); color: var(--ink); }
+.values-text { flex: 1; min-width: 0; }
+.values-text .h4 { overflow-wrap: anywhere; line-height: 1.35; }
+.values-text p { margin-top: 4px; color: var(--muted); font-size: 1rem; line-height: 1.55; }
+/* Icon chip (card grid and values): same as the homepage tile chip, solid blue with a white icon (10.4:1). */
+.icon-badge { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 48px; height: 48px; border-radius: var(--r-md); background: var(--blue); color: #fff; }
+.icon-badge svg { width: 24px; height: 24px; }
 .quote { margin-top: 28px; padding-left: 20px; border-left: 3px solid var(--red); }
 .quote p { font-family: var(--serif); font-size: 1.25rem; line-height: 1.45; color: var(--ink); }
 .quote footer { margin-top: 8px; font-size: .875rem; color: var(--muted); }
-@media (min-width: 40rem) { .values-grid { grid-template-columns: 1fr 1fr; gap: 32px; } }
+/* Two columns from tablet up, so six values never become one tall list beside a short intro on desktop. */
+@media (min-width: 40rem) { .values-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; } }
+@media (min-width: 48rem) { .values-grid li { padding: 22px 20px; } }
+@media (min-width: 64rem) { .values { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 64px; } }
+/* Five or more values (class values-wide): the intro sits above and the rows use three columns, so the section does not grow into a tall
+   two-column stack beside the intro at 1024-1440 px. */
 @media (min-width: 64rem) {
-  .values { grid-template-columns: 5fr 7fr; gap: 64px; }
-  .values-grid:not(.values-grid-4) { grid-template-columns: repeat(3, 1fr); }
+  .values.values-wide { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .values-wide .values-intro { max-width: 52rem; }
+  .values-wide .values-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
 }
 
-.card-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
-@media (min-width: 40rem) { .card-grid { grid-template-columns: 1fr 1fr; } }
-@media (min-width: 64rem) { .card-grid.cols-3 { grid-template-columns: repeat(3, 1fr); } .card-grid.cols-4 { grid-template-columns: repeat(4, 1fr); } }
-.card { position: relative; display: flex; flex-direction: column; height: 100%; background: #fff; border-radius: var(--r-md); overflow: hidden; }
-.tone-white .card { box-shadow: inset 0 0 0 1px var(--line); }
-.card-media { border-radius: 0; }
-.card-body { padding: 20px; display: flex; flex-direction: column; gap: 8px; }
-.card-body p { color: var(--muted); font-size: .9375rem; }
-.card-meta { font-size: .875rem !important; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--blue) !important; }
+/* Card grid: one card component. Columns come from the CMS (cols-3, cols-4); four columns from 64rem (about 187 px of text per card at 1024 px).
+   No overflow:hidden on the card, so the focus ring can sit outside it; a photo rounds only its top corners. */
+.card-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.card-grid > li { min-width: 0; }
+@media (min-width: 40rem) { .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } }
+@media (min-width: 64rem) { .card-grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } .card-grid.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.card { position: relative; display: flex; flex-direction: column; height: 100%; min-width: 0; background: var(--blue-50); border: 1px solid rgba(30, 58, 138, .14); border-radius: var(--r-md); color: var(--ink); }
+.card-link { transition: transform 180ms var(--ease-out), border-color 150ms ease-out, box-shadow 150ms ease-out; }
+.card-media { border-radius: calc(var(--r-md) - 1px) calc(var(--r-md) - 1px) 0 0; }
+.card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; padding: 20px 18px 22px; }
+@media (min-width: 40rem) { .card-body { padding: 24px 22px; } }
+.card-body .icon-badge { margin-bottom: 6px; }
+.card-body .h4 { line-height: 1.35; overflow-wrap: anywhere; }
+.card-body p { color: var(--muted); font-size: 1rem; line-height: 1.55; }
+.card-body .card-meta { font-size: .875rem; line-height: 1.4; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--blue); }
+.card-arrow { display: inline-flex; margin-top: auto; padding-top: 6px; color: var(--blue); transition: transform 180ms var(--ease-out); }
 .card-link h3 a { color: var(--ink); text-decoration: none; }
-.card-link h3 a::after { content: ""; position: absolute; inset: 0; }
+.card-link h3 a::after { content: ""; position: absolute; inset: 0; border-radius: var(--r-md); }
 .card-link h3 a:focus-visible { outline: none; }
-.card-link h3 a:focus-visible::after { outline: 3px solid var(--red); outline-offset: -3px; border-radius: var(--r-md); }
-@media (hover: hover) {
-  .card-link { transition: box-shadow .15s ease-out; }
-  .card-link:hover { box-shadow: var(--shadow); }
-  .tone-white .card-link:hover { box-shadow: inset 0 0 0 1px var(--line), var(--shadow); }
+.card-link h3 a:focus-visible::after { outline: 3px solid var(--red); outline-offset: 2px; }
+.card-link:active { transform: scale(.985); }
+/* Keyboard focus gets the same cue as mouse hover (arrow nudge, blue title) plus the red ring above. */
+.card-link:focus-within .card-arrow { transform: translateX(4px); }
+.card-link:focus-within h3 a { color: var(--blue); }
+@media (hover: hover) and (pointer: fine) {
+  .card-link:hover { transform: translateY(-2px); border-color: rgba(30, 58, 138, .32); box-shadow: var(--shadow); }
   .card-link:hover h3 a { color: var(--blue); }
+  .card-link:hover .card-arrow { transform: translateX(4px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-link:hover, .card-link:active, .card-link:focus-within .card-arrow, .card-link:hover .card-arrow { transform: none; }
 }
 
+/* Call-to-action band: copy left, buttons right from 1024 px. Buttons are full width under 480 px and may wrap their label. */
 .cta-band { padding-block: 48px; }
-.cta-inner { display: grid; gap: 16px; align-items: center; }
-.cta-inner .lead { margin-top: 10px; }
-.cta-inner .btn-row { margin-top: 0; }
-@media (min-width: 64rem) { .cta-band { padding-block: 64px; } .cta-inner { grid-template-columns: 1fr auto; gap: 48px; } }
+.cta-inner { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: center; }
+.cta-inner > * { min-width: 0; }
+.cta-inner .lead { margin-top: 12px; }
+.cta-inner .btn-row { margin-top: 0; gap: 12px; }
+.cta-inner .btn-row .btn { flex: 1 1 100%; white-space: normal; text-align: center; }
+@media (min-width: 30rem) { .cta-inner .btn-row .btn { flex: 0 0 auto; } }
+@media (min-width: 48rem) { .cta-band { padding-block: 56px; } }
+@media (min-width: 64rem) { .cta-band { padding-block: 64px; } .cta-inner { grid-template-columns: minmax(0, 1fr) auto; gap: 48px; } }
 
-.steps { display: grid; gap: 16px; counter-reset: step; }
-.steps li { position: relative; background: #fff; border-radius: var(--r-md); padding: 20px 20px 20px 72px; counter-increment: step; }
-.tone-white .steps li { box-shadow: inset 0 0 0 1px var(--line); }
-.steps li::before { content: counter(step); position: absolute; left: 20px; top: 20px; width: 36px; height: 36px; border-radius: 50%; background: var(--blue); color: #fff; font-weight: 600; display: flex; align-items: center; justify-content: center; }
-.steps p { color: var(--muted); margin-top: 4px; font-size: .9375rem; }
-@media (min-width: 48rem) { .steps { grid-template-columns: 1fr 1fr; } }
+/* Process steps: a real sequence, so the numbers stay. Number chip is white on blue (10.4:1), same rounded square as the icon chip.
+   Under 1024 px the chip sits left of the text; from 1024 px (3, 4 or 5 steps) it sits above. Five steps get five columns from 1280 px. */
+.steps { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; counter-reset: step; }
+.steps li { position: relative; min-width: 0; padding: 27px 18px 22px 76px; border-radius: var(--r-md); background: var(--blue-50); border: 1px solid rgba(30, 58, 138, .14); color: var(--ink); counter-increment: step; }
+.steps li::before { content: counter(step); position: absolute; left: 18px; top: 18px; width: 44px; height: 44px; border-radius: var(--r-md); background: var(--blue); color: #fff; font-size: 1.125rem; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; display: flex; align-items: center; justify-content: center; }
+.steps .h4 { line-height: 1.35; overflow-wrap: anywhere; }
+.steps p { margin-top: 6px; color: var(--muted); font-size: 1rem; line-height: 1.55; }
+@media (min-width: 48rem) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; } }
 @media (min-width: 64rem) {
-  .steps-4 { grid-template-columns: repeat(4, 1fr); } .steps-5 { grid-template-columns: repeat(5, 1fr); } .steps-3 { grid-template-columns: repeat(3, 1fr); }
-  .steps-4 li, .steps-5 li, .steps-3 li { padding: 72px 20px 20px; }
+  .steps-3, .steps-5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .steps-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .steps-3 li, .steps-4 li, .steps-5 li { padding: 78px 20px 22px; }
+  .steps-3 li::before, .steps-4 li::before, .steps-5 li::before { left: 20px; top: 20px; }
 }
+@media (min-width: 80rem) { .steps-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
 
+/* FAQ: native details and summary (keyboard and screen readers as built in). Each question is a tinted row; the chevron turns 180 degrees
+   when open (transform only, 200 ms; reduced motion removes the transition, see below). */
 .faq .faq-list, .faq .h2 { max-width: 52rem; }
-.faq-list { margin-top: 24px; border-top: 1px solid var(--line); }
-.faq-item { border-bottom: 1px solid var(--line); }
-.faq-item summary { position: relative; padding: 18px 40px 18px 0; font-weight: 600; cursor: pointer; list-style: none; min-height: 44px; }
+.faq-list { display: grid; gap: 10px; margin-top: 24px; }
+.faq-item { border-radius: var(--r-md); background: var(--blue-50); border: 1px solid rgba(30, 58, 138, .14); color: var(--ink); transition: border-color 150ms ease-out; }
+.faq-item[open] { border-color: rgba(30, 58, 138, .32); }
+.faq-item summary { position: relative; display: block; min-height: 44px; padding: 16px 54px 16px 18px; border-radius: var(--r-md); font-size: 1.0625rem; font-weight: 600; line-height: 1.45; cursor: pointer; list-style: none; overflow-wrap: anywhere; }
 .faq-item summary::-webkit-details-marker { display: none; }
-.faq-item summary::after { content: "+"; position: absolute; right: 8px; top: 14px; font-size: 1.5rem; line-height: 1; color: var(--blue); }
-.faq-item[open] summary::after { content: "\2212"; }
-.faq-item p { padding: 0 0 20px; color: var(--muted); }
+.faq-item summary::after { content: ""; position: absolute; right: 14px; top: 50%; width: 24px; height: 24px; margin-top: -12px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231e3a8a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / 24px no-repeat; transition: transform 200ms var(--ease-out); }
+.faq-item[open] summary::after { transform: rotate(180deg); }
+.faq-item p { max-width: 65ch; padding: 0 54px 20px 18px; color: var(--muted); font-size: 1rem; line-height: 1.6; overflow-wrap: anywhere; }
+@media (hover: hover) and (pointer: fine) { .faq-item summary:hover { color: var(--blue); } }
 
-.vm-grid { display: grid; gap: 20px; }
-.vm-card { background: #fff; border-radius: var(--r-md); padding: 28px; }
-.vm-card .h3 { color: var(--blue); margin-bottom: 12px; }
-.vm-card p { color: var(--muted); }
-@media (min-width: 48rem) { .vm-grid { grid-template-columns: 1fr 1fr; } }
-.check-list { display: grid; gap: 10px; margin-top: 12px; }
-.check-list li { position: relative; padding-left: 30px; color: var(--muted); }
-.check-list li::before { content: ""; position: absolute; left: 2px; top: .3em; width: 18px; height: 18px; border-radius: 50%; background: var(--blue) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / 12px no-repeat; }
+/* Vision and mission: two tinted cards. Check marks are white on blue (10.4:1). */
+.vm-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.vm-card { min-width: 0; padding: 24px 20px; border-radius: var(--r-md); background: var(--blue-50); border: 1px solid rgba(30, 58, 138, .14); color: var(--ink); }
+.vm-card .h3 { margin-bottom: 12px; color: var(--blue); }
+.vm-card p { color: var(--muted); font-size: 1rem; line-height: 1.6; }
+.vm-card p + p { margin-top: 12px; }
+@media (min-width: 48rem) { .vm-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } .vm-card { padding: 32px 28px; } }
+.check-list { display: grid; gap: 12px; }
+ul.check-list { margin-top: 14px; }
+.check-list li { position: relative; padding-left: 32px; color: var(--muted); font-size: 1rem; line-height: 1.55; overflow-wrap: anywhere; }
+.check-list li::before { content: ""; position: absolute; left: 0; top: 2px; width: 20px; height: 20px; border-radius: 50%; background: var(--blue) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / 13px no-repeat; }
 
-.levels { display: grid; grid-template-columns: 1fr; gap: 20px; }
-@media (min-width: 40rem) { .levels { grid-template-columns: 1fr 1fr; } }
-@media (min-width: 64rem) { .levels { grid-template-columns: repeat(5, 1fr); } }
-.level { background: #fff; border-radius: var(--r-md); overflow: hidden; }
-.tone-white .level { box-shadow: inset 0 0 0 1px var(--line); }
-.level-classes { color: var(--blue) !important; font-weight: 600; font-size: .875rem !important; }
+/* Academic levels (also used by Campuses/Detail, which gets the same look): cards that are not links, so no hover or press.
+   Five columns from 64rem, so the five stages never leave one card alone on a row (about 136 px of text per card at 1024 px). */
+.levels { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.levels > li { min-width: 0; }
+@media (min-width: 40rem) { .levels { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } }
+@media (min-width: 64rem) { .levels { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.level { display: flex; flex-direction: column; border-radius: var(--r-md); background: var(--blue-50); border: 1px solid rgba(30, 58, 138, .14); color: var(--ink); }
+.level-classes, .card-body .level-classes { color: var(--blue); font-weight: 600; font-size: .9375rem; line-height: 1.45; }
 .levels-compact .card-body { padding: 18px; }
 
-.info-list { display: grid; gap: 24px; }
+/* Info list: heading and intro beside one tinted card with a check list; the note sits under a hairline. */
+.info-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+.info-list > * { min-width: 0; }
 .info-list .lead { margin-top: 12px; }
-.info-card { background: var(--warm); border-radius: var(--r-md); padding: 24px 28px; }
-.info-card .check-list { margin-top: 0; }
+.info-card { padding: 22px 20px; border-radius: var(--r-md); background: var(--blue-50); border: 1px solid rgba(30, 58, 138, .14); color: var(--ink); }
+.info-card ul.check-list { margin-top: 0; }
 .info-card .check-list li { color: var(--ink); }
-.info-card .note { margin-top: 16px; font-size: .9375rem; color: var(--muted); }
-@media (min-width: 64rem) { .info-list { grid-template-columns: 5fr 7fr; gap: 64px; align-items: start; } }
+.info-card .note { margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(30, 58, 138, .14); font-size: 1rem; line-height: 1.55; color: var(--muted); }
+@media (min-width: 48rem) { .info-card { padding: 28px 32px; } }
+@media (min-width: 64rem) { .info-list { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 64px; align-items: start; } }
+
+/* Rich text (CMS prose): 17 px, line height 1.7, measure 72ch, clear heading steps, underlined links. Colour is inherited so it works on any tone. */
+.prose { font-size: 1.0625rem; line-height: 1.7; overflow-wrap: break-word; }
+.prose h2 { font-family: var(--serif); font-size: clamp(1.375rem, 1.2rem + .6vw, 1.625rem); line-height: 1.25; letter-spacing: -.01em; }
+.prose h3 { font-size: var(--fs-h3); line-height: 1.35; }
+.prose h2, .prose h3 { margin-top: 2rem; }
+.prose h2 + *, .prose h3 + * { margin-top: .75rem; }
+.prose ul, .prose ol { padding-left: 1.5rem; }
+.prose a { text-decoration: underline; text-decoration-thickness: 1px; }
+.prose blockquote { padding-left: 20px; border-left: 3px solid var(--red); font-family: var(--serif); font-size: 1.1875rem; line-height: 1.5; }
+.prose img { border-radius: var(--r-md); }
+.prose table { display: block; max-width: 100%; overflow-x: auto; }
+.h2 + .prose { margin-top: 20px; }
+.rich-card .prose { padding: 22px 20px; border-radius: var(--r-lg); background: var(--blue-50); border: 1px solid rgba(30, 58, 138, .14); color: var(--ink); }
+@media (min-width: 48rem) { .rich-card .prose { padding: 32px; } }
 
 /* Forms */
 .form-layout { display: grid; gap: 28px; }
@@ -574,3 +647,5 @@ ul.home-campus-grid { display: grid; grid-template-columns: repeat(auto-fill, mi
 @media print { .site-header, .site-footer, .mobile-actions, .on-this-page { display: none; } }
 /* From 480px each sentence of the hero tagline starts on its own line; phones wrap naturally. */
 @media (min-width: 30rem) { .home-h1-line { display: block; } }
+/* The global reduced-motion rule does not reach pseudo-elements, so the FAQ chevron needs its own. */
+@media (prefers-reduced-motion: reduce) { .faq-item summary::after { transition: none; } }
