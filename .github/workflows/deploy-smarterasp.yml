@@ -91,9 +91,10 @@ jobs:
         run: |
           & $env:MSBUILD $env:PROJ /nologo /m /t:Build `
             /p:Configuration=Release "/p:Platform=AnyCPU" /p:SolutionDir="$((Resolve-Path src).Path)\" `
-            /p:DeployOnBuild=true /p:WebPublishMethod=FileSystem /p:DeleteExistingFiles=true `
+            /p:DeployOnBuild=true /p:DeployDefaultTarget=WebPublish /p:WebPublishMethod=FileSystem /p:DeleteExistingFiles=true `
             "/p:PublishUrl=$env:PUBLISH" /p:MvcBuildViews=false /clp:Summary`;Verbosity=minimal
           if ($LASTEXITCODE -ne 0) { throw "MSBuild publish failed ($LASTEXITCODE)" }
+          if (-not (Test-Path (Join-Path $env:PUBLISH 'bin\TheArqamSchools.Web.dll'))) { throw "Publish folder was not created" }
 
       - name: Precompile Razor views (check only, output thrown away)
         run: |
