@@ -1,0 +1,180 @@
+# Testing-phase deployment to SmarterASP.NET shared hosting.
+#
+# Uploads ONLY when the branch deploy/smarterasp is pushed. Pushing that branch
+# is the deliberate "deploy now" action and happens only with the owner's
+# written approval. A push to the development branch runs a dry run instead:
+# the same build, publish and checks with a placeholder connection string,
+# no secrets read and nothing uploaded.
+#
+# What it does: builds the site in Release mode on Windows, checks the Razor
+# views compile, writes the server settings (connection string, site address)
+# into the published Web.config, checks the result, then uploads it over FTPS
+# with tools/deploy/Publish-Ftp.ps1. The database is not touched.
+#
+# Settings (GitHub > Settings > Secrets and variables > Actions):
+#   Secrets   FTP_SERVER, FTP_USERNAME, FTP_PASSWORD, DB_CONNECTION_STRING
+#   Variables FTP_REMOTE_DIR      site folder on the FTP server, e.g. /site1 (required)
+#             SITE_URL            default https://thearqamschools.com
+#             SITE_REQUIRE_HTTPS  default true; set false only until the SSL certificate is installed
+#             SMOKE_URL           optional address to check after upload (e.g. the host's temporary URL)
+
+name: Deploy to SmarterASP (testing)
+
+on:
+  push:
+    branches:
+      - deploy/smarterasp
+      - claude/urdu-roman-english-kiukjf   # dry run only
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: pwsh
+
+# Never run two uploads at once, and never cancel one half way.
+concurrency:
+  group: deploy-smarterasp
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build, check and upload
+    runs-on: windows-2022
+    timeout-minutes: 40
+    env:
+      DRY_RUN: ${{ github.ref_name != 'deploy/smarterasp' }}
+      SLN: src\TheArqamSchools.sln
+      PROJ: src\TheArqamSchools.Web\TheArqamSchools.Web.csproj
+      PUBLISH: ${{ github.workspace }}\publish
+      FTP_SERVER: ${{ github.ref_name == 'deploy/smarterasp' && secrets.FTP_SERVER || '' }}
+      FTP_USERNAME: ${{ github.ref_name == 'deploy/smarterasp' && secrets.FTP_USERNAME || '' }}
+      FTP_PASSWORD: ${{ github.ref_name == 'deploy/smarterasp' && secrets.FTP_PASSWORD || '' }}
+      DB_CONNECTION_STRING: ${{ github.ref_name == 'deploy/smarterasp' && secrets.DB_CONNECTION_STRING || 'Data Source=dry-run;Initial Catalog=dry-run;User Id=dry-run;Password=dry-run' }}
+      FTP_REMOTE_DIR: ${{ vars.FTP_REMOTE_DIR }}
+      SITE_URL: ${{ vars.SITE_URL }}
+      SITE_REQUIRE_HTTPS: ${{ vars.SITE_REQUIRE_HTTPS }}
+      SMOKE_URL: ${{ vars.SMOKE_URL }}
+
+    steps:
+      - name: Check that every setting is present
+        if: env.DRY_RUN != 'true'
+        run: |
+          $missing = @()
+          foreach ($n in 'FTP_SERVER','FTP_USERNAME','FTP_PASSWORD','DB_CONNECTION_STRING','FTP_REMOTE_DIR') {
+            if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($n))) { $missing += $n }
+          }
+          if ($missing) { throw "Missing settings: $($missing -join ', '). Nothing was built or uploaded." }
+          "All settings present."
+
+      - name: Check out code
+        # actions/checkout, pinned by full commit SHA (tag v4.4.0).
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Find MSBuild and aspnet_compiler
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $msbuild = & $vswhere -latest -version "[17.0,18.0)" -requires Microsoft.Component.MSBuild -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
+          if (-not $msbuild) { throw "MSBuild 17 (Visual Studio 2022) not found" }
+          "MSBUILD=$msbuild" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "ASPNETC=$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\aspnet_compiler.exe" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Restore NuGet packages
+        run: |
+          nuget restore $env:SLN -PackagesDirectory src\packages -NonInteractive
+          if ($LASTEXITCODE -ne 0) { throw "NuGet restore failed ($LASTEXITCODE)" }
+
+      - name: Publish (Release) to a local folder
+        run: |
+          & $env:MSBUILD $env:PROJ /nologo /m /t:Build `
+            /p:Configuration=Release "/p:Platform=AnyCPU" /p:SolutionDir="$((Resolve-Path src).Path)\" `
+            /p:DeployOnBuild=true /p:WebPublishMethod=FileSystem /p:DeleteExistingFiles=true `
+            "/p:PublishUrl=$env:PUBLISH" /p:MvcBuildViews=false /clp:Summary`;Verbosity=minimal
+          if ($LASTEXITCODE -ne 0) { throw "MSBuild publish failed ($LASTEXITCODE)" }
+
+      - name: Precompile Razor views (check only, output thrown away)
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP "precompiled"
+          & $env:ASPNETC -v /TheArqamSchools -p $env:PUBLISH -c $out
+          if ($LASTEXITCODE -ne 0) { throw "Razor view precompilation failed ($LASTEXITCODE)" }
+
+      - name: Write server settings into the published Web.config
+        run: |
+          $path = Join-Path $env:PUBLISH 'Web.config'
+          [xml]$config = Get-Content -Raw -Encoding UTF8 $path
+          $cs = $config.configuration.connectionStrings.add | Where-Object { $_.name -eq 'ArqamDb' }
+          if (-not $cs) { throw "ArqamDb connection string not found in Web.config" }
+          $cs.SetAttribute('connectionString', $env:DB_CONNECTION_STRING)
+
+          $siteUrl = if ($env:SITE_URL) { $env:SITE_URL } else { 'https://thearqamschools.com' }
+          $https = if ($env:SITE_REQUIRE_HTTPS) { $env:SITE_REQUIRE_HTTPS.ToLowerInvariant() } else { 'true' }
+          if ($https -ne 'true' -and $https -ne 'false') { throw "SITE_REQUIRE_HTTPS must be true or false" }
+          $settings = $config.configuration.appSettings
+          function Set-AppSetting($key, $value) {
+            $node = $settings.add | Where-Object { $_.key -eq $key }
+            if (-not $node) { $node = $config.CreateElement('add'); $node.SetAttribute('key', $key); [void]$settings.AppendChild($node) }
+            $node.SetAttribute('value', $value)
+          }
+          Set-AppSetting 'Site:Url' $siteUrl
+          Set-AppSetting 'Site:RequireHttps' $https
+          # Testing phase: the site must stay hidden from search engines.
+          Set-AppSetting 'Site:NoIndex' 'true'
+          $config.Save($path)
+          "Site:Url = $siteUrl; Site:RequireHttps = $https; Site:NoIndex = true"
+
+      - name: Check the published folder
+        run: |
+          $p = $env:PUBLISH
+          # Debug symbols are not needed on the server.
+          Get-ChildItem $p -Recurse -File -Filter *.pdb | Remove-Item -Force
+          $must = 'bin\TheArqamSchools.Web.dll', 'bin\roslyn\csc.exe', 'Global.asax', 'Web.config',
+                  'Views\Web.config', 'Content\site.css', 'Scripts\site.js', 'Content\brand\the-arqam-schools-logo-official.png'
+          foreach ($f in $must) { if (-not (Test-Path (Join-Path $p $f))) { throw "Missing from publish output: $f" } }
+          if (-not (Get-ChildItem (Join-Path $p 'media') -Recurse -File -ErrorAction SilentlyContinue)) { throw "media folder missing" }
+          $bad = Get-ChildItem $p -Recurse -File | Where-Object {
+            $_.Extension -in '.cs', '.csproj', '.sql', '.user' -or $_.Name -in 'Web.Debug.config', 'Web.Release.config', 'packages.config'
+          }
+          if ($bad) { $bad | ForEach-Object { $_.FullName }; throw "Source or development files found in publish output" }
+          [xml]$c = Get-Content -Raw $(Join-Path $p 'Web.config')
+          if ($c.configuration.'system.web'.compilation.debug -eq 'true') { throw "debug=true in published Web.config" }
+          if ($c.configuration.'system.web'.customErrors.mode -ne 'On') { throw "customErrors is not On in published Web.config" }
+          $files = Get-ChildItem $p -Recurse -File
+          "Publish output OK: $($files.Count) files, $([math]::Round(($files | Measure-Object Length -Sum).Sum / 1MB, 1)) MB"
+
+      - name: Check the upload script parses (dry run)
+        if: env.DRY_RUN == 'true'
+        run: |
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path tools/deploy/Publish-Ftp.ps1).Path, [ref]$null, [ref]$errors)
+          if ($errors) { $errors | ForEach-Object { $_.ToString() }; throw "Publish-Ftp.ps1 has syntax errors" }
+          "Dry run: build, publish and checks passed. Nothing was uploaded."
+
+      - name: Upload over FTPS
+        if: env.DRY_RUN != 'true'
+        run: |
+          & ./tools/deploy/Publish-Ftp.ps1 -Source $env:PUBLISH -OfflinePage tools/deploy/app_offline.htm
+
+      - name: Remove the local copy that holds the connection string
+        if: always()
+        run: Remove-Item -Recurse -Force $env:PUBLISH -ErrorAction SilentlyContinue
+
+      - name: Quick check of the live site (report only)
+        if: success() && env.DRY_RUN != 'true' && env.SMOKE_URL != ''
+        run: |
+          $base = $env:SMOKE_URL.TrimEnd('/')
+          Start-Sleep -Seconds 10
+          $lines = @("## Quick check of $base", "", "| Address | Status |", "|---|---|")
+          foreach ($path in '/', '/about', '/admissions', '/campuses', '/robots.txt', '/status') {
+            try {
+              $r = Invoke-WebRequest -Uri "$base$path" -MaximumRedirection 5 -SkipHttpErrorCheck -TimeoutSec 60
+              $lines += "| ``$path`` | $($r.StatusCode) |"
+              if ($path -eq '/robots.txt' -and $r.StatusCode -eq 200 -and $r.Content -notmatch 'Disallow: /\s*$') {
+                $lines += "| robots.txt | **not hiding the site** |"
+              }
+            } catch { $lines += "| ``$path`` | no answer ($($_.Exception.Message)) |" }
+          }
+          $lines += "", "Expected: 200 for pages, 404 for /status (it answers only on the server itself)."
+          $lines | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
