@@ -1,0 +1,40 @@
+@model IList<MenuAdminView>
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = "Menus";
+}
+<h1>Menus</h1>
+<p class="admin-muted">Hidden items stay saved but are not shown on the website. An item gets a dropdown on the website only when it has visible sub-items.</p>
+@foreach (var m in Model)
+{
+    <section class="admin-card">
+        <div class="admin-page-head">
+            <h2>@m.Name</h2>
+            @if ((bool)ViewBag.CanCreate) { <a class="admin-button admin-button--secondary" href="/admin/menus/@m.Id.ToString("D")/new">Add item</a> }
+        </div>
+        @if (m.Items.Count == 0)
+        {
+            <p class="admin-muted">No items.</p>
+        }
+        else
+        {
+            <ul class="admin-list">
+                @foreach (var i in m.Items)
+                {
+                    <li class="admin-list-item">
+                        <a class="admin-list-link @(i.Depth > 0 ? "admin-list-link--child" : null)" href="/admin/menus/items/@i.Id.ToString("D")">
+                            <span class="admin-list-main">
+                                @if (i.Depth > 0) { <span aria-hidden="true">&#8627;</span> }
+                                <strong>@i.Label</strong>
+                                @if (!i.IsVisible) { <span class="admin-status admin-status--spam">Hidden</span> }
+                                @if (i.PageId.HasValue && i.PageStatus != "published") { <span class="admin-status admin-status--new">Page not published</span> }
+                            </span>
+                            <span class="admin-list-meta">@i.Link</span>
+                            <span class="admin-list-date">Order @i.SortOrder</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+}

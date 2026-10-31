@@ -126,3 +126,4 @@ a.admin-stat:hover { border-color: var(--blue); }
 .admin-field textarea { min-height: 8rem; resize: vertical; line-height: 1.5; }
 .admin-field textarea:focus-visible, .admin-field select:focus-visible { outline: 3px solid var(--blue); outline-offset: 1px; border-color: var(--blue); }
 .admin-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; }
+.admin-list-link--child { padding-left: 2rem; }

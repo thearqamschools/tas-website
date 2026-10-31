@@ -98,6 +98,8 @@
     <Compile Include="Controllers\AdminCampusesController.cs" />
     <Compile Include="Controllers\AdminDashboardController.cs" />
     <Compile Include="Controllers\AdminInboxController.cs" />
+    <Compile Include="Controllers\AdminMenusController.cs" />
+    <Compile Include="Controllers\AdminSettingsController.cs" />
     <Compile Include="Controllers\AdminUsersController.cs" />
     <Compile Include="Controllers\CampusesController.cs" />
     <Compile Include="Controllers\ErrorController.cs" />
@@ -114,9 +116,11 @@
     <Compile Include="Data\HeadOfficeRepository.cs" />
     <Compile Include="Data\InboxRepository.cs" />
     <Compile Include="Data\InquiryRepository.cs" />
+    <Compile Include="Data\MenuAdminRepository.cs" />
     <Compile Include="Data\NavigationRepository.cs" />
     <Compile Include="Data\PageRepository.cs" />
     <Compile Include="Data\RedirectRepository.cs" />
+    <Compile Include="Data\SettingsAdminRepository.cs" />
     <Compile Include="Data\SiteSettingsRepository.cs" />
     <Compile Include="Data\UserAdminRepository.cs" />
     <Compile Include="Helpers\Contact.cs" />
@@ -165,6 +169,9 @@
     <Content Include="Views\Admin\Dashboard\Index.cshtml" />
     <Content Include="Views\Admin\Inbox\Detail.cshtml" />
     <Content Include="Views\Admin\Inbox\Index.cshtml" />
+    <Content Include="Views\Admin\Menus\Edit.cshtml" />
+    <Content Include="Views\Admin\Menus\Index.cshtml" />
+    <Content Include="Views\Admin\Settings\Index.cshtml" />
     <Content Include="Views\Admin\Users\Edit.cshtml" />
     <Content Include="Views\Admin\Users\Index.cshtml" />
     <Content Include="Views\Campuses\Detail.cshtml" />

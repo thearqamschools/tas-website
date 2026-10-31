@@ -1,0 +1,83 @@
+@model SettingsForm
+@using TheArqamSchools.Web.Data
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = "Website settings";
+    var ro = Model.CanEdit ? null : "disabled";
+    var errors = ViewData.ModelState.Where(m => m.Value.Errors.Count > 0).SelectMany(m => m.Value.Errors).Select(e => e.ErrorMessage).ToList();
+}
+<h1>Website settings</h1>
+@if (Model.Saved)
+{
+    <div class="admin-alert admin-alert--success" role="status"><p>Settings saved. The website shows them within a minute.</p></div>
+}
+@if (errors.Count > 0)
+{
+    <div class="admin-alert admin-alert--error" role="alert">
+        <p><strong>Please correct the following:</strong></p>
+        @foreach (var e in errors) { <p>@e</p> }
+    </div>
+}
+<form method="post" action="/admin/settings" class="admin-form" novalidate>
+    @Html.AntiForgeryToken()
+    @foreach (var group in SettingsAdminRepository.Fields.GroupBy(f => f.Group))
+    {
+        <section class="admin-card">
+            <h2>@group.Key</h2>
+            @foreach (var f in group)
+            {
+                var id = f.Key.Replace(".", "-");
+                if (f.Kind == SettingsAdminRepository.Kind.Link)
+                {
+                    <fieldset class="admin-fieldset">
+                        <legend>@f.Label</legend>
+                        <div class="admin-grid-2">
+                            <div class="admin-field">
+                                <label for="@(id)-label">Button text</label>
+                                <input type="text" id="@(id)-label" name="@(f.Key).label" value="@Model.Get(f.Key + ".label")" maxlength="@f.Max" @ro />
+                            </div>
+                            <div class="admin-field">
+                                <label for="@(id)-href">Link</label>
+                                <input type="text" id="@(id)-href" name="@(f.Key).href" value="@Model.Get(f.Key + ".href")" maxlength="300" spellcheck="false" autocapitalize="none" @ro />
+                                <p class="admin-hint">A page on this website such as /admissions, or a full address starting with https://</p>
+                            </div>
+                        </div>
+                    </fieldset>
+                }
+                else
+                {
+                    <div class="admin-field">
+                        <label for="@id">@f.Label</label>
+                        @if (f.Kind == SettingsAdminRepository.Kind.Multiline)
+                        {
+                            <textarea id="@id" name="@f.Key" rows="3" maxlength="@f.Max" @ro>@Model.Get(f.Key)</textarea>
+                        }
+                        else
+                        {
+                            <input type="@(f.Kind == SettingsAdminRepository.Kind.Phone ? "tel" : "text")" id="@id" name="@f.Key" value="@Model.Get(f.Key)" maxlength="@f.Max" @ro />
+                        }
+                        @if (f.Hint != null) { <p class="admin-hint">@f.Hint</p> }
+                    </div>
+                }
+            }
+        </section>
+    }
+    <section class="admin-card">
+        <h2>Social media pages</h2>
+        <p class="admin-hint">Paste the full address of each official page. Leave empty if there is none.</p>
+        <div class="admin-grid-2">
+            @foreach (var p in SettingsAdminRepository.SocialPlatforms)
+            {
+                var label = p == "x" ? "X (Twitter)" : p == "tiktok" ? "TikTok" : p == "youtube" ? "YouTube" : p == "linkedin" ? "LinkedIn" : p == "whatsapp" ? "WhatsApp channel" : char.ToUpperInvariant(p[0]) + p.Substring(1);
+                <div class="admin-field">
+                    <label for="social-@p">@label</label>
+                    <input type="url" id="social-@p" name="social.@p" value="@Model.Get("social." + p)" maxlength="300" spellcheck="false" autocapitalize="none" @ro />
+                </div>
+            }
+        </div>
+    </section>
+    @if (Model.CanEdit)
+    {
+        <div><button type="submit" class="admin-button">Save settings</button></div>
+    }
+</form>

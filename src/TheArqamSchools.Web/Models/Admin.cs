@@ -342,4 +342,90 @@ namespace TheArqamSchools.Web.Models
         public string Notice { get; set; }
         public string PublicUrl { get; set; }
     }
+
+    /// <summary>Settings form values keyed by setting key (links use "key.label" and "key.href"; social links "social.platform").</summary>
+    public class SettingsForm
+    {
+        public SettingsForm() { Values = new Dictionary<string, string>(); }
+        public IDictionary<string, string> Values { get; private set; }
+        public bool Saved { get; set; }
+        public bool CanEdit { get; set; }
+
+        public string Get(string key)
+        {
+            string v;
+            return Values.TryGetValue(key, out v) ? v : null;
+        }
+    }
+
+    public class MenuAdminView
+    {
+        public Guid Id { get; set; }
+        public string Key { get; set; }
+        public string Name { get; set; }
+        public IList<MenuItemRow> Items { get; set; }
+    }
+
+    public class MenuItemRow
+    {
+        public Guid Id { get; set; }
+        public Guid MenuId { get; set; }
+        public Guid? ParentId { get; set; }
+        public string Label { get; set; }
+        public string Url { get; set; }
+        public Guid? PageId { get; set; }
+        public string PagePath { get; set; }
+        public string PageStatus { get; set; }
+        public string Target { get; set; }
+        public int SortOrder { get; set; }
+        public bool IsVisible { get; set; }
+        public int Depth { get; set; }
+        public string Link { get { return Url ?? PagePath; } }
+    }
+
+    public class PageOption
+    {
+        public Guid Id { get; set; }
+        public string Title { get; set; }
+        public string Path { get; set; }
+        public string Status { get; set; }
+    }
+
+    /// <summary>A menu item. Exactly one of PageId and Url is saved (the form's LinkType decides which).</summary>
+    public class MenuItemForm
+    {
+        public Guid Id { get; set; }
+        public Guid MenuId { get; set; }
+        public Guid? ParentId { get; set; }
+
+        [Required(ErrorMessage = "Please enter the menu text.")]
+        [StringLength(60, ErrorMessage = "The menu text can be at most 60 characters.")]
+        public string Label { get; set; }
+
+        public string LinkType { get; set; }
+        public Guid? PageId { get; set; }
+
+        [StringLength(300)]
+        public string Url { get; set; }
+
+        public string Target { get; set; }
+
+        [StringLength(160)]
+        public string Description { get; set; }
+
+        [Range(0, 100000)]
+        public int SortOrder { get; set; }
+
+        public bool IsVisible { get; set; }
+    }
+
+    public class MenuItemEditViewModel
+    {
+        public MenuItemForm Form { get; set; }
+        public MenuAdminView Menu { get; set; }
+        public IList<PageOption> Pages { get; set; }
+        public bool IsNew { get; set; }
+        public bool CanEdit { get; set; }
+        public string Notice { get; set; }
+    }
 }

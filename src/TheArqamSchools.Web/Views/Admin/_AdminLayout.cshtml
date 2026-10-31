@@ -33,6 +33,14 @@
                 {
                     <a href="/admin/campuses">Campuses</a>
                 }
+                @if (adminUser.Can("navigation.view"))
+                {
+                    <a href="/admin/menus">Menus</a>
+                }
+                @if (adminUser.Can("settings.view"))
+                {
+                    <a href="/admin/settings">Settings</a>
+                }
                 @if (adminUser.Can("users.manage"))
                 {
                     <a href="/admin/users">Users</a>
