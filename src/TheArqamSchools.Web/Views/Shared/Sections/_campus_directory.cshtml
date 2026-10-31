@@ -11,7 +11,7 @@
         <div class="section-head">
             <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
         </div>
-        <form class="finder" method="get" action="@(action)#find" role="search" aria-label="Find a campus">
+        <form class="finder@(cityLocked ? " finder-locked" : "")" method="get" action="@(action)#find" role="search" aria-label="Find a campus">
             <div class="field finder-q">
                 <label for="cf-q">Campus name, area or address</label>
                 <div class="input-icon">
@@ -56,7 +56,7 @@
         </form>
         <p class="results-count" role="status">
             @if (vm.Results.Count == 1) { <text>1 campus</text> } else { <text>@vm.Results.Count campuses</text> }
-            @(vm.IsFiltered ? " match your search" : " listed")
+            @(vm.IsFiltered ? (vm.Results.Count == 1 ? " matches your search" : " match your search") : " listed")
         </p>
         @if (vm.Results.Count == 0)
         {

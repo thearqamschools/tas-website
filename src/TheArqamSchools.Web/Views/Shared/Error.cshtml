@@ -1,6 +1,8 @@
 @model System.Web.Mvc.HandleErrorInfo
 @{
-    ViewBag.Meta = new PageMeta { Title = "Something went wrong | The Arqam Schools", NoIndex = true };
+    // Stand-alone on purpose: _Layout reads menus and settings from the database,
+    // which may be the reason this page is showing. Keep the site.css ?v= value
+    // in step with Views/Shared/_Layout.cshtml.
     Layout = null;
 }
 <!DOCTYPE html>
@@ -10,13 +12,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex" />
     <title>Something went wrong | The Arqam Schools</title>
-    <link rel="stylesheet" href="~/Content/site.css?v=20261024" />
+    <link rel="stylesheet" href="~/Content/site.css?v=20261107" />
 </head>
-<body>
-    <main class="container" style="padding:64px 16px">
-        <h1 class="h1">Something went wrong</h1>
-        <p class="lead">Please try again in a few minutes, or call us on 041-2660265.</p>
-        <p><a class="btn btn-primary" href="/">Go to the homepage</a></p>
+<body class="error-page">
+    <header class="site-header">
+        <div class="container header-bar">
+            <a class="brand" href="/" aria-label="The Arqam Schools, home">
+                <img src="~/Content/brand/the-arqam-schools-logo-official.png" alt="" width="52" height="52" />
+                <span>The Arqam Schools</span>
+            </a>
+        </div>
+    </header>
+    <main id="main">
+        <section class="page-header system-page tone-warm">
+            <div class="container">
+                <h1 class="h1">Something went wrong</h1>
+                <p class="lead">Please try again in a few minutes, or call us on <a href="@TheArqamSchools.Web.Helpers.Contact.TelUrl("041-2660265")">041-2660265</a>.</p>
+                <div class="btn-row">
+                    <a class="btn btn-primary" href="/">Go to the homepage</a>
+                </div>
+            </div>
+        </section>
     </main>
 </body>
 </html>

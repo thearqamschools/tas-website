@@ -28,6 +28,9 @@ namespace TheArqamSchools.Web
             routes.MapRoute("CampusDetail", "campuses/{city}/{slug}", new { controller = "Campuses", action = "Detail" });
             routes.MapRoute("CampusCity", "campuses/{city}", new { controller = "Campuses", action = "City" });
 
+            // Error page used by customErrors in Web.config; must come before the catch-all.
+            routes.MapRoute("Error", "error", new { controller = "Error", action = "Index" });
+
             // Every other address is looked up in dbo.pages; unknown addresses get the 404 page.
             routes.MapRoute("Page", "{*path}", new { controller = "Pages", action = "Show" });
         }

@@ -1,31 +1,236 @@
+@using System.Collections.Generic
 @using TheArqamSchools.Web.Helpers
+@helper Placeholder(string label, string ratioClass)
+{
+    @* Stand-in for a real TAS photograph. Never an authentic photo: the label is visible and is also the accessible name. *@
+    <figure class="home-ph @ratioClass" role="img" aria-label="@label">
+        <svg class="home-ph-art" viewBox="0 0 400 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
+            <path class="ph-window" d="M52 238V104a64 64 0 0 1 128 0v134z" />
+            <path class="ph-pane" d="M116 40v198M52 120h128" />
+            <g class="ph-shelf">
+                <rect x="224" y="86" width="132" height="8" rx="3" />
+                <rect x="224" y="150" width="132" height="8" rx="3" />
+                <rect x="224" y="214" width="132" height="8" rx="3" />
+            </g>
+            <g class="ph-book-a">
+                <rect x="232" y="54" width="14" height="32" rx="2" />
+                <rect x="262" y="62" width="14" height="24" rx="2" />
+                <rect x="320" y="118" width="14" height="32" rx="2" />
+                <rect x="240" y="182" width="14" height="32" rx="2" />
+            </g>
+            <g class="ph-book-b">
+                <rect x="248" y="48" width="12" height="38" rx="2" />
+                <rect x="296" y="124" width="14" height="26" rx="2" />
+                <rect x="276" y="190" width="14" height="24" rx="2" />
+                <rect x="326" y="180" width="14" height="34" rx="2" />
+            </g>
+            <g class="ph-book-c">
+                <rect x="280" y="56" width="14" height="30" rx="2" />
+                <rect x="234" y="126" width="14" height="24" rx="2" />
+                <rect x="258" y="186" width="12" height="28" rx="2" />
+            </g>
+            <rect class="ph-desk" x="0" y="238" width="400" height="62" />
+        </svg>
+        <span class="home-ph-label">@label</span>
+    </figure>
+}
 @{
     ViewBag.Meta = ViewBag.Meta as PageMeta;
+    // Campus finder data comes from the controller (published campuses only). Cast safely: either list may be missing or empty.
+    var cities = ViewBag.Cities as IList<FilterOption>;
+    var campuses = ViewBag.Campuses as IList<Campus>;
+    var hasCities = cities != null && cities.Count > 0;
+    var hasCampuses = campuses != null && campuses.Count > 0;
 }
-<section class="page-header page-header-feature tone-warm has-image">
-    <div class="container page-header-grid">
-        <div>
-            <p class="eyebrow">The Arqam Schools</p>
-            <h1 class="h1">Knowledge with values. Education with purpose.</h1>
-            <p class="lead">Modern education rooted in Islamic values, from Play Group to Matric, with Hifz classes, at 350+ campuses across Pakistan.</p>
-            <div class="btn-row">
-                <a class="btn btn-primary" href="/admissions">Admissions</a>
-                <a class="btn btn-outline" href="/campuses">Find a campus</a>
+<div class="home">
+
+    @* 1. Hero: cream field, serif headline, two actions, labelled placeholder panel. Static on purpose (protects first paint). *@
+    <section class="home-hero tone-warm">
+        <div class="container home-hero-grid">
+            <div class="home-hero-text">
+                <h1 class="h1"><span class="home-h1-line">Knowledge with values.</span> <span class="home-h1-line">Education with purpose.</span></h1>
+                <p class="lead">Modern education rooted in Islamic values, from Play Group to Matric, with Hifz classes, at 350+ campuses across Pakistan.</p>
+                <div class="btn-row">
+                    <a class="btn btn-primary btn-arrow" href="/admissions">Admissions @Icons.Svg("arrow-right", 18)</a>
+                    <a class="btn btn-outline" href="/campuses">Find a campus</a>
+                </div>
+            </div>
+            <div class="home-hero-art">
+                @Placeholder("Placeholder: real TAS classroom photo to come", "home-ph-hero")
             </div>
         </div>
-        <figure class="media-frame ratio-4-3">
-            <img src="/media/public-media/network/content/hero-students-classroom--20261014075037.jpg" alt="Students learning together in a classroom" width="1365" height="1024" fetchpriority="high" />
-        </figure>
-    </div>
-</section>
-<section class="section tone-white" aria-labelledby="explore-h">
-    <div class="container">
-        <div class="section-head"><h2 class="h2" id="explore-h">Explore The Arqam Schools</h2></div>
-        <ul class="card-grid cols-4">
-            <li><article class="card card-link"><div class="card-body"><span class="icon-badge">@Icons.Svg("users", 22)</span><h3 class="h4"><a href="/about">About Us</a></h3><p>Who we are, our vision and mission, and our values.</p></div></article></li>
-            <li><article class="card card-link"><div class="card-body"><span class="icon-badge">@Icons.Svg("book-open", 22)</span><h3 class="h4"><a href="/academics">Academics</a></h3><p>Teaching, academic levels and student development.</p></div></article></li>
-            <li><article class="card card-link"><div class="card-body"><span class="icon-badge">@Icons.Svg("graduation-cap", 22)</span><h3 class="h4"><a href="/admissions">Admissions</a></h3><p>The admission process and an online inquiry form.</p></div></article></li>
-            <li><article class="card card-link"><div class="card-body"><span class="icon-badge">@Icons.Svg("map-pin", 22)</span><h3 class="h4"><a href="/campuses">Campuses</a></h3><p>Find a campus by name, city, district or area.</p></div></article></li>
-        </ul>
-    </div>
-</section>
+    </section>
+
+    @* 2. Figures band: the three approved figures as plain text. No animation, no other claims. *@
+    <section class="home-figures" aria-labelledby="home-figures-h">
+        <div class="container">
+            <h2 class="sr-only" id="home-figures-h">The Arqam Schools at a glance</h2>
+            <ul class="home-figures-list">
+                <li><span class="home-fig">350+</span> <span class="home-fig-label">campuses</span></li>
+                <li><span class="home-fig">250,000+</span> <span class="home-fig-label">students</span></li>
+                <li><span class="home-fig">20,000+</span> <span class="home-fig-label">Hafiz-e-Quran</span></li>
+            </ul>
+        </div>
+    </section>
+
+    @* 3. Explore: the four existing links as wide, tinted, whole-tile links. *@
+    <section class="section tone-white" aria-labelledby="explore-h">
+        <div class="container">
+            <div class="section-head"><h2 class="h2" id="explore-h">Explore The Arqam Schools</h2></div>
+            <ul class="home-tiles">
+                <li class="home-reveal">
+                    <article class="home-tile">
+                        <span class="home-tile-icon">@Icons.Svg("users", 26)</span>
+                        <div class="home-tile-text">
+                            <h3 class="h4"><a href="/about">About Us</a></h3>
+                            <p>Who we are, our vision and mission, and our values.</p>
+                        </div>
+                        <span class="home-tile-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
+                    </article>
+                </li>
+                <li class="home-reveal">
+                    <article class="home-tile">
+                        <span class="home-tile-icon">@Icons.Svg("book-open", 26)</span>
+                        <div class="home-tile-text">
+                            <h3 class="h4"><a href="/academics">Academics</a></h3>
+                            <p>Teaching, academic levels and student development.</p>
+                        </div>
+                        <span class="home-tile-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
+                    </article>
+                </li>
+                <li class="home-reveal">
+                    <article class="home-tile home-tile-action">
+                        <span class="home-tile-icon">@Icons.Svg("graduation-cap", 26)</span>
+                        <div class="home-tile-text">
+                            <h3 class="h4"><a href="/admissions">Admissions</a></h3>
+                            <p>The admission process and an online inquiry form.</p>
+                        </div>
+                        <span class="home-tile-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
+                    </article>
+                </li>
+                <li class="home-reveal">
+                    <article class="home-tile">
+                        <span class="home-tile-icon">@Icons.Svg("map-pin", 26)</span>
+                        <div class="home-tile-text">
+                            <h3 class="h4"><a href="/campuses">Campuses</a></h3>
+                            <p>Find a campus by name, city, district or area.</p>
+                        </div>
+                        <span class="home-tile-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
+                    </article>
+                </li>
+            </ul>
+        </div>
+    </section>
+
+    @* 4. Educating the whole child. PROPOSED copy: needs the school's approval (see DESIGN-NOTES.md, "Proposed copy for approval"). *@
+    <section class="section tone-warm" aria-labelledby="values-h">
+        <div class="container home-split">
+            <div class="home-split-text home-reveal">
+                <h2 class="h2" id="values-h">Educating the whole child</h2>
+                <p class="home-split-lead">At The Arqam Schools, modern education and Islamic values go together, to help children grow in knowledge, character, discipline and confidence, from Play Group to Matric.</p>
+                <ul class="home-points">
+                    <li>
+                        <span class="home-point-icon">@Icons.Svg("book-open", 22)</span>
+                        <div>
+                            <h3 class="h4">Academic learning</h3>
+                            <p>Modern teaching that builds strong foundations, from Play Group to Matric.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="home-point-icon">@Icons.Svg("moon-star", 22)</span>
+                        <div>
+                            <h3 class="h4">Islamic education</h3>
+                            <p>Islamic values at the heart of school life, with Hifz classes.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="home-point-icon">@Icons.Svg("shield-check", 22)</span>
+                        <div>
+                            <h3 class="h4">Ethics and discipline</h3>
+                            <p>Good manners and discipline as part of everyday learning.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="home-point-icon">@Icons.Svg("heart-handshake", 22)</span>
+                        <div>
+                            <h3 class="h4">Confidence and character</h3>
+                            <p>Supporting each child to grow in confidence and strong character.</p>
+                        </div>
+                    </li>
+                </ul>
+                <a class="text-link" href="/about">About The Arqam Schools @Icons.Svg("arrow-right", 18)</a>
+            </div>
+            <div class="home-split-art home-reveal">
+                @Placeholder("Placeholder: real TAS school life photo to come", "home-ph-split")
+            </div>
+        </div>
+    </section>
+
+    @* 5. Campus finder: search form, city links and up to three campuses from the database. Nothing is hard-coded. *@
+    <section class="section tone-grey" id="find" aria-labelledby="finder-h">
+        <div class="container">
+            <div class="section-head">
+                <h2 class="h2" id="finder-h">Find a campus</h2>
+                <p class="lead">Find a campus by name, city, district or area.</p>
+            </div>
+            <div class="home-finder home-reveal">
+                <form class="home-search" method="get" action="/campuses" role="search" aria-label="Search campuses">
+                    <div class="field">
+                        <label for="home-q">Campus name, area or address</label>
+                        <div class="input-icon">
+                            @Icons.Svg("search", 20)
+                            <input id="home-q" name="q" type="search" maxlength="100" placeholder="For example, Samanabad" autocomplete="off" enterkeyhint="search" />
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-outline">Search campuses</button>
+                </form>
+                @if (hasCities)
+                {
+                    <div class="home-cities">
+                        <h3 class="h4" id="home-cities-h">Browse by city</h3>
+                        <ul class="home-city-list" aria-labelledby="home-cities-h">
+                            @foreach (var city in cities)
+                            {
+                                if (string.IsNullOrWhiteSpace(city.Slug)) { continue; }
+                                var cityHref = "/campuses/" + Url.Encode(city.Slug);
+                                <li><a class="home-city" href="@cityHref">@city.Name <span class="home-city-count">@city.Count @(city.Count == 1 ? "campus" : "campuses")</span></a></li>
+                            }
+                        </ul>
+                    </div>
+                }
+            </div>
+
+            @if (hasCampuses)
+            {
+                <ul class="home-campus-grid">
+                    @foreach (var c in campuses)
+                    {
+                        if (string.IsNullOrWhiteSpace(c.CitySlug) || string.IsNullOrWhiteSpace(c.Slug)) { continue; }
+                        var campusHref = "/campuses/" + Url.Encode(c.CitySlug) + "/" + Url.Encode(c.Slug);
+                        <li class="home-reveal">
+                            <article class="home-campus">
+                                <h3 class="h4"><a href="@campusHref">@c.Name</a></h3>
+                                @if (!string.IsNullOrWhiteSpace(c.Locality))
+                                {
+                                    <p class="home-campus-place">@Icons.Svg("map-pin", 16) <span>@c.Locality</span></p>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(c.AddressLine))
+                                {
+                                    <p class="home-campus-address">@c.AddressLine</p>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(c.Phone))
+                                {
+                                    <p class="home-campus-phone"><a href="@Contact.TelUrl(c.Phone)">@Icons.Svg("phone", 16) <span>@c.Phone</span></a></p>
+                                }
+                            </article>
+                        </li>
+                    }
+                </ul>
+            }
+
+            <div class="home-finder-foot">
+                <a class="text-link" href="/campuses">See all campuses @Icons.Svg("arrow-right", 18)</a>
+            </div>
+        </div>
+    </section>
+</div>

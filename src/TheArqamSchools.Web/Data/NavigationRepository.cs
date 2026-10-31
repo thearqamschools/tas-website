@@ -15,7 +15,7 @@ namespace TheArqamSchools.Web.Data
         /// </summary>
         public static IList<NavItem> Menu(string key)
         {
-            return Cache.Get("nav:" + key, () =>
+            return Cache.GetOrLastGood("nav:" + key, () =>
             {
                 using (var db = Db.Open())
                 {
@@ -39,7 +39,7 @@ namespace TheArqamSchools.Web.Data
                     }
                     return (IList<NavItem>)roots;
                 }
-            });
+            }, () => new List<NavItem>());
         }
     }
 }
