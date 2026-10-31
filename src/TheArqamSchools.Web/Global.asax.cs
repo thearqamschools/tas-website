@@ -20,6 +20,8 @@ namespace TheArqamSchools.Web
 
         protected void Application_BeginRequest(object sender, EventArgs e)
         {
+            if (Helpers.Site.NoIndex)
+                HttpContext.Current.Response.AppendHeader("X-Robots-Tag", "noindex, nofollow");
             LegacyUrls.Handle(HttpContext.Current);
         }
     }

@@ -32,6 +32,8 @@ namespace TheArqamSchools.Web.Controllers
 
         public ActionResult Robots()
         {
+            if (Site.NoIndex)
+                return Content("User-agent: *\nDisallow: /\n", "text/plain", Encoding.UTF8);
             var body = "User-agent: *\nDisallow: /admin\nDisallow: /status\n\nSitemap: " + Site.Absolute("/sitemap.xml") + "\n";
             return Content(body, "text/plain", Encoding.UTF8);
         }

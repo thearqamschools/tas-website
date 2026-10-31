@@ -52,6 +52,16 @@ namespace TheArqamSchools.Web.Helpers
             get { return !string.Equals(ConfigurationManager.AppSettings["Site:RequireHttps"], "false", StringComparison.OrdinalIgnoreCase); }
         }
 
+        /// <summary>
+        /// Testing phase: Site:NoIndex = true hides the whole site from search engines
+        /// (robots.txt "Disallow: /", a noindex meta tag on every page and an X-Robots-Tag header).
+        /// Set it to false on launch day.
+        /// </summary>
+        public static bool NoIndex
+        {
+            get { return string.Equals(ConfigurationManager.AppSettings["Site:NoIndex"], "true", StringComparison.OrdinalIgnoreCase); }
+        }
+
         public static string Encode(string s) { return HttpUtility.HtmlEncode(s ?? ""); }
     }
 }

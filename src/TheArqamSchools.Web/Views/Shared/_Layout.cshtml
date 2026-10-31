@@ -19,9 +19,9 @@
         <meta name="description" content="@description" />
     }
     <link rel="canonical" href="@canonical" />
-    @if (meta.NoIndex)
+    @if (meta.NoIndex || Site.NoIndex)
     {
-        <meta name="robots" content="noindex" />
+        <meta name="robots" content="noindex, nofollow" />
     }
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="The Arqam Schools" />
