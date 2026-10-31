@@ -120,6 +120,7 @@
     <Compile Include="Helpers\Media.cs" />
     <Compile Include="Helpers\RichText.cs" />
     <Compile Include="Helpers\Site.cs" />
+    <Compile Include="Infrastructure\ClientAddress.cs" />
     <Compile Include="Infrastructure\LegacyUrls.cs" />
     <Compile Include="Infrastructure\Auth\AdminAuth.cs" />
     <Compile Include="Infrastructure\Auth\AdminAuthorizeAttribute.cs" />

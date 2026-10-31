@@ -110,9 +110,10 @@ namespace TheArqamSchools.Web.Infrastructure
             return s.Length <= 120 && s.All(ch => (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '-') ? s : null;
         }
 
+        /// <summary>The visitor's address for rate limits (the real one behind Cloudflare, see ClientAddress).</summary>
         public static string ClientKey(HttpRequestBase request)
         {
-            return request.UserHostAddress ?? "unknown";
+            return ClientAddress.Get(request);
         }
     }
 }
