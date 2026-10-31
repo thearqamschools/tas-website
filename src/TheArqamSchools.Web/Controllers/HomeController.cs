@@ -14,6 +14,10 @@ namespace TheArqamSchools.Web.Controllers
         {
             var settings = SiteSettingsRepository.Public();
             ViewBag.Tagline = SiteSettingsRepository.Text(settings, "site.tagline");
+            // Campus finder: only published campuses from dbo.branches, never sample data.
+            // Cached for a minute because the homepage is the busiest public URL.
+            ViewBag.Cities = Cache.Get("home:cities", () => CampusRepository.Cities());
+            ViewBag.Campuses = Cache.Get("home:campuses", () => CampusRepository.Homepage());
             var seo = PageRepository.SeoForRoute("/");
             ViewBag.Meta = new PageMeta
             {

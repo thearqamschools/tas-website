@@ -9,7 +9,7 @@
     var link = d["link"];
 }
 <section class="section tone-@Model.Tone("white")" @(Model.Anchor != null ? "id=" + Model.Anchor : "") aria-labelledby="h-@Model.Id">
-    <div class="container split@(left ? " split-image-left" : "")">
+    <div class="container split@(imgUrl == null ? " split-solo" : (left ? " split-image-left" : ""))">
         <div class="split-text">
             @if (!string.IsNullOrEmpty(Model.Text("eyebrow"))) { <p class="eyebrow">@Model.Text("eyebrow")</p> }
             <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>

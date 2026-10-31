@@ -58,6 +58,16 @@ namespace TheArqamSchools.Web.Data
 
         public static IList<Campus> All() { return Search(null, null, null); }
 
+        /// <summary>Limit homepage data in SQL; the directory remains unrestricted.</summary>
+        public static IList<Campus> Homepage()
+        {
+            using (var db = Db.Open())
+            {
+                return db.Query<Campus>(Select.Replace("SELECT b.id", "SELECT TOP (3) b.id") +
+                    " ORDER BY c.sort_order, c.name, b.sort_order, b.name, b.id").ToList();
+            }
+        }
+
         public static int CountPublished()
         {
             using (var db = Db.Open())

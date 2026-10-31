@@ -6,7 +6,7 @@
     var quote = d["quote"];
 }
 <section class="section tone-@Model.Tone("warm")" @(Model.Anchor != null ? "id=" + Model.Anchor : "") aria-labelledby="h-@Model.Id">
-    <div class="container values">
+    <div class="container values@(items.Count > 4 ? " values-wide" : "")">
         <div class="values-intro">
             <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
             @if (!string.IsNullOrEmpty(Model.Text("body"))) { <p class="lead">@Model.Text("body")</p> }
@@ -22,9 +22,12 @@
             @foreach (var it in items)
             {
                 <li>
-                    <span class="icon-badge">@Icons.Svg(it.Value<string>("icon"), 24)</span>
-                    <h3 class="h4">@(it.Value<string>("title"))</h3>
-                    <p>@(it.Value<string>("description"))</p>
+                    @{ var chip = Icons.Svg(it.Value<string>("icon"), 24); }
+                    @if (!string.IsNullOrEmpty(chip.ToString())) { <span class="icon-badge">@chip</span> }
+                    <div class="values-text">
+                        <h3 class="h4">@(it.Value<string>("title"))</h3>
+                        <p>@(it.Value<string>("description"))</p>
+                    </div>
                 </li>
             }
         </ul>

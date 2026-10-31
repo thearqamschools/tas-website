@@ -27,7 +27,8 @@
                             </div>
                         }
                         <div class="card-body">
-                            @if (!string.IsNullOrEmpty(icon) && imgUrl == null) { <span class="icon-badge">@Icons.Svg(icon, 22)</span> }
+                            @{ var chip = string.IsNullOrEmpty(icon) || imgUrl != null ? null : Icons.Svg(icon, 22); }
+                            @if (chip != null && !string.IsNullOrEmpty(chip.ToString())) { <span class="icon-badge">@chip</span> }
                             @if (!string.IsNullOrEmpty(it.Value<string>("meta"))) { <p class="card-meta">@(it.Value<string>("meta"))</p> }
                             <h3 class="h4">
                                 @if (Site.IsSafeHref(href))
@@ -40,6 +41,7 @@
                                 }
                             </h3>
                             @if (!string.IsNullOrEmpty(it.Value<string>("summary"))) { <p>@(it.Value<string>("summary"))</p> }
+                            @if (Site.IsSafeHref(href)) { <span class="card-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span> }
                         </div>
                     </article>
                 </li>
