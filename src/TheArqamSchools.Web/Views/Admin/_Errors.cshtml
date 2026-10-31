@@ -1,0 +1,13 @@
+@* Form-level errors (ModelState key ""), shown at the top of a form. *@
+@{
+    var errors = ViewData.ModelState.ContainsKey("") ? ViewData.ModelState[""].Errors : null;
+}
+@if (errors != null && errors.Count > 0)
+{
+    <div class="admin-alert admin-alert--error" role="alert">
+        @foreach (var e in errors)
+        {
+            <p>@e.ErrorMessage</p>
+        }
+    </div>
+}

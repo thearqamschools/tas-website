@@ -1,0 +1,33 @@
+@model AdminLoginForm
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = "Sign in";
+}
+<section class="admin-card admin-card--narrow">
+    <h1>Sign in</h1>
+    @if (Request.QueryString["signedOut"] == "1")
+    {
+        <div class="admin-alert admin-alert--info" role="status"><p>You have signed out.</p></div>
+    }
+    @if (Request.QueryString["created"] == "1")
+    {
+        <div class="admin-alert admin-alert--success" role="status"><p>Your Super Admin account was created. Please sign in to set up two-step verification.</p></div>
+    }
+    @Html.Partial("~/Views/Admin/_Errors.cshtml")
+    <form method="post" action="/admin/login" class="admin-form" novalidate>
+        @Html.AntiForgeryToken()
+        @Html.HiddenFor(m => m.ReturnUrl)
+        <div class="admin-field">
+            <label for="Email">Email address</label>
+            @Html.TextBoxFor(m => m.Email, new { type = "email", autocomplete = "username", autocapitalize = "none", spellcheck = "false", required = "required", aria_describedby = "Email-error" })
+            @Html.ValidationMessageFor(m => m.Email, null, new { id = "Email-error", @class = "admin-field-error" })
+        </div>
+        <div class="admin-field">
+            <label for="Password">Password</label>
+            @Html.PasswordFor(m => m.Password, new { autocomplete = "current-password", required = "required", aria_describedby = "Password-error" })
+            @Html.ValidationMessageFor(m => m.Password, null, new { id = "Password-error", @class = "admin-field-error" })
+        </div>
+        <button type="submit" class="admin-button">Continue</button>
+    </form>
+    <p class="admin-note">After your password you will be asked for a 6-digit code from your authenticator app.</p>
+</section>

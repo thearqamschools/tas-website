@@ -13,6 +13,8 @@
 #
 # Settings (GitHub > Settings > Secrets and variables > Actions):
 #   Secrets   FTP_SERVER, FTP_USERNAME, FTP_PASSWORD, DB_CONNECTION_STRING
+#             ADMIN_SETUP_KEY (optional, 24+ characters): turns on /admin/setup until the
+#             first Super Admin exists; remove it afterwards
 #   Variables FTP_REMOTE_DIR      site folder on the FTP server, e.g. /site1 (required)
 #             SITE_URL            default https://thearqamschools.com
 #             SITE_REQUIRE_HTTPS  default true; set false only until the SSL certificate is installed
@@ -52,6 +54,7 @@ jobs:
       FTP_USERNAME: ${{ github.ref_name == 'deploy/smarterasp' && secrets.FTP_USERNAME || '' }}
       FTP_PASSWORD: ${{ github.ref_name == 'deploy/smarterasp' && secrets.FTP_PASSWORD || '' }}
       DB_CONNECTION_STRING: ${{ github.ref_name == 'deploy/smarterasp' && secrets.DB_CONNECTION_STRING || 'Data Source=dry-run;Initial Catalog=dry-run;User Id=dry-run;Password=dry-run' }}
+      ADMIN_SETUP_KEY: ${{ github.ref_name == 'deploy/smarterasp' && secrets.ADMIN_SETUP_KEY || '' }}
       FTP_REMOTE_DIR: ${{ vars.FTP_REMOTE_DIR }}
       SITE_URL: ${{ vars.SITE_URL }}
       SITE_REQUIRE_HTTPS: ${{ vars.SITE_REQUIRE_HTTPS }}
@@ -123,6 +126,13 @@ jobs:
           Set-AppSetting 'Site:RequireHttps' $https
           # Testing phase: the site must stay hidden from search engines.
           Set-AppSetting 'Site:NoIndex' 'true'
+          if ($env:ADMIN_SETUP_KEY) {
+            if ($env:ADMIN_SETUP_KEY.Trim().Length -lt 24) { throw "ADMIN_SETUP_KEY must be at least 24 characters" }
+            Set-AppSetting 'Admin:SetupKey' $env:ADMIN_SETUP_KEY.Trim()
+            "Admin:SetupKey is set (first Super Admin setup is open)"
+          } else {
+            Set-AppSetting 'Admin:SetupKey' ''
+          }
           $config.Save($path)
           "Site:Url = $siteUrl; Site:RequireHttps = $https; Site:NoIndex = true"
 

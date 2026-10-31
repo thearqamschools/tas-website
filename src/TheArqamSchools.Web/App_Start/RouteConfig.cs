@@ -28,6 +28,17 @@ namespace TheArqamSchools.Web
             routes.MapRoute("CampusDetail", "campuses/{city}/{slug}", new { controller = "Campuses", action = "Detail" });
             routes.MapRoute("CampusCity", "campuses/{city}", new { controller = "Campuses", action = "City" });
 
+            // Admin panel. Every /admin address is handled here, never by the CMS catch-all.
+            routes.MapRoute("AdminHome", "admin", new { controller = "AdminDashboard", action = "Index" });
+            routes.MapRoute("AdminLogin", "admin/login", new { controller = "AdminAccount", action = "Login" });
+            routes.MapRoute("AdminLoginCode", "admin/login/code", new { controller = "AdminAccount", action = "Code" });
+            routes.MapRoute("AdminLoginAuthenticator", "admin/login/authenticator", new { controller = "AdminAccount", action = "Authenticator" });
+            routes.MapRoute("AdminLogout", "admin/logout", new { controller = "AdminAccount", action = "Logout" },
+                new { httpMethod = new HttpMethodConstraint("POST") });
+            routes.MapRoute("AdminPassword", "admin/account/password", new { controller = "AdminAccount", action = "Password" });
+            routes.MapRoute("AdminSetup", "admin/setup", new { controller = "AdminAccount", action = "Setup" });
+            routes.MapRoute("AdminNotFound", "admin/{*rest}", new { controller = "AdminDashboard", action = "NotFound" });
+
             // Error page used by customErrors in Web.config; must come before the catch-all.
             routes.MapRoute("Error", "error", new { controller = "Error", action = "Index" });
 

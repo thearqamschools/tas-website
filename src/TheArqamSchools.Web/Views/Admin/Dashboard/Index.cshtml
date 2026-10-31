@@ -1,0 +1,34 @@
+@model AdminDashboardViewModel
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = "Dashboard";
+}
+<section class="admin-card">
+    <h1>Assalamualaikum, @Model.User.DisplayName</h1>
+    <p class="admin-muted">
+        Signed in as @Model.User.Email
+        @if (Model.User.RoleNames.Count > 0)
+        {
+            <text>&middot; @string.Join(", ", Model.User.RoleNames)</text>
+        }
+    </p>
+</section>
+
+@if (Model.NewAdmissionInquiries.HasValue)
+{
+    <section class="admin-stats" aria-label="New form submissions">
+        <div class="admin-stat">
+            <p class="admin-stat-value">@Model.NewAdmissionInquiries.Value.ToString("N0")</p>
+            <p class="admin-stat-label">New admission inquiries</p>
+        </div>
+        <div class="admin-stat">
+            <p class="admin-stat-value">@Model.NewContactMessages.Value.ToString("N0")</p>
+            <p class="admin-stat-label">New messages</p>
+        </div>
+    </section>
+}
+
+<section class="admin-card">
+    <h2>Coming next</h2>
+    <p>The inbox for admission inquiries and messages, then editing of pages, menus and campuses, are being added to the admin panel.</p>
+</section>

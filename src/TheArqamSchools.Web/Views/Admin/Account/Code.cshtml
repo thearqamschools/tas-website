@@ -1,0 +1,21 @@
+@model AdminCodeForm
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = "Verification code";
+}
+<section class="admin-card admin-card--narrow">
+    <h1>Enter your verification code</h1>
+    <p>Open your authenticator app (for example Google Authenticator) and enter the 6-digit code shown for <strong>The Arqam Schools</strong>.</p>
+    @Html.Partial("~/Views/Admin/_Errors.cshtml")
+    <form method="post" action="/admin/login/code" class="admin-form" novalidate>
+        @Html.AntiForgeryToken()
+        @Html.HiddenFor(m => m.ReturnUrl)
+        <div class="admin-field">
+            <label for="Code">6-digit code</label>
+            @Html.TextBoxFor(m => m.Code, new { inputmode = "numeric", autocomplete = "one-time-code", pattern = "[0-9 ]*", maxlength = "7", required = "required", autofocus = "autofocus", @class = "admin-code-input", aria_describedby = "Code-error" })
+            @Html.ValidationMessageFor(m => m.Code, null, new { id = "Code-error", @class = "admin-field-error" })
+        </div>
+        <button type="submit" class="admin-button">Sign in</button>
+    </form>
+    <p class="admin-note"><a href="/admin/login">Start again</a></p>
+</section>
