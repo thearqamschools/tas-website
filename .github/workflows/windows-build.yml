@@ -17,6 +17,7 @@ on:
       - claude/windows-build-check
       - claude/phase10-design
       - claude/release-prep-combined
+      - claude/urdu-roman-english-kiukjf
   # Lets someone start it by hand later, but only once this file is on main.
   workflow_dispatch:
 
