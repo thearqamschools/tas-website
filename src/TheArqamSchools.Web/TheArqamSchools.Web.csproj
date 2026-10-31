@@ -133,6 +133,7 @@
     <Compile Include="Infrastructure\ClientAddress.cs" />
     <Compile Include="Infrastructure\JsonContentFields.cs" />
     <Compile Include="Infrastructure\LegacyUrls.cs" />
+    <Compile Include="Infrastructure\Notifications.cs" />
     <Compile Include="Infrastructure\Auth\AdminAuth.cs" />
     <Compile Include="Infrastructure\Auth\AdminAuthorizeAttribute.cs" />
     <Compile Include="Infrastructure\Auth\PasswordHasher.cs" />

@@ -13,6 +13,8 @@
 #
 # Settings (GitHub > Settings > Secrets and variables > Actions):
 #   Secrets   FTP_SERVER, FTP_USERNAME, FTP_PASSWORD, DB_CONNECTION_STRING
+#             MAIL_HOST, MAIL_USER, MAIL_PASSWORD, MAIL_FROM, MAIL_NOTIFY_TO (optional: email
+#             to the school when a form is sent; MAIL_PORT / MAIL_ENABLE_SSL variables, default 587 / true)
 #             ADMIN_SETUP_KEY (optional, 24+ characters): turns on /admin/setup until the
 #             first Super Admin exists; remove it afterwards
 #   Variables FTP_REMOTE_DIR      site folder on the FTP server, e.g. /site1 (required)
@@ -55,6 +57,13 @@ jobs:
       FTP_PASSWORD: ${{ github.ref_name == 'deploy/smarterasp' && secrets.FTP_PASSWORD || '' }}
       DB_CONNECTION_STRING: ${{ github.ref_name == 'deploy/smarterasp' && secrets.DB_CONNECTION_STRING || 'Data Source=dry-run;Initial Catalog=dry-run;User Id=dry-run;Password=dry-run' }}
       ADMIN_SETUP_KEY: ${{ github.ref_name == 'deploy/smarterasp' && secrets.ADMIN_SETUP_KEY || '' }}
+      MAIL_HOST: ${{ github.ref_name == 'deploy/smarterasp' && secrets.MAIL_HOST || '' }}
+      MAIL_USER: ${{ github.ref_name == 'deploy/smarterasp' && secrets.MAIL_USER || '' }}
+      MAIL_PASSWORD: ${{ github.ref_name == 'deploy/smarterasp' && secrets.MAIL_PASSWORD || '' }}
+      MAIL_FROM: ${{ github.ref_name == 'deploy/smarterasp' && secrets.MAIL_FROM || '' }}
+      MAIL_NOTIFY_TO: ${{ github.ref_name == 'deploy/smarterasp' && secrets.MAIL_NOTIFY_TO || '' }}
+      MAIL_PORT: ${{ vars.MAIL_PORT }}
+      MAIL_ENABLE_SSL: ${{ vars.MAIL_ENABLE_SSL }}
       FTP_REMOTE_DIR: ${{ vars.FTP_REMOTE_DIR }}
       SITE_URL: ${{ vars.SITE_URL }}
       SITE_REQUIRE_HTTPS: ${{ vars.SITE_REQUIRE_HTTPS }}
@@ -133,6 +142,12 @@ jobs:
           } else {
             Set-AppSetting 'Admin:SetupKey' ''
           }
+          foreach ($pair in @(@('Mail:Host','MAIL_HOST'), @('Mail:User','MAIL_USER'), @('Mail:Password','MAIL_PASSWORD'),
+                              @('Mail:From','MAIL_FROM'), @('Mail:NotifyTo','MAIL_NOTIFY_TO'), @('Mail:Port','MAIL_PORT'), @('Mail:EnableSsl','MAIL_ENABLE_SSL'))) {
+            $v = [Environment]::GetEnvironmentVariable($pair[1])
+            if ($v) { Set-AppSetting $pair[0] $v.Trim() }
+          }
+          if ($env:MAIL_HOST) { "Email notifications are on" } else { "Email notifications are off (no MAIL_HOST)" }
           $config.Save($path)
           "Site:Url = $siteUrl; Site:RequireHttps = $https; Site:NoIndex = true"
 
