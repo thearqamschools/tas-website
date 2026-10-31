@@ -1,0 +1,26 @@
+@model IList<UserListRow>
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = "Users";
+}
+<div class="admin-page-head">
+    <h1>Users</h1>
+    <a class="admin-button" href="/admin/users/new">Add user</a>
+</div>
+<ul class="admin-list">
+    @foreach (var u in Model)
+    {
+        <li class="admin-list-item">
+            <a class="admin-list-link" href="/admin/users/@u.Id.ToString("D")">
+                <span class="admin-list-main">
+                    <strong>@(string.IsNullOrWhiteSpace(u.FullName) ? u.Email : u.FullName)</strong>
+                    @if (!u.IsActive) { <span class="admin-status admin-status--spam">Inactive</span> }
+                    @if (u.IsActive && !u.TwoFactorEnabled) { <span class="admin-status admin-status--new">Two-step not set up</span> }
+                    @if (u.LockoutEnd.HasValue && u.LockoutEnd.Value > DateTimeOffset.UtcNow) { <span class="admin-status admin-status--new">Locked</span> }
+                </span>
+                <span class="admin-list-meta">@u.Email @if (u.RoleNames.Count > 0) { <text>&middot; @string.Join(", ", u.RoleNames)</text> }</span>
+                <span class="admin-list-date">@(u.LastSignInAt.HasValue ? "Last sign-in " + u.LastSignInAt.Value.ToOffset(TimeSpan.FromHours(5)).ToString("d MMM yyyy") : "Never signed in")</span>
+            </a>
+        </li>
+    }
+</ul>

@@ -29,6 +29,10 @@
                     <a href="/admin/inquiries">Inquiries</a>
                     <a href="/admin/messages">Messages</a>
                 }
+                @if (adminUser.Can("users.manage"))
+                {
+                    <a href="/admin/users">Users</a>
+                }
                 <a href="/admin/account/password">Change password</a>
                 <form method="post" action="/admin/logout" class="admin-signout">
                     @Html.AntiForgeryToken()

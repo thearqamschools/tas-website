@@ -38,6 +38,14 @@ namespace TheArqamSchools.Web
                 new { httpMethod = new HttpMethodConstraint("POST") });
             routes.MapRoute("AdminPassword", "admin/account/password", new { controller = "AdminAccount", action = "Password" });
             routes.MapRoute("AdminSetup", "admin/setup", new { controller = "AdminAccount", action = "Setup" });
+            routes.MapRoute("AdminUsers", "admin/users", new { controller = "AdminUsers", action = "Index" });
+            routes.MapRoute("AdminUserNew", "admin/users/new", new { controller = "AdminUsers", action = "New" });
+            routes.MapRoute("AdminUserResetPassword", "admin/users/{id}/reset-password", new { controller = "AdminUsers", action = "ResetPassword" },
+                new { id = new GuidRouteConstraint(), httpMethod = new HttpMethodConstraint("POST") });
+            routes.MapRoute("AdminUserResetTwoStep", "admin/users/{id}/reset-two-step", new { controller = "AdminUsers", action = "ResetTwoFactor" },
+                new { id = new GuidRouteConstraint(), httpMethod = new HttpMethodConstraint("POST") });
+            routes.MapRoute("AdminUserEdit", "admin/users/{id}", new { controller = "AdminUsers", action = "Edit" },
+                new { id = new GuidRouteConstraint() });
             routes.MapRoute("AdminInboxExport", "admin/{kind}/export.csv", new { controller = "AdminInbox", action = "Export" },
                 new { kind = "inquiries|messages" });
             routes.MapRoute("AdminInboxStatus", "admin/{kind}/{id}/status", new { controller = "AdminInbox", action = "Status" },

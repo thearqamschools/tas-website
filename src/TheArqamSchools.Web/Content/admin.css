@@ -112,3 +112,17 @@ a.admin-stat:hover { border-color: var(--blue); }
   .admin-details { grid-template-columns: 1fr; gap: .125rem; }
   .admin-details dd { margin-bottom: .5rem; }
 }
+
+/* Forms with choices */
+.admin-fieldset { border: 1px solid var(--line); border-radius: var(--r-sm); padding: .75rem 1rem 1rem; margin: 0; min-width: 0; }
+.admin-fieldset legend { font-weight: 600; padding: 0 .25rem; }
+.admin-check { display: flex; align-items: flex-start; gap: .625rem; padding: .375rem 0; }
+.admin-check input[type="checkbox"], .admin-check input[type="radio"] { width: 22px; height: 22px; margin: .125rem 0 0; flex: none; accent-color: var(--blue); }
+.admin-check label { display: flex; flex-direction: column; font-weight: 400; margin: 0; }
+.admin-temp-password { border-color: var(--blue); }
+.admin-temp-password code { font-size: 1.25rem; letter-spacing: .05em; overflow-wrap: anywhere; }
+.admin-field textarea, .admin-field select { width: 100%; padding: .625rem .75rem; font: inherit; font-size: 1rem; color: var(--ink); background: var(--white); border: 1px solid #94a3b8; border-radius: var(--r-sm); }
+.admin-field select { min-height: 44px; }
+.admin-field textarea { min-height: 8rem; resize: vertical; line-height: 1.5; }
+.admin-field textarea:focus-visible, .admin-field select:focus-visible { outline: 3px solid var(--blue); outline-offset: 1px; border-color: var(--blue); }
+.admin-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; }

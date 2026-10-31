@@ -97,6 +97,7 @@
     <Compile Include="Controllers\AdminAccountController.cs" />
     <Compile Include="Controllers\AdminDashboardController.cs" />
     <Compile Include="Controllers\AdminInboxController.cs" />
+    <Compile Include="Controllers\AdminUsersController.cs" />
     <Compile Include="Controllers\CampusesController.cs" />
     <Compile Include="Controllers\ErrorController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
@@ -115,6 +116,7 @@
     <Compile Include="Data\PageRepository.cs" />
     <Compile Include="Data\RedirectRepository.cs" />
     <Compile Include="Data\SiteSettingsRepository.cs" />
+    <Compile Include="Data\UserAdminRepository.cs" />
     <Compile Include="Helpers\Contact.cs" />
     <Compile Include="Helpers\Icons.cs" />
     <Compile Include="Helpers\Media.cs" />
@@ -159,6 +161,8 @@
     <Content Include="Views\Admin\Dashboard\Index.cshtml" />
     <Content Include="Views\Admin\Inbox\Detail.cshtml" />
     <Content Include="Views\Admin\Inbox\Index.cshtml" />
+    <Content Include="Views\Admin\Users\Edit.cshtml" />
+    <Content Include="Views\Admin\Users\Index.cshtml" />
     <Content Include="Views\Campuses\Detail.cshtml" />
     <Content Include="Views\Home\Index.cshtml" />
     <Content Include="Views\Pages\Show.cshtml" />

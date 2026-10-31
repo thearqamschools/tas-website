@@ -177,4 +177,70 @@ namespace TheArqamSchools.Web.Models
         public string BasePath { get { return Kind == InboxKind.Inquiries ? "/admin/inquiries" : "/admin/messages"; } }
         public string ListTitle { get { return Kind == InboxKind.Inquiries ? "Admission inquiries" : "Messages"; } }
     }
+
+    public class UserListRow
+    {
+        public Guid Id { get; set; }
+        public string Email { get; set; }
+        public string FullName { get; set; }
+        public bool IsActive { get; set; }
+        public bool TwoFactorEnabled { get; set; }
+        public DateTimeOffset? LastSignInAt { get; set; }
+        public DateTimeOffset? LockoutEnd { get; set; }
+        public IList<string> RoleNames { get; set; }
+    }
+
+    public class UserRoleRow
+    {
+        public Guid UserId { get; set; }
+        public string Key { get; set; }
+        public string Name { get; set; }
+    }
+
+    public class RoleOption
+    {
+        public Guid Id { get; set; }
+        public string Key { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+    }
+
+    /// <summary>Create or edit an admin user. Lengths and formats match the dbo.users checks.</summary>
+    public class UserEditForm
+    {
+        public Guid Id { get; set; }
+
+        [Required(ErrorMessage = "Please enter the full name.")]
+        [StringLength(120, MinimumLength = 2, ErrorMessage = "Please enter the full name (2 to 120 characters).")]
+        public string FullName { get; set; }
+
+        [Required(ErrorMessage = "Please enter the email address.")]
+        [StringLength(254)]
+        [RegularExpression(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", ErrorMessage = "Please enter a valid email address.")]
+        public string Email { get; set; }
+
+        [StringLength(20)]
+        [RegularExpression(@"^\+?[0-9 ()-]{7,20}$", ErrorMessage = "Please enter a valid phone number, for example 0300-1234567, or leave it empty.")]
+        public string Phone { get; set; }
+
+        [StringLength(120)]
+        public string JobTitle { get; set; }
+
+        public bool IsActive { get; set; }
+        public bool TwoFactorEnabled { get; set; }
+        public DateTimeOffset? LastSignInAt { get; set; }
+        public IList<Guid> RoleIds { get; set; }
+    }
+
+    public class UserEditViewModel
+    {
+        public UserEditForm Form { get; set; }
+        public IList<RoleOption> Roles { get; set; }
+        public bool IsNew { get; set; }
+        public bool IsSelf { get; set; }
+        public bool ActorIsSuperAdmin { get; set; }
+        public string Notice { get; set; }
+        /// <summary>Shown once, right after creating the user or resetting the password.</summary>
+        public string TemporaryPassword { get; set; }
+    }
 }
