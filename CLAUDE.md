@@ -50,6 +50,12 @@ tools/compile-check/      Mono C# compile check with stub MVC/Dapper types (does
   `SiteSettingsRepository`.
 - Redirects: `LegacyUrls.Handle` applies `dbo.redirects`, maps `/branches/*` → `/campuses/*`
   and strips trailing slashes, for GET/HEAD only.
+- Errors: `Application_Error` (Global.asax.cs) and `HandleErrorAttribute` write the error page in place with the
+  right status (404 → NotFound, other codes → stand-alone `Error.cshtml`, which never touches the database);
+  `customErrors defaultRedirect="~/Error"` is only a safety net.
+- Database outages: `Db.Open` pauses new connections for 10 s after a failure; menus, settings, footer offices,
+  redirects and the homepage finder use `Cache.GetOrLastGood` (last good copy, else empty), so the homepage still
+  renders. CMS pages need the database and show the error page.
 - Images are served from `media/public-media/...` at `/media/public-media/...`. Build media
   URLs with `Helpers/Media.Url`.
 

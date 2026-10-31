@@ -9,17 +9,22 @@ namespace TheArqamSchools.Web.Data
     /// <summary>Public campus directory (dbo.branches). Only published, active or coming-soon campuses are shown.</summary>
     public static class CampusRepository
     {
-        private const string Select = @"
-            SELECT b.id, b.name, b.slug, b.area, b.address_line, b.phone, b.phone_alt, b.whatsapp, b.email, b.timings,
+        private const string Columns = @"
+                   b.id, b.name, b.slug, b.area, b.address_line, b.phone, b.phone_alt, b.whatsapp, b.email, b.timings,
                    b.overview, b.principal_name, b.principal_title, b.principal_message, b.status, b.admission_status,
                    b.admission_note, b.google_maps_url, b.latitude, b.longitude, b.social_links, b.seo_id, b.updated_at,
                    c.name AS city_name, c.slug AS city_slug, d.name AS district_name, d.slug AS district_slug,
-                   m.bucket AS cover_bucket, m.storage_path AS cover_path, m.alt_text AS cover_alt
+                   m.bucket AS cover_bucket, m.storage_path AS cover_path, m.alt_text AS cover_alt";
+
+        private const string From = @"
             FROM dbo.branches b
             JOIN dbo.cities c ON c.id = b.city_id
             LEFT JOIN dbo.districts d ON d.id = c.district_id
             LEFT JOIN dbo.media m ON m.id = b.cover_media_id
             WHERE b.is_published = 1 AND b.deleted_at IS NULL AND b.archived_at IS NULL AND b.status <> N'inactive'";
+
+        private const string Select = "SELECT " + Columns + From;
+        private const string Order = " ORDER BY c.sort_order, c.name, b.sort_order, b.name";
 
         /// <summary>
         /// Search by campus name, area, address, city or district (q), and filter by
@@ -32,7 +37,7 @@ namespace TheArqamSchools.Web.Data
                 sql += @" AND (b.name LIKE @like OR b.area LIKE @like OR b.address_line LIKE @like OR c.name LIKE @like OR d.name LIKE @like OR b.code = @q)";
             if (!string.IsNullOrWhiteSpace(city)) sql += " AND c.slug = @city";
             if (!string.IsNullOrWhiteSpace(district)) sql += " AND d.slug = @district";
-            sql += " ORDER BY c.sort_order, c.name, b.sort_order, b.name";
+            sql += Order;
             var term = (q ?? "").Trim();
             using (var db = Db.Open())
             {
@@ -57,6 +62,20 @@ namespace TheArqamSchools.Web.Data
         }
 
         public static IList<Campus> All() { return Search(null, null, null); }
+
+        /// <summary>
+        /// The first few published campuses in directory order, for the homepage finder.
+        /// TOP is applied in SQL, so the homepage reads at most this many rows however
+        /// many campuses are imported; the full list stays on /campuses.
+        /// </summary>
+        public static IList<Campus> Featured(int count)
+        {
+            count = Math.Max(1, Math.Min(count, 12));
+            using (var db = Db.Open())
+            {
+                return db.Query<Campus>("SELECT TOP (@count) " + Columns + From + Order, new { count }).ToList();
+            }
+        }
 
         public static int CountPublished()
         {
