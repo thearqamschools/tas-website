@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Web.Mvc;
 using TheArqamSchools.Web.Data;
 using TheArqamSchools.Web.Models;
@@ -18,7 +17,7 @@ namespace TheArqamSchools.Web.Controllers
             // Campus finder: only published campuses from dbo.branches, never sample data.
             // Cached for a minute because the homepage is the busiest public URL.
             ViewBag.Cities = Cache.Get("home:cities", () => CampusRepository.Cities());
-            ViewBag.Campuses = Cache.Get("home:campuses", () => CampusRepository.All().Take(3).ToList());
+            ViewBag.Campuses = Cache.Get("home:campuses", () => CampusRepository.Homepage());
             var seo = PageRepository.SeoForRoute("/");
             ViewBag.Meta = new PageMeta
             {

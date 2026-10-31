@@ -118,6 +118,12 @@ jobs:
           $views = (Get-ChildItem -Path $env:WEB\Views -Recurse -Filter *.cshtml).Count
           "Views in project: $views" | Tee-Object -FilePath "$env:LOGS\03-aspnet-compiler.log" -Append
 
+      - name: Runtime error and cold-cache outage regression checks (isolated copy)
+        run: |
+          & ./tools/release-check/Run-RuntimeChecks.ps1 -WebRoot $env:WEB 2>&1 |
+            Tee-Object -FilePath "$env:LOGS\04-runtime-checks.log"
+          if ($LASTEXITCODE -ne 0) { throw "Runtime checks failed" }
+
       - name: Write job summary
         if: always()
         run: |
