@@ -1,0 +1,67 @@
+@model InboxDetailViewModel
+@using TheArqamSchools.Web.Data
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    var item = Model.Item;
+    ViewBag.Title = item.Name;
+    var pk = (TimeZoneInfo)ViewBag.Pakistan;
+    var phoneDigits = new string((item.Phone ?? "").Where(char.IsDigit).ToArray());
+    var waNumber = phoneDigits.StartsWith("0") ? "92" + phoneDigits.Substring(1) : phoneDigits;
+}
+<p><a href="@Model.BasePath">&larr; @Model.ListTitle</a></p>
+
+@if (Model.Saved)
+{
+    <div class="admin-alert admin-alert--success" role="status"><p>Status saved.</p></div>
+}
+
+<section class="admin-card">
+    <div class="admin-page-head">
+        <h1>@item.Name</h1>
+        <span class="admin-status admin-status--@item.Status">@InboxRepository.Label(item.Status)</span>
+    </div>
+    <dl class="admin-details">
+        <dt>Received</dt><dd>@TimeZoneInfo.ConvertTime(item.CreatedAt, pk).ToString("d MMMM yyyy, h:mm tt") (Pakistan time)</dd>
+        @if (!string.IsNullOrEmpty(item.Phone))
+        {
+            <dt>Phone</dt>
+            <dd>
+                <a href="tel:@phoneDigits">@item.Phone</a>
+                @if (phoneDigits.Length >= 10)
+                {
+                    <text>&middot; <a href="https://wa.me/@waNumber" target="_blank" rel="noopener noreferrer">WhatsApp</a></text>
+                }
+            </dd>
+        }
+        @if (!string.IsNullOrEmpty(item.Email)) { <dt>Email</dt><dd><a href="mailto:@item.Email">@item.Email</a></dd> }
+        @if (!string.IsNullOrEmpty(item.CampusName)) { <dt>Campus</dt><dd>@item.CampusName</dd> }
+        @if (!string.IsNullOrEmpty(item.ClassName)) { <dt>Class</dt><dd>@item.ClassName</dd> }
+        @if (!string.IsNullOrEmpty(item.Type)) { <dt>Type</dt><dd>@item.Type</dd> }
+        @if (!string.IsNullOrEmpty(item.Subject)) { <dt>Subject</dt><dd>@item.Subject</dd> }
+        @if (!string.IsNullOrEmpty(item.SourcePage)) { <dt>Sent from</dt><dd>@item.SourcePage</dd> }
+        @if (item.ClosedAt.HasValue) { <dt>@(Model.Kind == InboxKind.Inquiries ? "Resolved" : "Replied")</dt><dd>@TimeZoneInfo.ConvertTime(item.ClosedAt.Value, pk).ToString("d MMMM yyyy, h:mm tt")</dd> }
+    </dl>
+    <h2>Message</h2>
+    @if (string.IsNullOrWhiteSpace(item.Message))
+    {
+        <p class="admin-muted">No message was written.</p>
+    }
+    else
+    {
+        <p class="admin-message">@item.Message</p>
+    }
+</section>
+
+@if (Model.CanUpdate)
+{
+    <section class="admin-card">
+        <h2>Change status</h2>
+        <form method="post" action="@(Model.BasePath + "/" + item.Id.ToString("D") + "/status")" class="admin-status-form">
+            @Html.AntiForgeryToken()
+            @foreach (var s in InboxRepository.Statuses)
+            {
+                <button type="submit" name="status" value="@s" class="admin-button @(s == item.Status ? "" : "admin-button--secondary")" @(s == item.Status ? Html.Raw("aria-pressed=\"true\"") : Html.Raw("aria-pressed=\"false\""))>@InboxRepository.Label(s)</button>
+            }
+        </form>
+    </section>
+}

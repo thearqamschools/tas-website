@@ -96,6 +96,7 @@
     <Compile Include="Controllers\AdmissionsController.cs" />
     <Compile Include="Controllers\AdminAccountController.cs" />
     <Compile Include="Controllers\AdminDashboardController.cs" />
+    <Compile Include="Controllers\AdminInboxController.cs" />
     <Compile Include="Controllers\CampusesController.cs" />
     <Compile Include="Controllers\ErrorController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
@@ -108,6 +109,7 @@
     <Compile Include="Data\ClassLevelRepository.cs" />
     <Compile Include="Data\Db.cs" />
     <Compile Include="Data\HeadOfficeRepository.cs" />
+    <Compile Include="Data\InboxRepository.cs" />
     <Compile Include="Data\InquiryRepository.cs" />
     <Compile Include="Data\NavigationRepository.cs" />
     <Compile Include="Data\PageRepository.cs" />
@@ -154,6 +156,8 @@
     <Content Include="Views\Admin\Account\Password.cshtml" />
     <Content Include="Views\Admin\Account\Setup.cshtml" />
     <Content Include="Views\Admin\Dashboard\Index.cshtml" />
+    <Content Include="Views\Admin\Inbox\Detail.cshtml" />
+    <Content Include="Views\Admin\Inbox\Index.cshtml" />
     <Content Include="Views\Campuses\Detail.cshtml" />
     <Content Include="Views\Home\Index.cshtml" />
     <Content Include="Views\Pages\Show.cshtml" />

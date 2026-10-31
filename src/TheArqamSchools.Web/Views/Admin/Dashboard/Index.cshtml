@@ -17,18 +17,18 @@
 @if (Model.NewAdmissionInquiries.HasValue)
 {
     <section class="admin-stats" aria-label="New form submissions">
-        <div class="admin-stat">
+        <a class="admin-stat" href="/admin/inquiries?status=new">
             <p class="admin-stat-value">@Model.NewAdmissionInquiries.Value.ToString("N0")</p>
             <p class="admin-stat-label">New admission inquiries</p>
-        </div>
-        <div class="admin-stat">
+        </a>
+        <a class="admin-stat" href="/admin/messages?status=new">
             <p class="admin-stat-value">@Model.NewContactMessages.Value.ToString("N0")</p>
             <p class="admin-stat-label">New messages</p>
-        </div>
+        </a>
     </section>
 }
 
 <section class="admin-card">
     <h2>Coming next</h2>
-    <p>The inbox for admission inquiries and messages, then editing of pages, menus and campuses, are being added to the admin panel.</p>
+    <p>Editing of pages, menus, campuses and settings, and managing users, are being added to the admin panel.</p>
 </section>

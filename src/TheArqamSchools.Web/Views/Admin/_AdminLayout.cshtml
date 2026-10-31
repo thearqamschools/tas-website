@@ -24,6 +24,11 @@
         {
             <nav class="admin-nav" aria-label="Admin">
                 <a href="/admin">Dashboard</a>
+                @if (adminUser.Can("inquiries.view"))
+                {
+                    <a href="/admin/inquiries">Inquiries</a>
+                    <a href="/admin/messages">Messages</a>
+                }
                 <a href="/admin/account/password">Change password</a>
                 <form method="post" action="/admin/logout" class="admin-signout">
                     @Html.AntiForgeryToken()

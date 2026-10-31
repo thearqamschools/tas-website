@@ -1,5 +1,6 @@
 using System.Web.Mvc;
 using System.Web.Routing;
+using System.Web.Mvc.Routing.Constraints;
 
 namespace TheArqamSchools.Web
 {
@@ -37,6 +38,14 @@ namespace TheArqamSchools.Web
                 new { httpMethod = new HttpMethodConstraint("POST") });
             routes.MapRoute("AdminPassword", "admin/account/password", new { controller = "AdminAccount", action = "Password" });
             routes.MapRoute("AdminSetup", "admin/setup", new { controller = "AdminAccount", action = "Setup" });
+            routes.MapRoute("AdminInboxExport", "admin/{kind}/export.csv", new { controller = "AdminInbox", action = "Export" },
+                new { kind = "inquiries|messages" });
+            routes.MapRoute("AdminInboxStatus", "admin/{kind}/{id}/status", new { controller = "AdminInbox", action = "Status" },
+                new { kind = "inquiries|messages", id = new GuidRouteConstraint(), httpMethod = new HttpMethodConstraint("POST") });
+            routes.MapRoute("AdminInboxDetail", "admin/{kind}/{id}", new { controller = "AdminInbox", action = "Detail" },
+                new { kind = "inquiries|messages", id = new GuidRouteConstraint() });
+            routes.MapRoute("AdminInbox", "admin/{kind}", new { controller = "AdminInbox", action = "Index" },
+                new { kind = "inquiries|messages" });
             routes.MapRoute("AdminNotFound", "admin/{*rest}", new { controller = "AdminDashboard", action = "NotFound" });
 
             // Error page used by customErrors in Web.config; must come before the catch-all.

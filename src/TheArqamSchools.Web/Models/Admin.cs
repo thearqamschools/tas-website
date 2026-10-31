@@ -123,4 +123,58 @@ namespace TheArqamSchools.Web.Models
         public int? NewAdmissionInquiries { get; set; }
         public int? NewContactMessages { get; set; }
     }
+
+    /// <summary>The two inbox lists: admission inquiries and other messages.</summary>
+    public enum InboxKind { Inquiries, Messages }
+
+    public class InboxItem
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public string Phone { get; set; }
+        public string Email { get; set; }
+        public string Message { get; set; }
+        public string Status { get; set; }
+        public string SourcePage { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+        public DateTimeOffset UpdatedAt { get; set; }
+        public DateTimeOffset? ClosedAt { get; set; }
+        public string CampusName { get; set; }
+        public string ClassName { get; set; }
+        public string Type { get; set; }
+        public string Subject { get; set; }
+    }
+
+    public class InboxListViewModel
+    {
+        public InboxKind Kind { get; set; }
+        public IList<InboxItem> Items { get; set; }
+        public int Total { get; set; }
+        public int Page { get; set; }
+        public int PageSize { get; set; }
+        public string Status { get; set; }
+        public string Query { get; set; }
+        public IDictionary<string, int> StatusCounts { get; set; }
+        public bool CanUpdate { get; set; }
+
+        public int PageCount { get { return Total == 0 ? 1 : (Total + PageSize - 1) / PageSize; } }
+        public string BasePath { get { return Kind == InboxKind.Inquiries ? "/admin/inquiries" : "/admin/messages"; } }
+        public string Title { get { return Kind == InboxKind.Inquiries ? "Admission inquiries" : "Messages"; } }
+
+        public int CountFor(string status)
+        {
+            int n;
+            return StatusCounts != null && StatusCounts.TryGetValue(status, out n) ? n : 0;
+        }
+    }
+
+    public class InboxDetailViewModel
+    {
+        public InboxKind Kind { get; set; }
+        public InboxItem Item { get; set; }
+        public bool CanUpdate { get; set; }
+        public bool Saved { get; set; }
+        public string BasePath { get { return Kind == InboxKind.Inquiries ? "/admin/inquiries" : "/admin/messages"; } }
+        public string ListTitle { get { return Kind == InboxKind.Inquiries ? "Admission inquiries" : "Messages"; } }
+    }
 }
