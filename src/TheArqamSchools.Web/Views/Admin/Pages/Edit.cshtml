@@ -1,0 +1,89 @@
+@model PageEditViewModel
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    var f = Model.Form;
+    ViewBag.Title = f.Title;
+    var ro = Model.CanEdit ? null : "disabled";
+    Func<string, string, string> val = (name, fallback) => ViewData.ModelState.ContainsKey(name) && ViewData.ModelState[name].Value != null ? ViewData.ModelState[name].Value.AttemptedValue : fallback;
+    var statusLabels = new Dictionary<string, string> { { "draft", "Draft (not on the website)" }, { "in_review", "Ready for review" }, { "published", "Published" }, { "archived", "Archived (hidden)" } };
+}
+<p><a href="/admin/pages">&larr; Pages</a></p>
+<div class="admin-page-head">
+    <h1>@f.Title</h1>
+    @if (f.Status == "published") { <a href="@f.Path" target="_blank" rel="noopener">View on website</a> }
+</div>
+@if (Model.Notice != null)
+{
+    <div class="admin-alert admin-alert--success" role="status"><p>@Model.Notice</p></div>
+}
+@Html.Partial("~/Views/Admin/_Errors.cshtml")
+
+<section class="admin-card">
+    <h2>Sections</h2>
+    <p class="admin-muted">The parts of the page, from top to bottom.</p>
+    <ul class="admin-list">
+        @foreach (var s in f.Sections)
+        {
+            <li class="admin-list-item">
+                <a class="admin-list-link" href="/admin/pages/@f.Id.ToString("D")/sections/@s.Id.ToString("D")">
+                    <span class="admin-list-main">
+                        <strong>@s.TypeLabel</strong>
+                        @if (!s.IsVisible) { <span class="admin-status admin-status--spam">Hidden</span> }
+                        @if (s.HasDraft) { <span class="admin-status admin-status--in_progress">Draft waiting</span> }
+                    </span>
+                </a>
+            </li>
+        }
+    </ul>
+</section>
+
+<form method="post" action="/admin/pages/@f.Id.ToString("D")" class="admin-form" novalidate>
+    @Html.AntiForgeryToken()
+    <section class="admin-card">
+        <h2>Page details</h2>
+        <p class="admin-muted">Address: <code>@f.Path</code> (cannot be changed, so existing links keep working)</p>
+        <div class="admin-field">
+            <label for="Title">Title</label>
+            <input type="text" id="Title" name="Title" value="@val("Title", f.Title)" maxlength="150" required aria-describedby="Title-error" @ro />
+            @Html.ValidationMessage("Title", null, new { id = "Title-error", @class = "admin-field-error" })
+        </div>
+        <div class="admin-field">
+            <label for="Summary">Summary (optional)</label>
+            <textarea id="Summary" name="Summary" rows="3" maxlength="300" aria-describedby="Summary-error" @ro>@val("Summary", f.Summary)</textarea>
+            @Html.ValidationMessage("Summary", null, new { id = "Summary-error", @class = "admin-field-error" })
+        </div>
+        <div class="admin-field">
+            <label for="Status">Status</label>
+            @if (Model.CanPublish)
+            {
+                <select id="Status" name="Status" @ro>
+                    @foreach (var s in statusLabels) { <option value="@s.Key" @(s.Key == f.Status ? "selected" : null)>@s.Value</option> }
+                </select>
+            }
+            else
+            {
+                <input type="hidden" name="Status" value="@f.Status" />
+                <p>@statusLabels[f.Status]. A Content Manager or Super Admin can publish or hide this page.</p>
+            }
+        </div>
+    </section>
+    <section class="admin-card">
+        <h2>Search engines</h2>
+        <div class="admin-field">
+            <label for="MetaTitle">Search title (optional)</label>
+            <input type="text" id="MetaTitle" name="MetaTitle" value="@val("MetaTitle", f.MetaTitle)" maxlength="70" aria-describedby="MetaTitle-hint MetaTitle-error" @ro />
+            <p class="admin-hint" id="MetaTitle-hint">Up to 70 characters. Leave empty to use the page title.</p>
+            @Html.ValidationMessage("MetaTitle", null, new { id = "MetaTitle-error", @class = "admin-field-error" })
+        </div>
+        <div class="admin-field">
+            <label for="MetaDescription">Search description (optional)</label>
+            <textarea id="MetaDescription" name="MetaDescription" rows="3" maxlength="170" aria-describedby="MetaDescription-hint MetaDescription-error" @ro>@val("MetaDescription", f.MetaDescription)</textarea>
+            <p class="admin-hint" id="MetaDescription-hint">Up to 170 characters, shown under the title in Google.</p>
+            @Html.ValidationMessage("MetaDescription", null, new { id = "MetaDescription-error", @class = "admin-field-error" })
+        </div>
+    </section>
+    @if (Model.CanEdit)
+    {
+        <div><button type="submit" class="admin-button">Save page</button></div>
+    }
+</form>

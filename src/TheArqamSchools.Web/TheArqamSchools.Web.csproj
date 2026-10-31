@@ -99,6 +99,7 @@
     <Compile Include="Controllers\AdminDashboardController.cs" />
     <Compile Include="Controllers\AdminInboxController.cs" />
     <Compile Include="Controllers\AdminMenusController.cs" />
+    <Compile Include="Controllers\AdminPagesController.cs" />
     <Compile Include="Controllers\AdminSettingsController.cs" />
     <Compile Include="Controllers\AdminUsersController.cs" />
     <Compile Include="Controllers\CampusesController.cs" />
@@ -118,6 +119,7 @@
     <Compile Include="Data\InquiryRepository.cs" />
     <Compile Include="Data\MenuAdminRepository.cs" />
     <Compile Include="Data\NavigationRepository.cs" />
+    <Compile Include="Data\PageAdminRepository.cs" />
     <Compile Include="Data\PageRepository.cs" />
     <Compile Include="Data\RedirectRepository.cs" />
     <Compile Include="Data\SettingsAdminRepository.cs" />
@@ -129,6 +131,7 @@
     <Compile Include="Helpers\RichText.cs" />
     <Compile Include="Helpers\Site.cs" />
     <Compile Include="Infrastructure\ClientAddress.cs" />
+    <Compile Include="Infrastructure\JsonContentFields.cs" />
     <Compile Include="Infrastructure\LegacyUrls.cs" />
     <Compile Include="Infrastructure\Auth\AdminAuth.cs" />
     <Compile Include="Infrastructure\Auth\AdminAuthorizeAttribute.cs" />
@@ -171,6 +174,9 @@
     <Content Include="Views\Admin\Inbox\Index.cshtml" />
     <Content Include="Views\Admin\Menus\Edit.cshtml" />
     <Content Include="Views\Admin\Menus\Index.cshtml" />
+    <Content Include="Views\Admin\Pages\Edit.cshtml" />
+    <Content Include="Views\Admin\Pages\Index.cshtml" />
+    <Content Include="Views\Admin\Pages\Section.cshtml" />
     <Content Include="Views\Admin\Settings\Index.cshtml" />
     <Content Include="Views\Admin\Users\Edit.cshtml" />
     <Content Include="Views\Admin\Users\Index.cshtml" />

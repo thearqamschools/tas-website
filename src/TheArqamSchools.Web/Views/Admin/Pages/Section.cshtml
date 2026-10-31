@@ -1,0 +1,125 @@
+@model SectionEditViewModel
+@using TheArqamSchools.Web.Infrastructure
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    var s = Model.Section;
+    var typeLabel = (s.Type ?? "").Replace("_", " ");
+    ViewBag.Title = s.PageTitle + " – " + typeLabel;
+    var url = "/admin/pages/" + s.PageId.ToString("D") + "/sections/" + s.Id.ToString("D");
+    var ro = Model.CanEdit ? null : "disabled";
+}
+<p><a href="/admin/pages/@s.PageId.ToString("D")">&larr; @s.PageTitle</a></p>
+<div class="admin-page-head">
+    <h1>@(char.ToUpperInvariant(typeLabel.Length > 0 ? typeLabel[0] : ' ') + (typeLabel.Length > 1 ? typeLabel.Substring(1) : ""))</h1>
+    @if (s.PageStatus == "published") { <a href="@s.PagePath" target="_blank" rel="noopener">View page</a> }
+</div>
+@if (Model.Notice != null)
+{
+    <div class="admin-alert admin-alert--success" role="status"><p>@Model.Notice</p></div>
+}
+@if (Model.Errors != null && Model.Errors.Count > 0)
+{
+    <div class="admin-alert admin-alert--error" role="alert">
+        @foreach (var e in Model.Errors) { <p>@e</p> }
+    </div>
+}
+@if (!s.IsVisible)
+{
+    <div class="admin-alert admin-alert--info" role="status"><p>This section is hidden on the website.</p></div>
+}
+@if (s.DraftData != null)
+{
+    <section class="admin-card admin-temp-password">
+        <h2>A draft is waiting</h2>
+        @if (Model.ShowingDraft)
+        {
+            <p>You are editing the draft. Visitors still see the published version until a Content Manager or Super Admin publishes it.</p>
+        }
+        else
+        {
+            <p>Someone saved changes as a draft. The form below shows the <strong>published</strong> version. Publish the draft to make it live, or discard it.</p>
+        }
+        <div class="admin-status-form">
+            @if (Model.CanPublish)
+            {
+                <form method="post" action="@url/publish">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="admin-button">Publish draft</button>
+                </form>
+            }
+            @if (Model.CanEdit)
+            {
+                <form method="post" action="@url/discard">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="admin-button admin-button--secondary">Discard draft</button>
+                </form>
+            }
+        </div>
+    </section>
+}
+
+@if (Model.Fields.Count == 0)
+{
+    <section class="admin-card"><p>This section has no text to edit here. It is built from other website data (for example the campus list).</p></section>
+}
+else
+{
+    <form method="post" action="@url" class="admin-form" novalidate>
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="signature" value="@Model.Signature" />
+        <section class="admin-card">
+            <p class="admin-muted">Change the words and links only. Please use approved figures and confirmed details.</p>
+            @for (var i = 0; i < Model.Fields.Count; i++)
+            {
+                var fld = Model.Fields[i];
+                var id = "v" + i;
+                if (fld.Kind == JsonContentFields.FieldKind.Switch)
+                {
+                    <div class="admin-check">
+                        <input type="checkbox" id="@id" name="@id" value="true" @(fld.Value == "true" ? "checked" : null) @ro />
+                        <input type="hidden" name="@id" value="false" />
+                        <label for="@id"><strong>@fld.Label</strong></label>
+                    </div>
+                }
+                else
+                {
+                    <div class="admin-field">
+                        <label for="@id">@fld.Label</label>
+                        @if (fld.Kind == JsonContentFields.FieldKind.LongText)
+                        {
+                            <textarea id="@id" name="@id" rows="@(Math.Min(12, Math.Max(3, (fld.Value ?? "").Length / 70 + 1)))" @ro>@fld.Value</textarea>
+                        }
+                        else if (fld.Kind == JsonContentFields.FieldKind.Number)
+                        {
+                            <input type="text" inputmode="decimal" id="@id" name="@id" value="@fld.Value" @ro />
+                        }
+                        else
+                        {
+                            <input type="text" id="@id" name="@id" value="@fld.Value" @(fld.Kind == JsonContentFields.FieldKind.Link ? "spellcheck=false autocapitalize=none" : null) @ro />
+                            if (fld.Kind == JsonContentFields.FieldKind.Link)
+                            {
+                                <p class="admin-hint">A page on this website such as /admissions, or a full address starting with https://</p>
+                            }
+                        }
+                    </div>
+                }
+            }
+        </section>
+        @if (Model.CanEdit)
+        {
+            <div><button type="submit" class="admin-button">@(Model.CanPublish ? "Save and publish" : "Save as draft")</button></div>
+        }
+    </form>
+}
+
+@if (Model.CanPublish)
+{
+    <section class="admin-card">
+        <h2>@(s.IsVisible ? "Hide this section" : "Show this section")</h2>
+        <form method="post" action="@url/visibility">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="visible" value="@(s.IsVisible ? "false" : "true")" />
+            <button type="submit" class="admin-button admin-button--secondary">@(s.IsVisible ? "Hide on website" : "Show on website")</button>
+        </form>
+    </section>
+}

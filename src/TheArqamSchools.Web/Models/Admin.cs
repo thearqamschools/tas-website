@@ -428,4 +428,92 @@ namespace TheArqamSchools.Web.Models
         public bool CanEdit { get; set; }
         public string Notice { get; set; }
     }
+
+    public class PageListRow
+    {
+        public Guid Id { get; set; }
+        public string Title { get; set; }
+        public string Path { get; set; }
+        public string Status { get; set; }
+        public DateTimeOffset UpdatedAt { get; set; }
+        public int SectionCount { get; set; }
+        public int DraftCount { get; set; }
+    }
+
+    public class SectionRow
+    {
+        public Guid Id { get; set; }
+        public string Type { get; set; }
+        public int SortOrder { get; set; }
+        public bool IsVisible { get; set; }
+        public bool HasDraft { get; set; }
+
+        /// <summary>"split_feature" becomes "Split feature".</summary>
+        public string TypeLabel
+        {
+            get
+            {
+                var t = (Type ?? "").Replace("_", " ");
+                return t.Length == 0 ? t : char.ToUpperInvariant(t[0]) + t.Substring(1);
+            }
+        }
+    }
+
+    /// <summary>Page details and search-engine text. The address (path) is not editable, so links never break.</summary>
+    public class PageEditForm
+    {
+        public Guid Id { get; set; }
+        public string Path { get; set; }
+
+        [Required(ErrorMessage = "Please enter the page title.")]
+        [StringLength(150, ErrorMessage = "The title can be at most 150 characters.")]
+        public string Title { get; set; }
+
+        [StringLength(300, ErrorMessage = "The summary can be at most 300 characters.")]
+        public string Summary { get; set; }
+
+        public string Status { get; set; }
+        public Guid? SeoId { get; set; }
+
+        [StringLength(70, ErrorMessage = "The search title can be at most 70 characters.")]
+        public string MetaTitle { get; set; }
+
+        [StringLength(170, ErrorMessage = "The search description can be at most 170 characters.")]
+        public string MetaDescription { get; set; }
+
+        public IList<SectionRow> Sections { get; set; }
+    }
+
+    public class PageEditViewModel
+    {
+        public PageEditForm Form { get; set; }
+        public bool CanEdit { get; set; }
+        public bool CanPublish { get; set; }
+        public string Notice { get; set; }
+    }
+
+    public class SectionContent
+    {
+        public Guid Id { get; set; }
+        public Guid PageId { get; set; }
+        public string Type { get; set; }
+        public string Data { get; set; }
+        public string DraftData { get; set; }
+        public bool IsVisible { get; set; }
+        public string PageTitle { get; set; }
+        public string PagePath { get; set; }
+        public string PageStatus { get; set; }
+    }
+
+    public class SectionEditViewModel
+    {
+        public SectionContent Section { get; set; }
+        public IList<TheArqamSchools.Web.Infrastructure.JsonContentFields.Field> Fields { get; set; }
+        public string Signature { get; set; }
+        public bool ShowingDraft { get; set; }
+        public bool CanEdit { get; set; }
+        public bool CanPublish { get; set; }
+        public string Notice { get; set; }
+        public IList<string> Errors { get; set; }
+    }
 }

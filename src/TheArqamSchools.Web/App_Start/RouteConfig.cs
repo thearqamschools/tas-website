@@ -58,6 +58,17 @@ namespace TheArqamSchools.Web
                 new { menuId = new GuidRouteConstraint() });
             routes.MapRoute("AdminMenuItemEdit", "admin/menus/items/{id}", new { controller = "AdminMenus", action = "Edit" },
                 new { id = new GuidRouteConstraint() });
+            routes.MapRoute("AdminPages", "admin/pages", new { controller = "AdminPages", action = "Index" });
+            routes.MapRoute("AdminPageSectionPublish", "admin/pages/{pageId}/sections/{sectionId}/publish", new { controller = "AdminPages", action = "PublishDraft" },
+                new { pageId = new GuidRouteConstraint(), sectionId = new GuidRouteConstraint(), httpMethod = new HttpMethodConstraint("POST") });
+            routes.MapRoute("AdminPageSectionDiscard", "admin/pages/{pageId}/sections/{sectionId}/discard", new { controller = "AdminPages", action = "DiscardDraft" },
+                new { pageId = new GuidRouteConstraint(), sectionId = new GuidRouteConstraint(), httpMethod = new HttpMethodConstraint("POST") });
+            routes.MapRoute("AdminPageSectionVisibility", "admin/pages/{pageId}/sections/{sectionId}/visibility", new { controller = "AdminPages", action = "Visibility" },
+                new { pageId = new GuidRouteConstraint(), sectionId = new GuidRouteConstraint(), httpMethod = new HttpMethodConstraint("POST") });
+            routes.MapRoute("AdminPageSection", "admin/pages/{pageId}/sections/{sectionId}", new { controller = "AdminPages", action = "Section" },
+                new { pageId = new GuidRouteConstraint(), sectionId = new GuidRouteConstraint() });
+            routes.MapRoute("AdminPageEdit", "admin/pages/{id}", new { controller = "AdminPages", action = "Edit" },
+                new { id = new GuidRouteConstraint() });
             routes.MapRoute("AdminInboxExport", "admin/{kind}/export.csv", new { controller = "AdminInbox", action = "Export" },
                 new { kind = "inquiries|messages" });
             routes.MapRoute("AdminInboxStatus", "admin/{kind}/{id}/status", new { controller = "AdminInbox", action = "Status" },
