@@ -2,6 +2,32 @@
 
 Written 31 October 2026. Read this first, then `CLAUDE.md` (rules), then `docs/release/READINESS.md` and `docs/release/STAGING-RUNBOOK.md`.
 
+## Update, 31 October 2026 (evening): read this part first
+
+- **Latest code is now on branch `claude/urdu-roman-english-kiukjf`.** It contains everything
+  from `claude/phase10-design` (merged in) plus the work below. Nothing is merged into `main`.
+- **Hosting chosen by the owner:** SmarterASP.NET shared Windows hosting (60-day trial, MSSQL 2025
+  available) for a **testing** site at `https://thearqamschools.com` (domain on Cloudflare). The site
+  stays hidden from search engines (`Site:NoIndex`). Steps: `docs/release/SMARTERASP-DEPLOY.md`.
+  Not deployed yet: the owner has the panel access on Monday.
+- **New since the section below was written:**
+  - `Site:NoIndex` testing mode (robots.txt `Disallow: /`, noindex meta tag and header);
+  - deploy workflow `.github/workflows/deploy-smarterasp.yml` (uploads only from branch
+    `deploy/smarterasp`; dry run on the development branch), `tools/deploy/Publish-Ftp.ps1`,
+    `Database/hosting/smarterasp_setup.sql`;
+  - rate limits use the real visitor address behind Cloudflare (`Infrastructure/ClientAddress.cs`);
+  - **admin panel** (see `docs/ADMIN-PANEL.md`): sign-in with required two-step verification,
+    first Super Admin setup, dashboard, inquiry and message inbox with CSV export, pages and
+    section editing with drafts, campuses, menus, settings, users and roles, audit log;
+  - email to the school when a form is sent (`Infrastructure/Notifications.cs`, off until mail
+    settings exist).
+- **Testing status:** every push passes the Windows build check (MSBuild, Razor precompile,
+  runtime checks) and the deploy dry run. None of the admin panel has run against a database
+  or in a browser yet; test it on the SmarterASP site first.
+- **Still open from the list below:** media library, Phase 2b forms (contact, careers,
+  franchise), Turnstile, news/events/gallery/downloads, campus import, school confirmations
+  W1–W7, error-log location, region/campus-limited roles.
+
 ## 1. Where the code is
 
 - Repository: `thearqamschools/tas-website`

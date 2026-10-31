@@ -171,12 +171,22 @@ tools/compile-check/      Mono C# compile check with stub MVC/Dapper types (does
   review by an agent or person who did not write them, before they are merged.
 - The final summary to the user says which agent changed what, and what each one tested.
 
+## Admin panel and deployment (added 31 October 2026)
+
+- Admin panel under `/admin`: see `docs/ADMIN-PANEL.md`. Controllers `Admin*Controller.cs`, views in
+  `Views/Admin/`, styles in `Content/admin.css`, sign-in code in `Infrastructure/Auth/`. Guard every
+  admin action with `[AdminAuthorize("permission.key")]`, add `[ValidateAntiForgeryToken]` to every
+  POST, and write `AuditLog.Write` in the same transaction as the change.
+- Testing deployment to SmarterASP.NET: `docs/release/SMARTERASP-DEPLOY.md`. Uploads happen only
+  from branch `deploy/smarterasp`, with the owner's approval.
+- `Site:NoIndex = true` keeps the testing site out of search engines; set it to false only at launch.
+
 ## Known gaps (from the October 2026 audit)
 
 - No automated tests or CI in the repository.
 - Never built in Visual Studio or run under IIS yet (`MvcBuildViews` is `false`).
-- Form submissions are saved but trigger no email, and there is no admin panel to read them.
-- `RateLimiter` keys on `Request.UserHostAddress`, which is the proxy address behind a CDN or load balancer.
+- Form notification emails and the admin inbox exist but have not yet run against a real mail server or database.
+- Rate limits trust `CF-Connecting-IP` only from Cloudflare's published ranges (`ClientAddress.cs`); update the list if Cloudflare changes it.
 - Only one campus (Samanabad) in the seed data; `/privacy` is a draft.
 - Franchise, contact and careers forms and news/events/gallery/downloads lists are not built.
 - README says HTTPS is enforced only when `Site:RequireHttps` is `true`; the code enforces it

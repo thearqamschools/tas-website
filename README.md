@@ -14,7 +14,7 @@ The previous version (`arqam-web`) is unchanged and remains the reference for ev
 | 1 | SQL Server 2025 database (all 51 tables, keys, checks, indexes), current content and roles, images, Visual Studio solution, status page | **Done**, scripts run on SQL Server 2025 |
 | 2a | Public website: design, header/footer, simplified navigation, CMS pages, About Us / Academics / Admissions / Campuses consolidated, campus directory and detail pages, admission and campus inquiry forms, redirects, sitemap | **Done**, tested (179/179 checks) |
 | 2b | Homepage in full, contact, careers and franchise forms, Turnstile, email notifications | Next |
-| 3 | Admin panel: sign-in with two-factor, roles and permissions, pages/homepage/menus editors, media library, branches, head offices, franchise applications, CSV export | Planned |
+| 3 | Admin panel: sign-in with two-factor, roles and permissions, inbox with CSV export, pages, campuses, menus, settings, users (see `docs/ADMIN-PANEL.md`); media library, head offices and franchise screens still to do | **Built, not yet tested on a database** |
 | 4 | SEO (sitemaps, redirects, sharing images), search, email, security review, IIS deployment guide | Planned |
 
 ## Folder layout
