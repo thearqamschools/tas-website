@@ -1,6 +1,6 @@
 # Staging and release runbook — 31 October 2026
 
-Status: prepared, not deployed. Existing development branch: `claude/phase10-design`.
+Status: prepared, not deployed. Development branch: `claude/phase10-design` (or the release branch the owner approves).
 Staging host, URL, certificate, SQL endpoint and server access have not been supplied.
 Do not substitute the old Claude artifact: it cannot submit forms or query SQL.
 No production deployment, DNS change, purchase or main merge is authorized.
@@ -71,7 +71,11 @@ Before starting the site, set the deployed configuration privately:
   a certificate-valid SQL hostname, and a short connection timeout (e.g. 5 seconds).
   Prefer integrated service authentication; otherwise obtain a dedicated SQL secret
   from the operator. Never store credentials in scripts, build logs, Git or chat.
-- Protect connectionStrings with server-supported ASP.NET protected configuration,
+- Each new release folder brings a fresh `Web.config` from the artifact, so the server-only
+  values above are lost on every deployment. Re-apply them (from an administrator-only note
+  outside the web root) before switching the site to the new folder.
+- Protect connectionStrings with server-supported ASP.NET protected configuration
+  (`%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\aspnet_regiis.exe -pef "connectionStrings" <release folder>`),
   restrict file ACLs, and back up the encryption key securely for recovery. Provision
   any explicit machineKey securely, consistently per environment, never in Git.
 
@@ -121,6 +125,7 @@ It does not establish database correctness. Then record all of the following:
 
 1. External HTTPS and certificate-chain check; secure cookies; no private files,
    App_Data, Web.config, source or detailed error disclosure. `/status` inaccessible.
+   The four security headers must also be present on 400, 404, 500 and 503 responses.
 2. Add at least four **synthetic** published campuses in the disposable staging DB,
    plus inactive/unpublished/archived/deleted fixtures. Homepage shows at most three
    eligible records, directory still returns all eligible records, ordering is stable,

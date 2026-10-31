@@ -62,15 +62,23 @@ namespace TheArqamSchools.Web.Data
 
         /// <summary>
         /// True when the error means the database could not be reached (connection
-        /// failure or the short pause above) or did not answer in time (timeout,
-        /// error number -2). Other SQL errors, such as a missing table or a denied
-        /// permission, are real faults and are not hidden by this.
+        /// failure or the short pause above), did not answer in time (-2), or a pooled
+        /// connection broke at the network level (53, 64, 121, 233, 10053, 10054, 10060).
+        /// Other SQL errors, such as a missing table or a denied permission, are real
+        /// faults and are not hidden by this.
         /// </summary>
         public static bool IsUnavailable(Exception ex)
         {
             if (ex is DatabaseUnavailableException) return true;
             var sql = ex as SqlException;
-            return sql != null && sql.Number == -2;
+            if (sql == null) return false;
+            switch (sql.Number)
+            {
+                case -2: case 53: case 64: case 121: case 233: case 10053: case 10054: case 10060:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         /// <summary>Column names in the database use snake_case; C# properties use PascalCase.</summary>

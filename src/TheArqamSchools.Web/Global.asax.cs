@@ -61,6 +61,7 @@ namespace TheArqamSchools.Web
                     response.ContentType = "text/html; charset=utf-8";
                     response.Cache.SetCacheability(HttpCacheability.NoCache);
                     response.Cache.SetNoStore();
+                    if (status == 503) response.AppendHeader("Retry-After", "60");
                     response.Write("<!doctype html><html lang=\"en-PK\"><head><meta charset=\"utf-8\">" +
                         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" +
                         "<meta name=\"robots\" content=\"noindex\"><title>Something went wrong | The Arqam Schools</title></head>" +
