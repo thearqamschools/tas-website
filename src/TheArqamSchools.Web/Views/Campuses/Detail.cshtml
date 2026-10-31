@@ -167,6 +167,7 @@
                 {
                     <div class="alert alert-error" role="alert" tabindex="-1" data-focus><p>Please check the highlighted fields and try again.</p></div>
                 }
+                <p class="form-note">Fields marked <span class="req">*</span> are required.</p>
                 <form method="post" action="@c.Url/message#contact" novalidate>
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="BranchId" value="@c.Id" />
@@ -176,13 +177,13 @@
                     </div>
                     <div class="field@(err("Type") != null ? " has-error" : "")">
                         <label for="cm-type">What is your message about? <span class="req" aria-hidden="true">*</span></label>
-                        <select id="cm-type" name="Type" required>
+                        <select id="cm-type" name="Type" required @(err("Type") != null ? "aria-invalid=true aria-describedby=cm-type-err" : "")>
                             @foreach (var t in CampusMessageForm.Types)
                             {
                                 <option value="@t" @(f.Type == t ? "selected" : "")>@typeLabels[t]</option>
                             }
                         </select>
-                        @if (err("Type") != null) { <p class="field-error">@err("Type")</p> }
+                        @if (err("Type") != null) { <p class="field-error" id="cm-type-err">@err("Type")</p> }
                     </div>
                     <div class="field-row">
                         <div class="field@(err("Name") != null ? " has-error" : "")">
@@ -207,8 +208,8 @@
                         @if (err("Message") != null) { <p class="field-error" id="cm-message-err">@err("Message")</p> }
                     </div>
                     <div class="field field-check@(err("Consent") != null ? " has-error" : "")">
-                        <label><input type="checkbox" name="Consent" value="true" @(f.Consent ? "checked" : "") required /> <span>I agree that The Arqam Schools may contact me about this message. <span class="req" aria-hidden="true">*</span></span></label>
-                        @if (err("Consent") != null) { <p class="field-error">@err("Consent")</p> }
+                        <label><input type="checkbox" name="Consent" value="true" @(f.Consent ? "checked" : "") required @(err("Consent") != null ? "aria-invalid=true aria-describedby=cm-consent-err" : "") /> <span>I agree that The Arqam Schools may contact me about this message. <span class="req" aria-hidden="true">*</span></span></label>
+                        @if (err("Consent") != null) { <p class="field-error" id="cm-consent-err">@err("Consent")</p> }
                     </div>
                     <button type="submit" class="btn btn-primary">Send message</button>
                 </form>
