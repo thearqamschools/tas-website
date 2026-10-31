@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Web;
 using System.Web.Mvc;
 using System.Web.Routing;
@@ -23,40 +24,65 @@ namespace TheArqamSchools.Web
             LegacyUrls.Handle(HttpContext.Current);
         }
 
+        /// <summary>
+        /// Every unhandled error (there is no global HandleErrorAttribute) is answered
+        /// here, in place and without a redirect, with the right status code:
+        /// request validation and anti-forgery failures 400, HttpException codes kept
+        /// (404 shows the "Page not found" page), database unavailable 503 with
+        /// Retry-After, everything else 500. No exception details are shown. The log
+        /// line has the status, method and a sanitised path (no query string, form data
+        /// or cookies); the full exception is logged only for 5xx.
+        /// </summary>
         protected void Application_Error(object sender, EventArgs e)
         {
-            var error = Server.GetLastError();
-            var status = 500;
-            for (var cause = error; cause != null; cause = cause.InnerException)
+            var context = HttpContext.Current;
+            if (context == null) return;
+            var ex = Server.GetLastError();
+            if (ex == null) return;
+            var status = Controllers.ErrorController.StatusFor(ex);
+            // 4xx messages can quote what the visitor sent (for example a rejected form value), so only the type is logged.
+            Trace.TraceError("Unhandled error {0} for {1} {2}: {3}", status, context.Request.HttpMethod, LogSafe(context.Request.Path),
+                status >= 500 ? ex.ToString() : ex.GetType().FullName);
+            context.ClearError();
+            try
             {
-                var http = cause as HttpException;
-                if (http != null) status = http.GetHttpCode();
-                if (cause is HttpRequestValidationException || cause is System.Web.Mvc.HttpAntiForgeryException)
-                { status = 400; break; }
-                // Includes failures in the shared header/footer, even on a cold cache.
-                if (cause is System.Data.SqlClient.SqlException && Request.Path == "/")
-                { status = 503; break; }
+                Controllers.ErrorController.Render(context, status);
             }
-            if (status < 400 || status > 599) status = 500;
-            Server.ClearError();
-            Response.Clear();
-            Response.StatusCode = status;
-            Response.TrySkipIisCustomErrors = true;
-            Response.ContentType = "text/html; charset=utf-8";
-            Response.Cache.SetCacheability(HttpCacheability.NoCache);
-            Response.Cache.SetNoStore();
-            if (status == 503) Response.AddHeader("Retry-After", "60");
-            // No Razor, layout, database, exception text or user input in this last-resort page.
-            var title = status == 503 ? "Temporarily unavailable" :
-                status == 404 ? "Page not found" : status < 500 ? "Request could not be completed" : "Something went wrong";
-            Response.Write("<!doctype html><html lang=\"en-PK\"><head><meta charset=\"utf-8\">" +
-                "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" +
-                "<meta name=\"robots\" content=\"noindex\"><title>" + title + " | The Arqam Schools</title>" +
-                "<link rel=\"stylesheet\" href=\"/Content/site.css?v=20261107\"></head>" +
-                "<body class=\"error-page\"><main id=\"main\" class=\"container\"><h1>" + title + "</h1>" +
-                "<p>The Arqam Schools</p><p>Please try again in a few minutes, or call " +
-                "<a href=\"tel:+92412660265\">041-2660265</a>.</p><p><a href=\"/\">Go to the homepage</a></p></main></body></html>");
-            CompleteRequest();
+            catch (Exception renderError)
+            {
+                Trace.TraceError("Error page failed: {0}", renderError);
+                try
+                {
+                    // Last resort: a fixed page with no Razor, layout, database, exception text or user input.
+                    var response = context.Response;
+                    response.Clear();
+                    response.StatusCode = status;
+                    response.TrySkipIisCustomErrors = true;
+                    response.ContentType = "text/html; charset=utf-8";
+                    response.Cache.SetCacheability(HttpCacheability.NoCache);
+                    response.Cache.SetNoStore();
+                    response.Write("<!doctype html><html lang=\"en-PK\"><head><meta charset=\"utf-8\">" +
+                        "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" +
+                        "<meta name=\"robots\" content=\"noindex\"><title>Something went wrong | The Arqam Schools</title></head>" +
+                        "<body><main><h1>Something went wrong</h1><p>Please try again in a few minutes, or call us on " +
+                        "<a href=\"tel:0412660265\">041-2660265</a>.</p><p><a href=\"/\">Go to the homepage</a></p></main></body></html>");
+                }
+                catch (HttpException)
+                {
+                    // Headers already sent: the response cannot be replaced.
+                }
+            }
+            context.ApplicationInstance.CompleteRequest();
+        }
+
+        /// <summary>Path for a log line: control characters (forged new lines) removed, at most 200 characters.</summary>
+        private static string LogSafe(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return "";
+            var chars = path.Length > 200 ? path.Substring(0, 200) : path;
+            var sb = new System.Text.StringBuilder(chars.Length);
+            foreach (var c in chars) sb.Append(char.IsControl(c) ? '_' : c);
+            return sb.ToString();
         }
     }
 }

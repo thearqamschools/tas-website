@@ -13,7 +13,7 @@ namespace TheArqamSchools.Web.Data
     {
         public static IDictionary<string, JToken> Public()
         {
-            return Cache.Get("settings", () =>
+            return Cache.GetOrLastGood("settings", () =>
             {
                 using (var db = Db.Open())
                 {
@@ -21,7 +21,7 @@ namespace TheArqamSchools.Web.Data
                             "SELECT [key], [value] FROM dbo.site_settings WHERE is_public = 1")
                         .ToDictionary(r => r.Key, r => JToken.Parse(r.Value));
                 }
-            });
+            }, () => new Dictionary<string, JToken>());
         }
 
         public static string Text(IDictionary<string, JToken> settings, string key, string fallback = "")

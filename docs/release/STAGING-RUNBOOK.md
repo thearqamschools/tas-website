@@ -130,11 +130,13 @@ It does not establish database correctness. Then record all of the following:
    redirect-after-post. Verify invalid IDs/fields fail, missing/tampered CSRF fails,
    honeypot saves nothing and sixth valid attempt within ten minutes is limited.
    Confirm stored rows with a separate operator identity; remove only the test rows.
-4. Stop/disconnect only staging SQL, recycle staging pool (cold cache), request `/`:
-   503 with safe text, confirmed phone, Retry-After 60, no-store and no redirect;
-   repeat warm-cache/expired-cache cases. Restart SQL and confirm `/` becomes 200.
-   Cached data may remain visible for its existing 60-second lifetime; no new stale
-   cache was added. Failed form writes must never display successful submission.
+4. Stop/disconnect only staging SQL. Request `/` with a warm cache (it must still
+   show the homepage from the last good copy, status 200), then recycle the staging
+   pool (cold cache) and request `/` again: status 200, homepage without menus and
+   without campus cards. Request a CMS page such as `/about`: 503 with the safe error
+   page, Retry-After 60, no-store and no redirect, answered quickly (new connections
+   pause for 10 seconds after a failure). Restart SQL and confirm everything is normal
+   within about 70 seconds. Failed form writes must never display successful submission.
 5. On a private test copy, check managed 400/403/404/500, request-validation failures,
    missing CSRF, IIS-native missing static files, blocked private paths, oversized
    requests and unsupported verbs. Preserve status; never expose stack traces or

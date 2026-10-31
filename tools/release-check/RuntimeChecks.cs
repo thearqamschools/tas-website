@@ -32,9 +32,21 @@ public class RuntimeChecks : MarshalByRefObject
         string cache;
         if (!worker.Headers.TryGetValue("Cache-Control", out cache) || !cache.Contains("no-store"))
             throw new Exception("Error response may be cached");
-        if (expected == 503 && (!body.Contains("Temporarily unavailable") || !worker.Headers.ContainsKey("Retry-After")))
+        if (expected == 503 && (!body.Contains("Something went wrong") || !worker.Headers.ContainsKey("Retry-After")))
             throw new Exception("Outage response missing retry information");
         Console.WriteLine("PASS " + verb + " /" + page + "?" + query + " => " + worker.Status + ", safe body, no redirect");
+    }
+    /// <summary>The homepage must still render (status 200) while the database is unreachable.</summary>
+    public void CheckHomepageDuringOutage()
+    {
+        var output = new StringWriter();
+        var worker = new Worker("", "", output, "GET");
+        HttpRuntime.ProcessRequest(worker);
+        string body = output.ToString();
+        if (worker.Status != 200) throw new Exception("Homepage during outage expected 200 got " + worker.Status + " " + body);
+        if (!body.Contains("Knowledge with values")) throw new Exception("Homepage content missing during outage");
+        if (body.Contains("SqlException") || body.Contains("Stack Trace")) throw new Exception("Error detail leaked");
+        Console.WriteLine("PASS GET / during database outage => 200, homepage rendered without the database");
     }
     public static int Main(string[] args)
     {
@@ -44,7 +56,8 @@ public class RuntimeChecks : MarshalByRefObject
             foreach (int code in new[] {400, 403, 404, 429, 500}) host.Check("release-test.aspx", "code=" + code, "GET", code);
             host.Check("release-test.aspx", "code=500&unsafe=%3Cscript%3E", "GET", 400);
             host.Check("admissions/inquiry", "", "POST", 400);
-            host.Check("", "", "GET", 503);
+            host.CheckHomepageDuringOutage();
+            host.Check("about", "", "GET", 503);
             return 0;
         }
         catch (Exception error) { Console.Error.WriteLine(error); return 1; }
