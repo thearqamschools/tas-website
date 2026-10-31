@@ -68,7 +68,7 @@
         <div class="admin-grid-2">
             @foreach (var p in SettingsAdminRepository.SocialPlatforms)
             {
-                var label = p == "x" ? "X (Twitter)" : p == "tiktok" ? "TikTok" : p == "youtube" ? "YouTube" : p == "linkedin" ? "LinkedIn" : p == "whatsapp" ? "WhatsApp channel" : char.ToUpperInvariant(p[0]) + p.Substring(1);
+                var label = p == "facebook2" ? "Facebook (second page)" : p == "x" ? "X (Twitter)" : p == "tiktok" ? "TikTok" : p == "youtube" ? "YouTube" : p == "linkedin" ? "LinkedIn" : p == "whatsapp" ? "WhatsApp channel" : char.ToUpperInvariant(p[0]) + p.Substring(1);
                 <div class="admin-field">
                     <label for="social-@p">@label</label>
                     <input type="url" id="social-@p" name="social.@p" value="@Model.Get("social." + p)" maxlength="300" spellcheck="false" autocapitalize="none" @ro />

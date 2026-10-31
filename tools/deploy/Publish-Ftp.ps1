@@ -11,7 +11,8 @@
     1. upload app_offline.htm, so IIS stops the site and releases bin\*.dll;
     2. remove the host's placeholder start pages (they would hide the MVC homepage);
     3. upload every file, creating folders as needed (3 tries per file);
-    4. delete app_offline.htm, also when an upload failed, so the site comes back.
+    4. only when every file arrived, delete app_offline.htm (4 tries). After a failed
+       upload the "being updated" page stays, so visitors never get a half-new site.
 
   Files already on the server that are not in the new build are left in place.
 
@@ -144,8 +145,23 @@ try {
 catch {
     $failed = $_
 }
-finally {
-    if (Remove-FtpFile 'app_offline.htm') { "Site back online (app_offline.htm removed)" }
+
+if ($failed) {
+    # Half the files may be new and half old: keep the "being updated" page up rather than
+    # serve a mixed site. Run the deployment again; it uploads everything and then removes it.
+    Write-Host "::error::Upload failed; the site stays on the 'being updated' page until the next successful deployment."
+    throw $failed
 }
 
-if ($failed) { throw $failed }
+$removed = $false
+for ($attempt = 1; $attempt -le 4 -and -not $removed; $attempt++) {
+    try {
+        [void](Remove-FtpFile 'app_offline.htm')
+        $removed = $true
+        "Site back online (app_offline.htm removed)"
+    }
+    catch {
+        if ($attempt -eq 4) { throw "All files uploaded, but app_offline.htm could not be removed: $($_.Exception.Message). Delete it by FTP or run the deployment again." }
+        Start-Sleep -Seconds (3 * $attempt)
+    }
+}

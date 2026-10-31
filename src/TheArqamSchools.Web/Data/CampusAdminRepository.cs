@@ -97,6 +97,7 @@ namespace TheArqamSchools.Web.Data
                 CampusEditForm before = null;
                 if (isNew)
                 {
+                    if (!canPublish) f.IsPublished = false;
                     f.Id = db.ExecuteScalar<Guid>(
                         @"INSERT INTO dbo.branches (city_id, name, slug, created_by, updated_by, is_published, status, admission_status)
                           OUTPUT inserted.id VALUES (@CityId, @Name, @Slug, @actorId, @actorId, 0, N'coming_soon', N'closed')",

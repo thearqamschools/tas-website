@@ -73,8 +73,9 @@ namespace TheArqamSchools.Web.Controllers
                 if (url == null) continue;
                 if (!url.StartsWith("https://", StringComparison.OrdinalIgnoreCase) || url.Length > 300 || url.Any(char.IsWhiteSpace))
                     ModelState.AddModelError("social." + platform, platform + ": please paste the full address starting with https://.");
-                social.Add(new JObject { ["url"] = url, ["platform"] = platform });
+                social.Add(new JObject { ["url"] = url, ["platform"] = SettingsAdminRepository.PlatformOf(platform) });
             }
+            foreach (var kept in SettingsAdminRepository.Load().KeptSocial) social.Add(kept);
             json["social"] = social.ToString(Formatting.None);
 
             if (!ModelState.IsValid) return Show(form);
@@ -91,7 +92,7 @@ namespace TheArqamSchools.Web.Controllers
         private static bool IsLink(string href)
         {
             if (href.Length > 300 || href.Any(char.IsWhiteSpace)) return false;
-            return (href.StartsWith("/") && !href.StartsWith("//")) || href.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+            return (href.StartsWith("/") && !href.StartsWith("//") && !href.StartsWith("/\\")) || href.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string Clean(string s)

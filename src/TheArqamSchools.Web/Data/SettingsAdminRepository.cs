@@ -45,7 +45,10 @@ namespace TheArqamSchools.Web.Data
             new Field { Group = "Search engines", Key = "seo.org_region", Label = "Head office province", Kind = Kind.Text, Max = 80 }
         };
 
-        public static readonly string[] SocialPlatforms = { "facebook", "instagram", "youtube", "tiktok", "x", "linkedin", "whatsapp" };
+        /// <summary>Form slots for social links; "facebook2" is a second Facebook page (saved with platform "facebook").</summary>
+        public static readonly string[] SocialPlatforms = { "facebook", "facebook2", "instagram", "youtube", "tiktok", "x", "linkedin", "whatsapp" };
+
+        public static string PlatformOf(string slot) { return slot == "facebook2" ? "facebook" : slot; }
 
         /// <summary>The current values as form text: "text" for text settings; "label" and "href" for links.</summary>
         public static SettingsForm Load()
@@ -80,7 +83,11 @@ namespace TheArqamSchools.Web.Data
                         foreach (var item in arr.OfType<JObject>())
                         {
                             var platform = (string)item["platform"];
-                            if (platform != null && SocialPlatforms.Contains(platform)) form.Values["social." + platform] = (string)item["url"];
+                            var slot = platform == "facebook" && form.Values.ContainsKey("social.facebook") ? "facebook2" : platform;
+                            if (slot != null && SocialPlatforms.Contains(slot) && !form.Values.ContainsKey("social." + slot))
+                                form.Values["social." + slot] = (string)item["url"];
+                            else
+                                form.KeptSocial.Add(item);   // not shown on the form: kept as it is on save
                         }
                 }
                 return form;

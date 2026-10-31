@@ -80,7 +80,7 @@ namespace TheArqamSchools.Web.Controllers
                 f.PageId = null;
                 if (f.Url == null)
                     ModelState.AddModelError("Url", "Please enter the link.");
-                else if (f.Url.Any(char.IsWhiteSpace) || !((f.Url.StartsWith("/") && !f.Url.StartsWith("//")) || f.Url.StartsWith("https://", StringComparison.Ordinal)))
+                else if (f.Url.Any(char.IsWhiteSpace) || !((f.Url.StartsWith("/") && !f.Url.StartsWith("//") && !f.Url.StartsWith("/\\")) || f.Url.StartsWith("https://", StringComparison.Ordinal)))
                     ModelState.AddModelError("Url", "The link must start with / (a page on this website) or https://.");
             }
             else

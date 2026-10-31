@@ -49,6 +49,16 @@ assignments count.
   Manager or Super Admin publishes or discards them.
 - Links must start with `/`, `#`, `https://`, `mailto:` or `tel:`.
 
+## Known limits (from the independent review, 31 October 2026)
+
+- A new user, or a user whose two-step verification was reset, sets up the authenticator
+  with the temporary password alone; there is no forced password change yet. Hand
+  temporary passwords over privately and ask users to change them at once.
+- Authenticator keys are stored unencrypted in `dbo.users` (protect database backups).
+  The "each code only once" check is per server process.
+- A publisher's save leaves a waiting draft in place; publishing that draft later
+  replaces the publisher's change. The section page says when a draft is waiting.
+
 ## Not built yet
 
 - Media library (uploading images), homepage editing (the homepage is in the code),

@@ -23,7 +23,7 @@ namespace TheArqamSchools.Web.Helpers
         public static bool IsSafeHref(string href)
         {
             if (string.IsNullOrWhiteSpace(href)) return false;
-            return (href.StartsWith("/") && !href.StartsWith("//")) || href.StartsWith("#")
+            return (href.StartsWith("/") && !href.StartsWith("//") && !href.StartsWith("/\\")) || href.StartsWith("#")
                 || href.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
                 || href.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase)
                 || href.StartsWith("tel:", StringComparison.OrdinalIgnoreCase);

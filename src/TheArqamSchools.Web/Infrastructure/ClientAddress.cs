@@ -32,8 +32,22 @@ namespace TheArqamSchools.Web.Infrastructure
             var forwarded = request.Headers["CF-Connecting-IP"];
             IPAddress visitor;
             if (!string.IsNullOrEmpty(forwarded) && IPAddress.TryParse(forwarded.Trim(), out visitor) && IsCloudflare(remoteIp))
-                return visitor.ToString();
-            return remoteIp.ToString();
+                return Key(visitor);
+            return Key(remoteIp);
+        }
+
+        /// <summary>
+        /// IPv4 addresses as they are. IPv6 addresses by their first 64 bits: one home or
+        /// mobile connection owns a whole /64 block, so counting single addresses would let
+        /// one visitor bypass every limit.
+        /// </summary>
+        private static string Key(IPAddress ip)
+        {
+            if (ip.IsIPv4MappedToIPv6) ip = ip.MapToIPv4();
+            if (ip.AddressFamily != System.Net.Sockets.AddressFamily.InterNetworkV6) return ip.ToString();
+            var bytes = ip.GetAddressBytes();
+            for (var i = 8; i < 16; i++) bytes[i] = 0;
+            return new IPAddress(bytes).ToString() + "/64";
         }
 
         public static bool IsCloudflare(IPAddress ip)

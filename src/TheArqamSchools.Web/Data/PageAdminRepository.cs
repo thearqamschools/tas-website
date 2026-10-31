@@ -11,7 +11,8 @@ namespace TheArqamSchools.Web.Data
     /// CMS pages (dbo.pages, dbo.page_sections, dbo.seo_metadata) for the admin panel.
     /// Section text is edited through JsonContentFields. Users with pages.publish save
     /// straight to the live section (data); users with only pages.update save a draft
-    /// (draft_data) that a publisher then publishes or discards. The public pages read
+    /// (draft_data) that a publisher then publishes or discards. A publisher's own save
+    /// leaves a waiting draft untouched, so nobody's draft is lost silently. The public pages read
     /// the database directly, so published changes show at once.
     /// </summary>
     public static class PageAdminRepository
@@ -53,7 +54,13 @@ namespace TheArqamSchools.Web.Data
                 var before = db.QuerySingle<PageEditForm>(
                     @"SELECT p.id, p.title, p.summary, p.status, p.seo_id, s.meta_title, s.meta_description
                       FROM dbo.pages p WITH (UPDLOCK) LEFT JOIN dbo.seo_metadata s ON s.id = p.seo_id WHERE p.id = @Id", new { f.Id }, tx);
-                if (!canPublish && (f.Status == "published" || before.Status == "published")) f.Status = before.Status;
+                if (!canPublish && (f.Status == "published" || f.Status == "archived" || before.Status == "published" || before.Status == "archived"))
+                    f.Status = before.Status;
+                if (!canPublish && before.Status == "published")
+                {
+                    // Visitors see these at once, so on a published page only a publisher may change them.
+                    f.Title = before.Title; f.Summary = before.Summary; f.MetaTitle = before.MetaTitle; f.MetaDescription = before.MetaDescription;
+                }
 
                 db.Execute(
                     @"UPDATE dbo.pages SET title = @Title, summary = @Summary, status = @Status,
@@ -101,7 +108,7 @@ namespace TheArqamSchools.Web.Data
                 var before = db.QuerySingle<SectionContent>(
                     "SELECT id, data, draft_data FROM dbo.page_sections WITH (UPDLOCK) WHERE id = @sectionId", new { sectionId }, tx);
                 db.Execute(live
-                    ? "UPDATE dbo.page_sections SET data = @json, draft_data = NULL, updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId WHERE id = @sectionId"
+                    ? "UPDATE dbo.page_sections SET data = @json, updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId WHERE id = @sectionId"
                     : "UPDATE dbo.page_sections SET draft_data = @json, updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId WHERE id = @sectionId",
                     new { sectionId, json, actorId }, tx);
                 AuditLog.Write(db, tx, actorId, "update", "page_sections", sectionId.ToString(), new

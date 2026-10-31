@@ -62,7 +62,8 @@ namespace TheArqamSchools.Web.Controllers
                 return LoginView(form, GenericFailure);
             }
 
-            AdminUserRepository.ResetFailures(user.Id);
+            // The failure counter is NOT reset here: wrong codes must keep counting towards the
+            // lockout until the whole sign-in succeeds (RecordSignIn clears it).
             var stamp = AdminUserRepository.EnsureSecurityStamp(user);
             if (user.TwoFactorEnabled && !string.IsNullOrEmpty(user.AuthenticatorKey))
             {

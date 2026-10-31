@@ -3,7 +3,7 @@
     Layout = "~/Views/Admin/_AdminLayout.cshtml";
     var f = Model.Form;
     ViewBag.Title = f.Title;
-    var ro = Model.CanEdit ? null : "disabled";
+    var ro = Model.CanEdit && (Model.CanPublish || f.Status != "published") ? null : "disabled";
     Func<string, string, string> val = (name, fallback) => ViewData.ModelState.ContainsKey(name) && ViewData.ModelState[name].Value != null ? ViewData.ModelState[name].Value.AttemptedValue : fallback;
     var statusLabels = new Dictionary<string, string> { { "draft", "Draft (not on the website)" }, { "in_review", "Ready for review" }, { "published", "Published" }, { "archived", "Archived (hidden)" } };
 }
@@ -82,8 +82,12 @@
             @Html.ValidationMessage("MetaDescription", null, new { id = "MetaDescription-error", @class = "admin-field-error" })
         </div>
     </section>
-    @if (Model.CanEdit)
+    @if (Model.CanEdit && (Model.CanPublish || f.Status != "published"))
     {
         <div><button type="submit" class="admin-button">Save page</button></div>
+    }
+    else if (Model.CanEdit)
+    {
+        <p class="admin-muted">This page is published, so its title and search text can be changed by a Content Manager or Super Admin. You can still edit its sections as drafts.</p>
     }
 </form>

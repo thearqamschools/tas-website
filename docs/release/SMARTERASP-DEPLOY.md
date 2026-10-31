@@ -42,6 +42,16 @@ Skip `03_fulltext.sql` (optional, and Full-Text Search may not be offered).
 | `MAIL_HOST`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_FROM`, `MAIL_NOTIFY_TO` | secrets | optional: email to the school when a form is sent |
 | `MAIL_PORT`, `MAIL_ENABLE_SSL` | variables | optional, default `587` / `true` |
 
+**Recommended protection:** create a GitHub **Environment** named `smarterasp-testing`
+(Settings → Environments), allow only the branch `deploy/smarterasp`, add the owner as
+a required reviewer, and put the secrets above in that environment instead of the
+repository. Then add `environment: smarterasp-testing` to the deploy job. Every upload
+then waits for the owner's click, and other branches cannot read the secrets.
+
+**Fixed machine key:** shared hosting may change the ASP.NET machine key when the app
+restarts, which signs every admin out. Before go-live, add a fixed `<machineKey>` to the
+server's Web.config (generated once, kept only on the server).
+
 ## 4. Upload (only with the owner's go-ahead)
 
 Push the tested commit to the branch `deploy/smarterasp`. The workflow

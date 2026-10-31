@@ -77,6 +77,9 @@ namespace TheArqamSchools.Web.Controllers
                     ? Line(received, InboxRepository.Label(r.Status), r.Name, r.Phone, r.Email, r.CampusName, r.ClassName, r.Message, r.SourcePage)
                     : Line(received, InboxRepository.Label(r.Status), r.Type, r.Name, r.Phone, r.Email, r.CampusName, r.Subject, r.Message, r.SourcePage));
             }
+            using (var db = Db.Open())
+                AuditLog.Write(db, null, AdminAuth.Current(HttpContext).Id, "update", inquiries ? "admission_inquiries" : "contact_messages", null,
+                    new { @event = "csv_export", rows = rows.Count, status = Array.IndexOf(InboxRepository.Statuses, status) >= 0 ? status : null });
             var name = (inquiries ? "admission-inquiries-" : "messages-") + DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + ".csv";
             // UTF-8 with BOM so Excel shows Urdu names correctly.
             var bytes = Encoding.UTF8.GetPreamble();

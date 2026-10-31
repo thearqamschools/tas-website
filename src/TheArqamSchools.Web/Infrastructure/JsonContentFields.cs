@@ -25,6 +25,7 @@ namespace TheArqamSchools.Web.Infrastructure
             public string Label;
             public FieldKind Kind;
             public string Value;
+            public bool WholeNumber;
         }
 
         private static readonly HashSet<string> HiddenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -45,10 +46,14 @@ namespace TheArqamSchools.Web.Infrastructure
             return fields;
         }
 
-        /// <summary>Hash of every editable field's path and kind, in order.</summary>
+        /// <summary>
+        /// Hash of every editable field's path and current value, in order. If anyone saves the
+        /// section (or it changes shape) while a form is open, that form's save is refused
+        /// instead of silently overwriting their words.
+        /// </summary>
         public static string Signature(IList<Field> fields)
         {
-            var text = string.Join("\n", fields.Select(f => f.Path + "|" + f.Kind));
+            var text = string.Join("\n", fields.Select(f => f.Path + "\u0001" + (f.Value ?? "")));
             using (var sha = SHA256.Create())
                 return Convert.ToBase64String(sha.ComputeHash(Encoding.UTF8.GetBytes(text)));
         }
@@ -77,7 +82,12 @@ namespace TheArqamSchools.Web.Infrastructure
                             errors.Add(f.Label + ": please enter a number.");
                             values.Add(null);
                         }
-                        else values.Add(number == decimal.Truncate(number) && Math.Abs(number) < int.MaxValue ? new JValue((long)number) : new JValue(number));
+                        else if (f.WholeNumber && (number != decimal.Truncate(number) || Math.Abs(number) > long.MaxValue / 2))
+                        {
+                            errors.Add(f.Label + ": please enter a whole number.");
+                            values.Add(null);
+                        }
+                        else values.Add(f.WholeNumber ? new JValue((long)number) : new JValue(number));
                         break;
                     default:
                         var text = (raw ?? "").Replace("\r\n", "\n").Trim();
@@ -125,7 +135,11 @@ namespace TheArqamSchools.Web.Infrastructure
                     break;
                 case JTokenType.Integer:
                 case JTokenType.Float:
-                    fields.Add(new Field { Path = token.Path, Label = Label(token.Path), Kind = FieldKind.Number, Value = ((IFormattable)((JValue)token).Value).ToString(null, CultureInfo.InvariantCulture) });
+                    fields.Add(new Field
+                    {
+                        Path = token.Path, Label = Label(token.Path), Kind = FieldKind.Number, WholeNumber = token.Type == JTokenType.Integer,
+                        Value = ((IFormattable)((JValue)token).Value).ToString(null, CultureInfo.InvariantCulture)
+                    });
                     break;
                 case JTokenType.Boolean:
                     fields.Add(new Field { Path = token.Path, Label = Label(token.Path), Kind = FieldKind.Switch, Value = (bool)token ? "true" : "false" });
@@ -164,7 +178,7 @@ namespace TheArqamSchools.Web.Infrastructure
         public static bool IsSafeLink(string href)
         {
             if (href.Any(char.IsWhiteSpace) || href.Length > 500) return false;
-            return (href.StartsWith("/") && !href.StartsWith("//")) || href.StartsWith("#")
+            return (href.StartsWith("/") && !href.StartsWith("//") && !href.StartsWith("/\\")) || href.StartsWith("#")
                 || href.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
                 || href.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase)
                 || href.StartsWith("tel:", StringComparison.OrdinalIgnoreCase);

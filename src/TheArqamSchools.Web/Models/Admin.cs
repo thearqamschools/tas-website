@@ -315,8 +315,8 @@ namespace TheArqamSchools.Web.Models
             ErrorMessage = "Please paste a Google Maps link (it starts with https://maps.app.goo.gl/ or https://www.google.com/maps).")]
         public string GoogleMapsUrl { get; set; }
 
-        [Range(-90, 90, ErrorMessage = "Latitude must be between -90 and 90.")] public decimal? Latitude { get; set; }
-        [Range(-180, 180, ErrorMessage = "Longitude must be between -180 and 180.")] public decimal? Longitude { get; set; }
+        [Range(typeof(decimal), "-90", "90", ErrorMessage = "Latitude must be between -90 and 90.")] public decimal? Latitude { get; set; }
+        [Range(typeof(decimal), "-180", "180", ErrorMessage = "Longitude must be between -180 and 180.")] public decimal? Longitude { get; set; }
 
         [StringLength(5000)] public string Overview { get; set; }
         [StringLength(120)] public string PrincipalName { get; set; }
@@ -346,8 +346,10 @@ namespace TheArqamSchools.Web.Models
     /// <summary>Settings form values keyed by setting key (links use "key.label" and "key.href"; social links "social.platform").</summary>
     public class SettingsForm
     {
-        public SettingsForm() { Values = new Dictionary<string, string>(); }
+        public SettingsForm() { Values = new Dictionary<string, string>(); KeptSocial = new List<Newtonsoft.Json.Linq.JObject>(); }
         public IDictionary<string, string> Values { get; private set; }
+        /// <summary>Social links in the database that the form has no slot for; saved back unchanged.</summary>
+        public IList<Newtonsoft.Json.Linq.JObject> KeptSocial { get; private set; }
         public bool Saved { get; set; }
         public bool CanEdit { get; set; }
 
