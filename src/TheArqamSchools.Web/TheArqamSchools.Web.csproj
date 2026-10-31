@@ -95,6 +95,7 @@
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Controllers\AdmissionsController.cs" />
     <Compile Include="Controllers\CampusesController.cs" />
+    <Compile Include="Controllers\ErrorController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\PagesController.cs" />
     <Compile Include="Controllers\SeoController.cs" />

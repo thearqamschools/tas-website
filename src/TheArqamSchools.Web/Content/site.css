@@ -26,7 +26,6 @@
   --fs-h4: clamp(1.125rem, .9375rem + .39vw, 1.1875rem);
   --fs-lead: clamp(1.125rem, .9375rem + .39vw, 1.1875rem);
   --fs-eyebrow: clamp(.875rem, .8rem + .2vw, .9375rem);
-  --fs-small: .9375rem;
 }
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: calc(var(--header-h) + 16px); }
@@ -59,13 +58,11 @@ a, button, summary, [role="button"] { touch-action: manipulation; }
 .h4 { font-weight: 600; font-size: var(--fs-h4); line-height: 1.45; }
 .lead { font-size: var(--fs-lead); line-height: 1.6; color: var(--muted); max-width: 38rem; }
 .eyebrow { text-transform: uppercase; letter-spacing: .08em; font-size: var(--fs-eyebrow); font-weight: 600; line-height: 1.4; color: var(--blue); margin-bottom: .75rem; }
-.text-sm { font-size: var(--fs-small); line-height: 1.55; }
 .muted { color: var(--muted); }
 .prose, .prose-lg { max-width: 72ch; }
 .prose > * + *, .prose-lg > * + * { margin-top: 1rem; }
 .prose-lg { font-size: 1.0625rem; line-height: 1.75; color: var(--muted); }
-.prose h2, .prose h3 { color: var(--ink); margin-top: 1.75rem; font-weight: 600; }
-.prose ul, .prose ol { padding-left: 1.25rem; }
+.prose h2, .prose h3 { color: var(--ink); font-weight: 600; }
 .prose li + li { margin-top: .375rem; }
 
 /* Buttons */
@@ -109,7 +106,7 @@ a, button, summary, [role="button"] { touch-action: manipulation; }
 .text-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-weight: 600; color: var(--blue); }
 .icon { flex-shrink: 0; }
 .icon-link { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: var(--r-sm); color: inherit; }
-.icon-link:hover { background: rgba(255,255,255,.1); }
+@media (hover: hover) and (pointer: fine) { .icon-link:hover { background: rgba(255,255,255,.1); } }
 
 /* Header */
 .site-header { position: sticky; top: 0; z-index: 50; background: #fff; border-bottom: 1px solid var(--line); }
@@ -241,6 +238,23 @@ ul.mobile-utility { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; mar
   .page-header .media-frame { aspect-ratio: 4 / 3; }
   .page-header-feature.has-image .page-header-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 56px; }
 }
+
+/* System pages (phase 10, batch 5): the 404 page (inside the layout) and the stand-alone error page share one calm page header: a little more
+   air than a content page, because nothing else is on the page, and a short red rule above the heading (decorative, no text).
+   Placed after .page-header so these paddings win at every breakpoint. */
+.system-page { padding-block: 48px 56px; }
+.system-page .h1::before { content: ""; display: block; width: 48px; height: 4px; margin-bottom: 20px; border-radius: 2px; background: var(--red); }
+.system-page .lead { max-width: 34rem; }
+.system-page .btn-row { margin-top: 32px; }
+@media (min-width: 48rem) { .system-page { padding-block: 72px 80px; } }
+@media (min-width: 64rem) { .system-page { padding-block: 96px 104px; } }
+/* Error page (Views/Shared/Error.cshtml): stand-alone, only this stylesheet. The header needs no nav, script or top bar to lay out; it is not
+   sticky (the sticky offset of -40 px at 1024 px is for the top bar, which this page does not have). The warm band fills the rest of the window. */
+.error-page { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+.error-page .site-header { position: static; }
+.error-page main { flex: 1 0 auto; background: var(--warm); }
+.error-page .page-header { border-bottom: 0; }
+.error-page .lead a { white-space: nowrap; }
 
 /* Sections */
 /* Section rhythm (every page): 48 px top and bottom on phones, 64 px from 768 px, 72 px from 1024 px.
@@ -737,7 +751,7 @@ ul.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 @media (min-width: 64rem) { .footer-cta-inner .h2 { font-size: 2.125rem; } }
 .footer-main { background: var(--ink); color: rgba(255,255,255,.72); }
 .footer-main a { color: rgba(255,255,255,.85); }
-.footer-main a:hover { color: #fff; }
+@media (hover: hover) and (pointer: fine) { .footer-main a:hover { color: #fff; } }
 .footer-main :focus-visible { outline-color: #fff; }
 .footer-grid { display: grid; gap: 36px; padding-block: 56px; }
 .footer-grid h2 { color: #fff; font-size: 1rem; font-weight: 600; margin-bottom: 12px; line-height: 1.4; }
@@ -749,7 +763,7 @@ ul.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .footer-links li a, .footer-office li a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
 .footer-office { font-style: normal; }
 .footer-office p { margin-bottom: 8px; }
-.footer-bottom { display: flex; border-top: 0 !important; box-shadow: 0 -1px 0 rgba(255,255,255,.12); flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; padding-block: 20px; border-top: 1px solid rgba(255,255,255,.12); font-size: .875rem; }
+.footer-bottom { display: flex; border-top: 0 !important; box-shadow: 0 -1px 0 rgba(255,255,255,.12); flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; padding-block: 20px; font-size: .875rem; }
 @media (min-width: 40rem) { .footer-grid { grid-template-columns: 1fr 1fr; } .footer-identity { grid-column: 1 / -1; } }
 @media (min-width: 80rem) { .footer-grid { grid-template-columns: 1fr .55fr 1.2fr 1.2fr; } .footer-identity { grid-column: auto; } }
 
