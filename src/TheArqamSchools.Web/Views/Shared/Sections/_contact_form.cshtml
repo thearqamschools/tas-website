@@ -21,7 +21,7 @@
             <h2 class="h2" id="h-@Model.Id">@(string.IsNullOrEmpty(Model.Text("heading")) ? "Send us a message" : Model.Text("heading"))</h2>
             @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
             <ul class="contact-list">
-                @if (!string.IsNullOrEmpty(phone)) { <li>@Icons.Svg("phone", 20) <a href="@Contact.TelUrl(phone)">@phone</a>@if (!string.IsNullOrEmpty(phoneAlt)) { <text>, <a href="@Contact.TelUrl(phoneAlt)">@phoneAlt</a></text> }</li> }
+                @if (!string.IsNullOrEmpty(phone)) { <li>@Icons.Svg("phone", 20) <span><a href="@Contact.TelUrl(phone)">@phone</a>@if (!string.IsNullOrEmpty(phoneAlt)) {<text>, <a href="@Contact.TelUrl(phoneAlt)">@phoneAlt</a></text>}</span></li> }
                 @if (!string.IsNullOrEmpty(whatsapp)) { <li>@Icons.Svg("whatsapp", 20) <a href="@Contact.WhatsAppUrl(whatsapp)" target="_blank" rel="noopener">WhatsApp @whatsapp</a></li> }
                 @if (!string.IsNullOrEmpty(address)) { <li>@Icons.Svg("map-pin", 20) <span class="pre-line">@address</span></li> }
             </ul>

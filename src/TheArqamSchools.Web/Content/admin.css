@@ -127,3 +127,6 @@ a.admin-stat:hover { border-color: var(--blue); }
 .admin-field textarea:focus-visible, .admin-field select:focus-visible { outline: 3px solid var(--blue); outline-offset: 1px; border-color: var(--blue); }
 .admin-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; }
 .admin-list-link--child { padding-left: 2rem; }
+
+.admin-quick-links { margin: 0; padding-left: 1.25rem; columns: 2 14rem; }
+.admin-quick-links li { margin-bottom: .375rem; }

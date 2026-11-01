@@ -29,6 +29,12 @@
 }
 
 <section class="admin-card">
-    <h2>Coming next</h2>
-    <p>Editing of pages, menus, campuses and settings, and managing users, are being added to the admin panel.</p>
+    <h2>Quick links</h2>
+    <ul class="admin-quick-links">
+        @if (Model.User.Can("inquiries.view")) { <li><a href="/admin/inquiries">Admission inquiries</a></li><li><a href="/admin/messages">Messages</a></li> }
+        @if (Model.User.Can("franchise.view")) { <li><a href="/admin/franchise">Franchise applications</a></li> }
+        @if (Model.User.Can("pages.view")) { <li><a href="/admin/pages">Pages</a></li> }
+        @if (Model.User.Can("branches.view")) { <li><a href="/admin/campuses">Campuses</a></li> }
+        <li><a href="/" target="_blank" rel="noopener">View the website</a></li>
+    </ul>
 </section>
