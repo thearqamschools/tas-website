@@ -106,7 +106,7 @@ namespace TheArqamSchools.Web.Data
             {
                 db.Execute(
                     @"UPDATE dbo.users SET password_hash = @passwordHash, security_stamp = @stamp, access_failed_count = 0,
-                             lockout_end = NULL, updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId
+                             lockout_end = NULL, updated_at = SYSDATETIMEOFFSET()
                       WHERE id = @userId AND deleted_at IS NULL",
                     new { userId, passwordHash, actorId, stamp = AdminUserRepository.NewStamp() }, tx);
                 AuditLog.Write(db, tx, actorId, "update", "users", userId.ToString(), new { @event = "password_reset_by_admin" });
@@ -122,7 +122,7 @@ namespace TheArqamSchools.Web.Data
             {
                 db.Execute(
                     @"UPDATE dbo.users SET two_factor_enabled = 0, authenticator_key = NULL, security_stamp = @stamp,
-                             updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId
+                             updated_at = SYSDATETIMEOFFSET()
                       WHERE id = @userId AND deleted_at IS NULL",
                     new { userId, actorId, stamp = AdminUserRepository.NewStamp() }, tx);
                 AuditLog.Write(db, tx, actorId, "update", "users", userId.ToString(), new { @event = "two_factor_reset_by_admin" });

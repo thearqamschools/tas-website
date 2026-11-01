@@ -122,7 +122,7 @@ namespace TheArqamSchools.Web.Data
             {
                 db.Execute(
                     @"UPDATE dbo.users SET authenticator_key = @secret, two_factor_enabled = 1, security_stamp = @stamp,
-                             updated_at = SYSDATETIMEOFFSET(), updated_by = @userId
+                             updated_at = SYSDATETIMEOFFSET()
                       WHERE id = @userId", new { userId, secret, stamp });
                 AuditLog.Write(db, null, userId, "update", "users", userId.ToString(), new { @event = "two_factor_enabled" });
             }
@@ -137,7 +137,7 @@ namespace TheArqamSchools.Web.Data
             {
                 db.Execute(
                     @"UPDATE dbo.users SET password_hash = @passwordHash, security_stamp = @stamp,
-                             updated_at = SYSDATETIMEOFFSET(), updated_by = @userId
+                             updated_at = SYSDATETIMEOFFSET()
                       WHERE id = @userId", new { userId, passwordHash, stamp });
                 AuditLog.Write(db, null, userId, "update", "users", userId.ToString(), new { @event = "password_changed" });
             }

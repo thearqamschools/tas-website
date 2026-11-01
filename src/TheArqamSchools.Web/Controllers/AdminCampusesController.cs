@@ -77,6 +77,9 @@ namespace TheArqamSchools.Web.Controllers
         private ActionResult Save(CampusEditForm form, bool isNew)
         {
             var actor = AdminAuth.Current(HttpContext);
+            // An empty city choice ("Choose a city" with a new city typed instead) is not a binding error;
+            // the city rules are checked below.
+            ModelState.Remove("CityId");
             Clean(form);
             if (string.IsNullOrEmpty(form.Slug) && !string.IsNullOrEmpty(form.Name))
             {
