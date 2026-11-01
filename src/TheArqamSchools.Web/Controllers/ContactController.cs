@@ -26,6 +26,9 @@ namespace TheArqamSchools.Web.Controllers
             if (model == null || model.Contact == null) return HttpNotFound();
             model.Contact.Form = form;
 
+            // The database counts length after trimming; check the trimmed values too.
+            if (form.Name != null && form.Name.Trim().Length < 2) ModelState.AddModelError("Name", "Please enter your name (2 to 120 characters).");
+            if (form.Message != null && form.Message.Trim().Length < 2) ModelState.AddModelError("Message", "Please write your message (up to 3,000 characters).");
             if (!ContactForm.Types.Contains(form.Type))
                 ModelState.AddModelError("Type", "Please choose what your message is about.");
             if (string.IsNullOrWhiteSpace(form.Phone) && string.IsNullOrWhiteSpace(form.Email))
@@ -59,7 +62,12 @@ namespace TheArqamSchools.Web.Controllers
             if (!model.Franchise.Accepting) return Redirect("/franchise/apply#apply");
             model.Franchise.Form = form;
 
-            if (form.BuildingPlan != null && !FranchiseForm.BuildingPlans.Contains(form.BuildingPlan))
+            Action<string, string, string> min2 = (key, value, message) => { if (value != null && value.Trim().Length < 2) ModelState.AddModelError(key, message); };
+            min2("FullName", form.FullName, "Please enter your full name (2 to 120 characters).");
+            min2("City", form.City, "Please enter your city (2 to 80 characters).");
+            min2("ProposedCity", form.ProposedCity, "Please enter the proposed city (2 to 80 characters).");
+            min2("ProposedArea", form.ProposedArea, "Please enter the proposed area (2 to 120 characters).");
+            if (!string.IsNullOrEmpty(form.BuildingPlan) && !FranchiseForm.BuildingPlans.Contains(form.BuildingPlan))
                 ModelState.AddModelError("BuildingPlan", "Please choose an option from the list.");
             if (!string.IsNullOrWhiteSpace(form.StartTimeline) && model.Franchise.StartTimelines.Count > 0
                 && !model.Franchise.StartTimelines.Contains(form.StartTimeline))

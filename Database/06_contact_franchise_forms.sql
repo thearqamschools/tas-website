@@ -8,8 +8,10 @@
 --  2. Adds a "contact_form" section to /contact and a "franchise_form" section
 --     to /franchise/apply, unless the page already has one. The forms post to
 --     /contact/send and /franchise/apply/send (ContactController).
---  Nothing is deleted. The headings and intros can be edited in the admin panel
---  (Pages). Contact details on /contact come from the website settings.
+--  If either page is missing, it stops with an error and changes nothing.
+--  Nothing is deleted. Headings and intros can be edited in the admin panel
+--  (Pages); the anchors ("contact", "apply"), which the forms' redirects use,
+--  are not shown there. Contact details on /contact come from the website settings.
 -- =============================================================================
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
@@ -25,6 +27,9 @@ BEGIN TRANSACTION;
 DECLARE @p_contact UNIQUEIDENTIFIER = (SELECT id FROM dbo.pages WHERE path = N'/contact' AND deleted_at IS NULL);
 DECLARE @p_apply UNIQUEIDENTIFIER = (SELECT id FROM dbo.pages WHERE path = N'/franchise/apply' AND deleted_at IS NULL);
 
+IF @p_contact IS NULL OR @p_apply IS NULL
+    THROW 50006, N'06: the /contact or /franchise/apply page was not found. Nothing was changed; check the pages and run again.', 1;
+
 IF OBJECT_ID(N'archive.page_sections_20261101') IS NULL
     SELECT * INTO archive.page_sections_20261101 FROM dbo.page_sections WHERE page_id IN (@p_contact, @p_apply);
 
@@ -39,11 +44,8 @@ IF @p_apply IS NOT NULL
    AND NOT EXISTS (SELECT 1 FROM dbo.page_sections WHERE page_id = @p_apply AND [type] = N'franchise_form')
     INSERT INTO dbo.page_sections (page_id, [type], data, sort_order, is_visible) VALUES
       (@p_apply, N'franchise_form',
-       N'{"anchor":"apply","tone":"white","heading":"Franchise application","intro":"Tell us about yourself and the location you have in mind. Our franchise team will review your application and contact you."}',
+       N'{"anchor":"apply","tone":"white","heading":"Franchise application"}',
        10, 1);
-
-IF @p_contact IS NULL PRINT N'Note: the /contact page was not found; no contact form was added.';
-IF @p_apply IS NULL PRINT N'Note: the /franchise/apply page was not found; no franchise form was added.';
 
 INSERT INTO dbo.schema_migrations (id) VALUES (N'06_contact_franchise_forms');
 COMMIT TRANSACTION;

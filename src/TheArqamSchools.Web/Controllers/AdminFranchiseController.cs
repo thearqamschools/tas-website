@@ -52,7 +52,7 @@ namespace TheArqamSchools.Web.Controllers
         [AdminAuthorize("franchise.export")]
         public ActionResult Export(string status)
         {
-            var rows = FranchiseRepository.List(status, Request.Unvalidated.QueryString["q"]);
+            var rows = FranchiseRepository.List(status, Request.Unvalidated.QueryString["q"], FranchiseRepository.ExportLimit);
             var csv = new StringBuilder();
             csv.AppendLine("Reference,Received (Pakistan time),Status,Name,Mobile,WhatsApp,Email,City,Province,Proposed city,Proposed area,Building,Building size,Start,Experience,Message");
             foreach (var r in rows)

@@ -118,6 +118,7 @@ namespace TheArqamSchools.Web.Models
         public string FullName { get; set; }
 
         [Required(ErrorMessage = "Please enter your mobile number.")]
+        [StringLength(20)]
         [RegularExpression(@"^\+?[0-9 ()-]{7,20}$", ErrorMessage = "Please enter a valid mobile number, for example 0300-1234567.")]
         public string Mobile { get; set; }
 

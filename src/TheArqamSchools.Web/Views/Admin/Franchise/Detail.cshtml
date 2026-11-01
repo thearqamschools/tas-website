@@ -5,7 +5,9 @@
     ViewBag.Title = Model.FullName;
     var plans = new Dictionary<string, string> { { "own", "Owns a building or plot" }, { "rent", "Plans to rent" }, { "undecided", "Not decided" } };
     Func<string, string> digits = p => new string((p ?? "").Where(char.IsDigit).ToArray());
-    Func<string, string> wa = p => { var d = digits(p); return d.StartsWith("0") ? "92" + d.Substring(1) : d; };
+    Func<string, string> tel = p => ((p ?? "").Trim().StartsWith("+") ? "+" : "") + digits(p);
+    Func<string, string> wa = p => { var d = digits(p); return d.StartsWith("00") ? d.Substring(2) : d.StartsWith("0") ? "92" + d.Substring(1) : d; };
+    var badge = Model.Status == "new" ? "new" : Model.Status == "approved" ? "resolved" : Model.Status == "rejected" ? "spam" : "in_progress";
 }
 <p><a href="/admin/franchise">&larr; Franchise applications</a></p>
 @if ((bool)ViewBag.Saved)
@@ -15,12 +17,12 @@
 <section class="admin-card">
     <div class="admin-page-head">
         <h1>@Model.FullName</h1>
-        <span class="admin-status admin-status--in_progress">@FranchiseRepository.Label(Model.Status)</span>
+        <span class="admin-status admin-status--@badge">@FranchiseRepository.Label(Model.Status)</span>
     </div>
     <dl class="admin-details">
         <dt>Reference</dt><dd>@Model.ReferenceNo</dd>
         <dt>Received</dt><dd>@Model.SubmittedAt.ToOffset(TimeSpan.FromHours(5)).ToString("d MMMM yyyy, h:mm tt") (Pakistan time)</dd>
-        <dt>Mobile</dt><dd><a href="tel:@digits(Model.Mobile)">@Model.Mobile</a> &middot; <a href="https://wa.me/@wa(Model.Whatsapp ?? Model.Mobile)" target="_blank" rel="noopener noreferrer">WhatsApp</a></dd>
+        <dt>Mobile</dt><dd><a href="tel:@tel(Model.Mobile)">@Model.Mobile</a> &middot; <a href="https://wa.me/@wa(Model.Whatsapp ?? Model.Mobile)" target="_blank" rel="noopener noreferrer">WhatsApp</a></dd>
         @if (!string.IsNullOrEmpty(Model.Whatsapp)) { <dt>WhatsApp</dt><dd>@Model.Whatsapp</dd> }
         <dt>Email</dt><dd><a href="mailto:@Model.Email">@Model.Email</a></dd>
         <dt>Lives in</dt><dd>@(Model.City + (string.IsNullOrEmpty(Model.Province) ? "" : ", " + Model.Province))</dd>

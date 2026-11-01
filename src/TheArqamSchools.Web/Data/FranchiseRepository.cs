@@ -27,7 +27,7 @@ namespace TheArqamSchools.Web.Data
             {
                 get
                 {
-                    try { return JArray.Parse(string.IsNullOrEmpty(StartTimelines) ? "[]" : StartTimelines).Select(t => (string)t).Where(t => !string.IsNullOrWhiteSpace(t)).ToList(); }
+                    try { return JArray.Parse(string.IsNullOrEmpty(StartTimelines) ? "[]" : StartTimelines).Where(t => t.Type == JTokenType.String).Select(t => (string)t).Where(t => !string.IsNullOrWhiteSpace(t)).ToList(); }
                     catch (Newtonsoft.Json.JsonReaderException) { return new List<string>(); }
                 }
             }
@@ -68,7 +68,10 @@ namespace TheArqamSchools.Web.Data
 
         // ---- Admin ----------------------------------------------------------------------
 
-        public static IList<FranchiseRow> List(string status, string q)
+        public const int ListLimit = 500;
+        public const int ExportLimit = 5000;
+
+        public static IList<FranchiseRow> List(string status, string q, int limit = ListLimit)
         {
             status = Statuses.Contains(status) ? status : null;
             q = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
@@ -76,11 +79,17 @@ namespace TheArqamSchools.Web.Data
             var like = q == null ? null : "%" + q.Replace("[", "[[]").Replace("%", "[%]").Replace("_", "[_]") + "%";
             using (var db = Db.Open())
                 return db.Query<FranchiseRow>(
-                    @"SELECT TOP 500 * FROM dbo.franchise_applications
+                    @"SELECT TOP (@limit) * FROM dbo.franchise_applications
                       WHERE (@status IS NULL OR status = @status)
                         AND (@like IS NULL OR full_name LIKE @like OR mobile LIKE @like OR email LIKE @like
                              OR reference_no LIKE @like OR proposed_city LIKE @like)
-                      ORDER BY submitted_at DESC", new { status, like }).ToList();
+                      ORDER BY submitted_at DESC", new { status, like, limit }).ToList();
+        }
+
+        public static bool ReferenceExists(string reference)
+        {
+            using (var db = Db.Open())
+                return db.ExecuteScalar<int>("SELECT COUNT(*) FROM dbo.franchise_applications WHERE reference_no = @reference", new { reference }) > 0;
         }
 
         public static FranchiseRow Get(Guid id)

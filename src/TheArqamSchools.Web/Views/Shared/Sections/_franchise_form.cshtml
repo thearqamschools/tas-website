@@ -14,8 +14,8 @@
 {
     <div class="field@(err(key) != null ? " has-error" : "")">
         <label for="fr-@key">@label @if (required) { <span class="req" aria-hidden="true">*</span> } else { <span class="optional">(optional)</span> }</label>
-        <input id="fr-@key" name="@key" type="@type" value="@value" maxlength="@max" @(autocomplete != null ? "autocomplete=" + autocomplete : "") @(required ? "required" : "") @inv(key) />
-        @if (hint != null) { <p class="hint">@hint</p> }
+        <input id="fr-@key" name="@key" type="@type" value="@value" maxlength="@max" @(autocomplete != null ? "autocomplete=" + autocomplete : "") @(required ? "required" : "") @(err(key) != null ? "aria-invalid=true" : "") aria-describedby="@((hint != null ? "fr-" + key + "-hint " : "") + (err(key) != null ? "fr-" + key + "-err" : ""))" />
+        @if (hint != null) { <p class="hint" id="fr-@(key)-hint">@hint</p> }
         @if (err(key) != null) { <p class="field-error" id="fr-@(key)-err">@err(key)</p> }
     </div>
 }

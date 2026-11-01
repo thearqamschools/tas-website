@@ -60,7 +60,8 @@ namespace TheArqamSchools.Web.Infrastructure
                     StartTimelines = settings.TimelineList,
                 };
                 var reference = request == null ? null : request.QueryString["ref"];
-                if (reference != null && System.Text.RegularExpressions.Regex.IsMatch(reference, @"^FR-[0-9]{4}-[0-9]{5,}$"))
+                if (reference != null && System.Text.RegularExpressions.Regex.IsMatch(reference, @"^FR-[0-9]{4}-[0-9]{5,}$")
+                    && FranchiseRepository.ReferenceExists(reference))
                 {
                     model.Franchise.Sent = true;
                     model.Franchise.ReferenceNo = reference;

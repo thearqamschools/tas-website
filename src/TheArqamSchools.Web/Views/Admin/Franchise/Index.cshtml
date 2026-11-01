@@ -39,6 +39,7 @@
 }
 else
 {
+    <p class="admin-muted">@(Model.Count >= TheArqamSchools.Web.Data.FranchiseRepository.ListLimit ? "Showing the newest " + Model.Count + ". Use the status filter or search to find older ones; the CSV download includes up to 5,000." : Model.Count + " applications")</p>
     <ul class="admin-list">
         @foreach (var r in Model)
         {
