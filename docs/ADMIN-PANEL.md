@@ -26,6 +26,7 @@ Address: `/admin`. Built in ASP.NET MVC 5 inside the website (no extra packages)
 | Dashboard | `/admin` | any signed-in user |
 | Admission inquiries | `/admin/inquiries` | `inquiries.view`, `inquiries.update` (status) |
 | Messages | `/admin/messages` | `inquiries.view`, `inquiries.update` |
+| Franchise applications | `/admin/franchise` | `franchise.view`, `franchise.update` (status), `franchise.export` (CSV) |
 | Pages and sections | `/admin/pages` | `pages.view`, `pages.update` (drafts), `pages.publish` |
 | Campuses | `/admin/campuses` | `branches.view`, `.create`, `.update`, `.publish`, `.delete` (archive) |
 | Menus | `/admin/menus` | `navigation.view`, `.create`, `.update` |
@@ -62,6 +63,7 @@ assignments count.
 ## Not built yet
 
 - Media library (uploading images), homepage editing (the homepage is in the code),
-  news, events, gallery, downloads, careers and franchise screens.
+  news, events, gallery, downloads and careers screens; franchise form settings
+  (accepting applications, start timelines) are read from `dbo.franchise_settings` but not editable yet.
 - Region- or campus-limited roles.
 - Viewing the audit log in the panel (it is in the database).

@@ -518,4 +518,30 @@ namespace TheArqamSchools.Web.Models
         public string Notice { get; set; }
         public IList<string> Errors { get; set; }
     }
+
+    public class FranchiseRow
+    {
+        public Guid Id { get; set; }
+        public string ReferenceNo { get; set; }
+        public string Status { get; set; }
+        public string FullName { get; set; }
+        public string Mobile { get; set; }
+        public string Whatsapp { get; set; }
+        public string Email { get; set; }
+        public string City { get; set; }
+        public string District { get; set; }
+        public string Province { get; set; }
+        public string Address { get; set; }
+        public string ProposedCity { get; set; }
+        public string ProposedArea { get; set; }
+        public string BuildingPlan { get; set; }
+        public string BuildingArea { get; set; }
+        public string Experience { get; set; }
+        public string InvestmentRange { get; set; }
+        public string StartTimeline { get; set; }
+        public string Message { get; set; }
+        public string SourcePage { get; set; }
+        public DateTimeOffset SubmittedAt { get; set; }
+        public DateTimeOffset UpdatedAt { get; set; }
+    }
 }

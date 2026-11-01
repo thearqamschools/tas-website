@@ -29,6 +29,10 @@
                     <a href="/admin/inquiries">Inquiries</a>
                     <a href="/admin/messages">Messages</a>
                 }
+                @if (adminUser.Can("franchise.view"))
+                {
+                    <a href="/admin/franchise">Franchise</a>
+                }
                 @if (adminUser.Can("pages.view"))
                 {
                     <a href="/admin/pages">Pages</a>

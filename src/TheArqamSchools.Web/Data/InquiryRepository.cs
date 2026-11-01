@@ -35,6 +35,19 @@ namespace TheArqamSchools.Web.Data
             }
         }
 
+        /// <summary>A message from the /contact page (no campus; may have a subject).</summary>
+        public static Guid SaveGeneralMessage(string type, string name, string phone, string email, string subject, string message, string sourcePage)
+        {
+            using (var db = Db.Open())
+            {
+                return db.ExecuteScalar<Guid>(
+                    @"INSERT INTO dbo.contact_messages ([type], name, phone, email, subject, message, source_page)
+                      OUTPUT inserted.id
+                      VALUES (@type, @name, @phone, @email, @subject, @message, @sourcePage)",
+                    new { type, name, phone, email, subject, message, sourcePage });
+            }
+        }
+
         /// <summary>A class level id is only stored if it exists.</summary>
         public static bool ClassLevelExists(Guid id)
         {

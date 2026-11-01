@@ -68,6 +68,106 @@ namespace TheArqamSchools.Web.Models
         public string Website { get; set; }
     }
 
+    /// <summary>General message from /contact (saved in dbo.contact_messages). Phone or email is required, as the database requires.</summary>
+    public class ContactForm
+    {
+        public static readonly string[] Types = { "general", "feedback", "careers", "media", "other" };
+
+        public string Type { get; set; }
+
+        [Required(ErrorMessage = "Please enter your name.")]
+        [StringLength(120, MinimumLength = 2, ErrorMessage = "Please enter your name (2 to 120 characters).")]
+        public string Name { get; set; }
+
+        [StringLength(20)]
+        [RegularExpression(@"^\+?[0-9 ()-]{7,20}$", ErrorMessage = "Please enter a valid phone number, for example 0300-1234567.")]
+        public string Phone { get; set; }
+
+        [StringLength(254)]
+        [RegularExpression(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", ErrorMessage = "Please enter a valid email address.")]
+        public string Email { get; set; }
+
+        [StringLength(200, ErrorMessage = "Please keep the subject under 200 characters.")]
+        public string Subject { get; set; }
+
+        [Required(ErrorMessage = "Please write your message.")]
+        [StringLength(3000, MinimumLength = 2, ErrorMessage = "Please write your message (up to 3,000 characters).")]
+        public string Message { get; set; }
+
+        [Range(typeof(bool), "true", "true", ErrorMessage = "Please agree that we may contact you.")]
+        public bool Consent { get; set; }
+
+        /// <summary>Hidden field: people leave it empty, spam bots fill it in.</summary>
+        public string Website { get; set; }
+    }
+
+    public class ContactSectionViewModel
+    {
+        public ContactForm Form { get; set; }
+        public bool Sent { get; set; }
+        public bool RateLimited { get; set; }
+    }
+
+    /// <summary>Franchise application from /franchise/apply (saved in dbo.franchise_applications). Lengths and formats match the database checks.</summary>
+    public class FranchiseForm
+    {
+        public static readonly string[] BuildingPlans = { "own", "rent", "undecided" };
+
+        [Required(ErrorMessage = "Please enter your full name.")]
+        [StringLength(120, MinimumLength = 2, ErrorMessage = "Please enter your full name (2 to 120 characters).")]
+        public string FullName { get; set; }
+
+        [Required(ErrorMessage = "Please enter your mobile number.")]
+        [RegularExpression(@"^\+?[0-9 ()-]{7,20}$", ErrorMessage = "Please enter a valid mobile number, for example 0300-1234567.")]
+        public string Mobile { get; set; }
+
+        [StringLength(20)]
+        [RegularExpression(@"^\+?[0-9 ()-]{7,20}$", ErrorMessage = "Please enter a valid WhatsApp number, or leave it empty.")]
+        public string Whatsapp { get; set; }
+
+        [Required(ErrorMessage = "Please enter your email address.")]
+        [StringLength(254)]
+        [RegularExpression(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", ErrorMessage = "Please enter a valid email address.")]
+        public string Email { get; set; }
+
+        [Required(ErrorMessage = "Please enter the city where you live.")]
+        [StringLength(80, MinimumLength = 2, ErrorMessage = "Please enter your city (2 to 80 characters).")]
+        public string City { get; set; }
+
+        [StringLength(80)] public string Province { get; set; }
+
+        [Required(ErrorMessage = "Please enter the city where you want to open the campus.")]
+        [StringLength(80, MinimumLength = 2, ErrorMessage = "Please enter the proposed city (2 to 80 characters).")]
+        public string ProposedCity { get; set; }
+
+        [Required(ErrorMessage = "Please enter the area or locality.")]
+        [StringLength(120, MinimumLength = 2, ErrorMessage = "Please enter the proposed area (2 to 120 characters).")]
+        public string ProposedArea { get; set; }
+
+        public string BuildingPlan { get; set; }
+        [StringLength(80)] public string BuildingArea { get; set; }
+        [StringLength(2000, ErrorMessage = "Please keep this under 2,000 characters.")] public string Experience { get; set; }
+        [StringLength(80)] public string StartTimeline { get; set; }
+        [StringLength(3000, ErrorMessage = "Please keep your message under 3,000 characters.")] public string Message { get; set; }
+
+        [Range(typeof(bool), "true", "true", ErrorMessage = "Please agree that we may contact you.")]
+        public bool Consent { get; set; }
+
+        public string Website { get; set; }
+    }
+
+    public class FranchiseSectionViewModel
+    {
+        public FranchiseForm Form { get; set; }
+        public bool Accepting { get; set; }
+        public string ClosedMessage { get; set; }
+        public string ResponseTime { get; set; }
+        public IList<string> StartTimelines { get; set; }
+        public bool Sent { get; set; }
+        public string ReferenceNo { get; set; }
+        public bool RateLimited { get; set; }
+    }
+
     /// <summary>Everything the admission inquiry section needs to draw the form.</summary>
     public class AdmissionInquiryViewModel
     {

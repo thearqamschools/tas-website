@@ -3,13 +3,14 @@
 @{
     ViewBag.Meta = Model.Meta;
     var known = new HashSet<string> { "page_header", "split_feature", "values", "card_grid", "cta_band", "process_steps", "faq", "rich_text",
-                                      "vision_mission", "academic_levels", "info_list", "admission_inquiry", "campus_directory" };
+                                      "vision_mission", "academic_levels", "info_list", "admission_inquiry", "campus_directory",
+                                      "contact_form", "franchise_form" };
     var sections = Model.Sections.Where(s => known.Contains(s.Type)).ToList();
     var custom = sections.FirstOrDefault(s => s.Type == "page_header");
     var cityName = ViewBag.CityName as string;
     // The footer has its own call to action; skip it when the page already ends with one.
     var last = sections.LastOrDefault();
-    ViewBag.HideFooterCta = (last != null && last.Type == "cta_band") || sections.Any(x => x.Type == "admission_inquiry");
+    ViewBag.HideFooterCta = (last != null && last.Type == "cta_band") || sections.Any(x => x.Type == "admission_inquiry" || x.Type == "contact_form" || x.Type == "franchise_form");
 }
 @if (custom != null && cityName == null)
 {

@@ -53,6 +53,20 @@ namespace TheArqamSchools.Web.Infrastructure
             Send("New website message (" + OneLine(type) + ")", body.ToString());
         }
 
+        public static void FranchiseApplication(Guid id, string reference, string name, string proposedCity)
+        {
+            var body = new StringBuilder()
+                .AppendLine("A new franchise application was sent from the website.")
+                .AppendLine()
+                .AppendLine("Reference: " + OneLine(reference))
+                .AppendLine("Name: " + OneLine(name))
+                .AppendLine("Proposed city: " + OneLine(proposedCity))
+                .AppendLine()
+                .AppendLine("Open it in the admin panel to see the contact details and full application:")
+                .AppendLine(Helpers.Site.Absolute("/admin/franchise/" + id.ToString("D")));
+            Send("New franchise application " + OneLine(reference), body.ToString());
+        }
+
         private static void Send(string subject, string body)
         {
             if (!Enabled) return;

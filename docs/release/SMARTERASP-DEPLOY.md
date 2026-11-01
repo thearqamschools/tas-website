@@ -23,6 +23,7 @@ Connect to the new, empty database and run, in this order:
 3. `Database/02_seed_data.sql`
 4. `Database/04_simplify_navigation.sql`
 5. `Database/05_franchise_header_button.sql`
+6. `Database/06_contact_franchise_forms.sql` (adds the contact and franchise application forms)
 
 Skip `03_fulltext.sql` (optional, and Full-Text Search may not be offered).
 

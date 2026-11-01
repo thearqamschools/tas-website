@@ -1,0 +1,57 @@
+@model IList<FranchiseRow>
+@using TheArqamSchools.Web.Data
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = "Franchise applications";
+    var status = ViewBag.Status as string;
+    var q = ViewBag.Query as string;
+    Func<string, string> link = st =>
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrEmpty(st)) { parts.Add("status=" + Url.Encode(st)); }
+        if (!string.IsNullOrEmpty(q)) { parts.Add("q=" + Url.Encode(q)); }
+        return "/admin/franchise" + (parts.Count > 0 ? "?" + string.Join("&", parts) : "");
+    };
+}
+<div class="admin-page-head">
+    <h1>Franchise applications</h1>
+    @if ((bool)ViewBag.CanExport)
+    {
+        <a class="admin-button admin-button--secondary" href="@(link(status).Replace("/admin/franchise", "/admin/franchise/export.csv"))">Download CSV</a>
+    }
+</div>
+<nav class="admin-tabs" aria-label="Filter by status">
+    <a href="@link(null)" @(status == null ? Html.Raw("aria-current=\"page\"") : null)>All</a>
+    @foreach (var s in FranchiseRepository.Statuses)
+    {
+        <a href="@link(s)" @(status == s ? Html.Raw("aria-current=\"page\"") : null)>@FranchiseRepository.Label(s)</a>
+    }
+</nav>
+<form method="get" action="/admin/franchise" class="admin-search" role="search">
+    @if (status != null) { <input type="hidden" name="status" value="@status" /> }
+    <label for="q" class="admin-visually-hidden">Search applications</label>
+    <input type="search" id="q" name="q" value="@q" placeholder="Search name, phone, email, reference or city" maxlength="100" />
+    <button type="submit" class="admin-button">Search</button>
+</form>
+@if (Model.Count == 0)
+{
+    <section class="admin-card"><p>No applications to show.</p></section>
+}
+else
+{
+    <ul class="admin-list">
+        @foreach (var r in Model)
+        {
+            <li class="admin-list-item">
+                <a class="admin-list-link" href="/admin/franchise/@r.Id.ToString("D")">
+                    <span class="admin-list-main">
+                        <strong>@r.FullName</strong>
+                        <span class="admin-status admin-status--@(r.Status == "new" ? "new" : r.Status == "approved" ? "resolved" : r.Status == "rejected" ? "spam" : "in_progress")">@FranchiseRepository.Label(r.Status)</span>
+                    </span>
+                    <span class="admin-list-meta">@r.ReferenceNo &middot; @r.ProposedCity, @r.ProposedArea</span>
+                    <span class="admin-list-date">@r.SubmittedAt.ToOffset(TimeSpan.FromHours(5)).ToString("d MMM yyyy")</span>
+                </a>
+            </li>
+        }
+    </ul>
+}

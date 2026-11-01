@@ -97,12 +97,14 @@
     <Compile Include="Controllers\AdminAccountController.cs" />
     <Compile Include="Controllers\AdminCampusesController.cs" />
     <Compile Include="Controllers\AdminDashboardController.cs" />
+    <Compile Include="Controllers\AdminFranchiseController.cs" />
     <Compile Include="Controllers\AdminInboxController.cs" />
     <Compile Include="Controllers\AdminMenusController.cs" />
     <Compile Include="Controllers\AdminPagesController.cs" />
     <Compile Include="Controllers\AdminSettingsController.cs" />
     <Compile Include="Controllers\AdminUsersController.cs" />
     <Compile Include="Controllers\CampusesController.cs" />
+    <Compile Include="Controllers\ContactController.cs" />
     <Compile Include="Controllers\ErrorController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\PagesController.cs" />
@@ -114,6 +116,7 @@
     <Compile Include="Data\CampusRepository.cs" />
     <Compile Include="Data\ClassLevelRepository.cs" />
     <Compile Include="Data\Db.cs" />
+    <Compile Include="Data\FranchiseRepository.cs" />
     <Compile Include="Data\HeadOfficeRepository.cs" />
     <Compile Include="Data\InboxRepository.cs" />
     <Compile Include="Data\InquiryRepository.cs" />
@@ -171,6 +174,8 @@
     <Content Include="Views\Admin\Campuses\Edit.cshtml" />
     <Content Include="Views\Admin\Campuses\Index.cshtml" />
     <Content Include="Views\Admin\Dashboard\Index.cshtml" />
+    <Content Include="Views\Admin\Franchise\Detail.cshtml" />
+    <Content Include="Views\Admin\Franchise\Index.cshtml" />
     <Content Include="Views\Admin\Inbox\Detail.cshtml" />
     <Content Include="Views\Admin\Inbox\Index.cshtml" />
     <Content Include="Views\Admin\Menus\Edit.cshtml" />
@@ -190,8 +195,10 @@
     <Content Include="Views\Shared\Sections\_admission_inquiry.cshtml" />
     <Content Include="Views\Shared\Sections\_campus_directory.cshtml" />
     <Content Include="Views\Shared\Sections\_card_grid.cshtml" />
+    <Content Include="Views\Shared\Sections\_contact_form.cshtml" />
     <Content Include="Views\Shared\Sections\_cta_band.cshtml" />
     <Content Include="Views\Shared\Sections\_faq.cshtml" />
+    <Content Include="Views\Shared\Sections\_franchise_form.cshtml" />
     <Content Include="Views\Shared\Sections\_info_list.cshtml" />
     <Content Include="Views\Shared\Sections\_page_header.cshtml" />
     <Content Include="Views\Shared\Sections\_process_steps.cshtml" />

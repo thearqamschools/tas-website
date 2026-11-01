@@ -11,6 +11,8 @@ namespace TheArqamSchools.Web.Models
         public PageMeta Meta { get; set; }
         public AdmissionInquiryViewModel Inquiry { get; set; }
         public CampusDirectoryViewModel Directory { get; set; }
+        public ContactSectionViewModel Contact { get; set; }
+        public FranchiseSectionViewModel Franchise { get; set; }
         /// <summary>Validation errors from a form posted on this page.</summary>
         public ModelStateDictionary FormErrors { get; set; }
     }

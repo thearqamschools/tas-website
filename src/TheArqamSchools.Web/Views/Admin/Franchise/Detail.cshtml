@@ -1,0 +1,47 @@
+@model FranchiseRow
+@using TheArqamSchools.Web.Data
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = Model.FullName;
+    var plans = new Dictionary<string, string> { { "own", "Owns a building or plot" }, { "rent", "Plans to rent" }, { "undecided", "Not decided" } };
+    Func<string, string> digits = p => new string((p ?? "").Where(char.IsDigit).ToArray());
+    Func<string, string> wa = p => { var d = digits(p); return d.StartsWith("0") ? "92" + d.Substring(1) : d; };
+}
+<p><a href="/admin/franchise">&larr; Franchise applications</a></p>
+@if ((bool)ViewBag.Saved)
+{
+    <div class="admin-alert admin-alert--success" role="status"><p>Status saved.</p></div>
+}
+<section class="admin-card">
+    <div class="admin-page-head">
+        <h1>@Model.FullName</h1>
+        <span class="admin-status admin-status--in_progress">@FranchiseRepository.Label(Model.Status)</span>
+    </div>
+    <dl class="admin-details">
+        <dt>Reference</dt><dd>@Model.ReferenceNo</dd>
+        <dt>Received</dt><dd>@Model.SubmittedAt.ToOffset(TimeSpan.FromHours(5)).ToString("d MMMM yyyy, h:mm tt") (Pakistan time)</dd>
+        <dt>Mobile</dt><dd><a href="tel:@digits(Model.Mobile)">@Model.Mobile</a> &middot; <a href="https://wa.me/@wa(Model.Whatsapp ?? Model.Mobile)" target="_blank" rel="noopener noreferrer">WhatsApp</a></dd>
+        @if (!string.IsNullOrEmpty(Model.Whatsapp)) { <dt>WhatsApp</dt><dd>@Model.Whatsapp</dd> }
+        <dt>Email</dt><dd><a href="mailto:@Model.Email">@Model.Email</a></dd>
+        <dt>Lives in</dt><dd>@(Model.City + (string.IsNullOrEmpty(Model.Province) ? "" : ", " + Model.Province))</dd>
+        <dt>Proposed campus</dt><dd>@Model.ProposedArea, @Model.ProposedCity</dd>
+        @if (!string.IsNullOrEmpty(Model.BuildingPlan)) { <dt>Building</dt><dd>@(plans.ContainsKey(Model.BuildingPlan) ? plans[Model.BuildingPlan] : Model.BuildingPlan)</dd> }
+        @if (!string.IsNullOrEmpty(Model.BuildingArea)) { <dt>Building size</dt><dd>@Model.BuildingArea</dd> }
+        @if (!string.IsNullOrEmpty(Model.StartTimeline)) { <dt>Start</dt><dd>@Model.StartTimeline</dd> }
+    </dl>
+    @if (!string.IsNullOrWhiteSpace(Model.Experience)) { <h2>Experience</h2><p class="admin-message">@Model.Experience</p> }
+    @if (!string.IsNullOrWhiteSpace(Model.Message)) { <h2>Message</h2><p class="admin-message">@Model.Message</p> }
+</section>
+@if ((bool)ViewBag.CanUpdate)
+{
+    <section class="admin-card">
+        <h2>Change status</h2>
+        <form method="post" action="/admin/franchise/@Model.Id.ToString("D")/status" class="admin-status-form">
+            @Html.AntiForgeryToken()
+            @foreach (var s in FranchiseRepository.Statuses)
+            {
+                <button type="submit" name="status" value="@s" class="admin-button @(s == Model.Status ? "" : "admin-button--secondary")" aria-pressed="@(s == Model.Status ? "true" : "false")">@FranchiseRepository.Label(s)</button>
+            }
+        </form>
+    </section>
+}

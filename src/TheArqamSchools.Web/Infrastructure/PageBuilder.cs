@@ -39,6 +39,34 @@ namespace TheArqamSchools.Web.Infrastructure
                 if (request != null && Guid.TryParse(request.QueryString["campus"], out campus)) model.Inquiry.Form.BranchId = campus;
             }
 
+            if (model.Sections.Any(s => s.Type == "contact_form"))
+            {
+                model.Contact = new ContactSectionViewModel
+                {
+                    Form = new ContactForm { Type = "general" },
+                    Sent = request != null && request.QueryString["sent"] == "1",
+                };
+            }
+
+            if (model.Sections.Any(s => s.Type == "franchise_form"))
+            {
+                var settings = FranchiseRepository.LoadSettings();
+                model.Franchise = new FranchiseSectionViewModel
+                {
+                    Form = new FranchiseForm(),
+                    Accepting = settings.AcceptingApplications,
+                    ClosedMessage = settings.ClosedMessage,
+                    ResponseTime = settings.ResponseTime,
+                    StartTimelines = settings.TimelineList,
+                };
+                var reference = request == null ? null : request.QueryString["ref"];
+                if (reference != null && System.Text.RegularExpressions.Regex.IsMatch(reference, @"^FR-[0-9]{4}-[0-9]{5,}$"))
+                {
+                    model.Franchise.Sent = true;
+                    model.Franchise.ReferenceNo = reference;
+                }
+            }
+
             if (model.Sections.Any(s => s.Type == "campus_directory"))
             {
                 // Search terms are read without ASP.NET request validation: they are cleaned here,

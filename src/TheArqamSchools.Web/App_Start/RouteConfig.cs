@@ -23,6 +23,12 @@ namespace TheArqamSchools.Web
             routes.MapRoute("AdmissionInquiry", "admissions/inquiry", new { controller = "Admissions", action = "Inquiry" },
                 new { httpMethod = new HttpMethodConstraint("POST") });
 
+            // Forms on CMS pages (/contact and /franchise/apply are CMS pages).
+            routes.MapRoute("ContactSend", "contact/send", new { controller = "Contact", action = "Send" },
+                new { httpMethod = new HttpMethodConstraint("POST") });
+            routes.MapRoute("FranchiseApply", "franchise/apply/send", new { controller = "Contact", action = "Franchise" },
+                new { httpMethod = new HttpMethodConstraint("POST") });
+
             // Campuses: /campuses is the CMS page with the directory; city and campus pages come from dbo.branches.
             routes.MapRoute("CampusMessage", "campuses/{city}/{slug}/message", new { controller = "Campuses", action = "Message" },
                 new { httpMethod = new HttpMethodConstraint("POST") });
@@ -68,6 +74,12 @@ namespace TheArqamSchools.Web
             routes.MapRoute("AdminPageSection", "admin/pages/{pageId}/sections/{sectionId}", new { controller = "AdminPages", action = "Section" },
                 new { pageId = new GuidRouteConstraint(), sectionId = new GuidRouteConstraint() });
             routes.MapRoute("AdminPageEdit", "admin/pages/{id}", new { controller = "AdminPages", action = "Edit" },
+                new { id = new GuidRouteConstraint() });
+            routes.MapRoute("AdminFranchise", "admin/franchise", new { controller = "AdminFranchise", action = "Index" });
+            routes.MapRoute("AdminFranchiseExport", "admin/franchise/export.csv", new { controller = "AdminFranchise", action = "Export" });
+            routes.MapRoute("AdminFranchiseStatus", "admin/franchise/{id}/status", new { controller = "AdminFranchise", action = "Status" },
+                new { id = new GuidRouteConstraint(), httpMethod = new HttpMethodConstraint("POST") });
+            routes.MapRoute("AdminFranchiseDetail", "admin/franchise/{id}", new { controller = "AdminFranchise", action = "Detail" },
                 new { id = new GuidRouteConstraint() });
             routes.MapRoute("AdminInboxExport", "admin/{kind}/export.csv", new { controller = "AdminInbox", action = "Export" },
                 new { kind = "inquiries|messages" });

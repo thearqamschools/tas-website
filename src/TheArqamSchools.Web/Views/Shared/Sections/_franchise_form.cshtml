@@ -1,0 +1,118 @@
+@model PageSection
+@using TheArqamSchools.Web.Helpers
+@{
+    var page = (PageViewModel)ViewData["page"];
+    var vm = page.Franchise;
+    var f = vm.Form ?? new FranchiseForm();
+    var errors = page.FormErrors;
+    Func<string, string> err = key => errors != null && errors.ContainsKey(key) && errors[key].Errors.Count > 0 ? errors[key].Errors[0].ErrorMessage : null;
+    Func<string, string> inv = key => err(key) != null ? "aria-invalid=true aria-describedby=fr-" + key + "-err" : "";
+    var hasErrors = errors != null && !errors.IsValid;
+    var plans = new Dictionary<string, string> { { "own", "I own a suitable building or plot" }, { "rent", "I plan to rent a building" }, { "undecided", "Not decided yet" } };
+}
+@helper Field(Func<string, string> err, Func<string, string> inv, string key, string label, string value, bool required, string type = "text", int max = 120, string autocomplete = null, string hint = null)
+{
+    <div class="field@(err(key) != null ? " has-error" : "")">
+        <label for="fr-@key">@label @if (required) { <span class="req" aria-hidden="true">*</span> } else { <span class="optional">(optional)</span> }</label>
+        <input id="fr-@key" name="@key" type="@type" value="@value" maxlength="@max" @(autocomplete != null ? "autocomplete=" + autocomplete : "") @(required ? "required" : "") @inv(key) />
+        @if (hint != null) { <p class="hint">@hint</p> }
+        @if (err(key) != null) { <p class="field-error" id="fr-@(key)-err">@err(key)</p> }
+    </div>
+}
+<section class="section tone-@Model.Tone("white")" id="@(Model.Anchor ?? "apply")" aria-labelledby="h-@Model.Id">
+    <div class="container form-layout">
+        <div class="form-intro">
+            <h2 class="h2" id="h-@Model.Id">@(string.IsNullOrEmpty(Model.Text("heading")) ? "Franchise application" : Model.Text("heading"))</h2>
+            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
+            @if (!string.IsNullOrEmpty(vm.ResponseTime)) { <p class="muted">Our franchise team usually replies within @vm.ResponseTime.</p> }
+            <p class="muted">Read more about partnering with us on the <a href="/franchise">Franchise page</a>.</p>
+        </div>
+        <div class="form-card">
+            @if (vm.Sent)
+            {
+                <div class="alert alert-success" role="status" tabindex="-1" data-focus>
+                    @Icons.Svg("check-circle", 22)
+                    <p>Thank you. Your application has been received. Your reference number is <strong>@vm.ReferenceNo</strong>. Please keep it for any follow-up.</p>
+                </div>
+            }
+            else if (!vm.Accepting)
+            {
+                <div class="alert alert-info" role="status"><p>@(string.IsNullOrEmpty(vm.ClosedMessage) ? "We are not taking new franchise applications at the moment. Please check again later." : vm.ClosedMessage)</p></div>
+            }
+            else
+            {
+                if (vm.RateLimited)
+                {
+                    <div class="alert alert-error" role="alert" tabindex="-1" data-focus><p>An application was already sent from this connection a short time ago. Please wait and try again later.</p></div>
+                }
+                else if (hasErrors)
+                {
+                    <div class="alert alert-error" role="alert" tabindex="-1" data-focus><p>Please check the highlighted fields and try again.</p></div>
+                }
+                <p class="form-note">Fields marked <span class="req">*</span> are required.</p>
+                <form method="post" action="/franchise/apply/send#apply" novalidate>
+                    @Html.AntiForgeryToken()
+                    <div class="hp" aria-hidden="true">
+                        <label for="fr-website">Website</label>
+                        <input id="fr-website" name="Website" type="text" tabindex="-1" autocomplete="off" />
+                    </div>
+                    <fieldset class="form-group">
+                        <legend class="h4">About you</legend>
+                        @Field(err, inv, "FullName", "Full name", f.FullName, true, autocomplete: "name")
+                        <div class="field-row">
+                            @Field(err, inv, "Mobile", "Mobile number", f.Mobile, true, "tel", 20, "tel", "For example 0300-1234567")
+                            @Field(err, inv, "Whatsapp", "WhatsApp number", f.Whatsapp, false, "tel", 20)
+                        </div>
+                        @Field(err, inv, "Email", "Email", f.Email, true, "email", 254, "email")
+                        <div class="field-row">
+                            @Field(err, inv, "City", "City where you live", f.City, true, max: 80, autocomplete: "address-level2")
+                            @Field(err, inv, "Province", "Province", f.Province, false, max: 80, autocomplete: "address-level1")
+                        </div>
+                    </fieldset>
+                    <fieldset class="form-group">
+                        <legend class="h4">The proposed campus</legend>
+                        <div class="field-row">
+                            @Field(err, inv, "ProposedCity", "City", f.ProposedCity, true, max: 80)
+                            @Field(err, inv, "ProposedArea", "Area or locality", f.ProposedArea, true)
+                        </div>
+                        <div class="field@(err("BuildingPlan") != null ? " has-error" : "")">
+                            <label for="fr-BuildingPlan">Building <span class="optional">(optional)</span></label>
+                            <select id="fr-BuildingPlan" name="BuildingPlan" @inv("BuildingPlan")>
+                                <option value="">Choose one</option>
+                                @foreach (var p in plans) { <option value="@p.Key" @(f.BuildingPlan == p.Key ? "selected" : "")>@p.Value</option> }
+                            </select>
+                            @if (err("BuildingPlan") != null) { <p class="field-error" id="fr-BuildingPlan-err">@err("BuildingPlan")</p> }
+                        </div>
+                        @Field(err, inv, "BuildingArea", "Building or plot size", f.BuildingArea, false, max: 80, hint: "For example 1 kanal, or 10 marla")
+                        @if (vm.StartTimelines.Count > 0)
+                        {
+                            <div class="field@(err("StartTimeline") != null ? " has-error" : "")">
+                                <label for="fr-StartTimeline">When would you like to start? <span class="optional">(optional)</span></label>
+                                <select id="fr-StartTimeline" name="StartTimeline" @inv("StartTimeline")>
+                                    <option value="">Choose one</option>
+                                    @foreach (var t in vm.StartTimelines) { <option value="@t" @(f.StartTimeline == t ? "selected" : "")>@t</option> }
+                                </select>
+                                @if (err("StartTimeline") != null) { <p class="field-error" id="fr-StartTimeline-err">@err("StartTimeline")</p> }
+                            </div>
+                        }
+                    </fieldset>
+                    <div class="field@(err("Experience") != null ? " has-error" : "")">
+                        <label for="fr-Experience">Your experience in education or business <span class="optional">(optional)</span></label>
+                        <textarea id="fr-Experience" name="Experience" rows="3" maxlength="2000" @inv("Experience")>@f.Experience</textarea>
+                        @if (err("Experience") != null) { <p class="field-error" id="fr-Experience-err">@err("Experience")</p> }
+                    </div>
+                    <div class="field@(err("Message") != null ? " has-error" : "")">
+                        <label for="fr-Message">Anything else you would like us to know <span class="optional">(optional)</span></label>
+                        <textarea id="fr-Message" name="Message" rows="3" maxlength="3000" @inv("Message")>@f.Message</textarea>
+                        @if (err("Message") != null) { <p class="field-error" id="fr-Message-err">@err("Message")</p> }
+                    </div>
+                    <div class="field field-check@(err("Consent") != null ? " has-error" : "")">
+                        <label><input type="checkbox" name="Consent" value="true" @(f.Consent ? "checked" : "") required @inv("Consent") /> <span>I agree that The Arqam Schools may contact me about this application. <span class="req" aria-hidden="true">*</span></span></label>
+                        @if (err("Consent") != null) { <p class="field-error" id="fr-Consent-err">@err("Consent")</p> }
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send application</button>
+                </form>
+            }
+        </div>
+    </div>
+</section>

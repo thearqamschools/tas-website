@@ -28,6 +28,8 @@ Database/
   04_simplify_navigation.sql  phase 2a content change: backs up to archive.*_20261024, simplifies the menu,
                            consolidates the four main pages, archives old subpages, adds 301 redirects
   05_franchise_header_button.sql  red header button becomes "Franchise"; Franchise hidden from the main menu
+  06_contact_franchise_forms.sql  adds the message form to /contact and the application form to /franchise/apply
+  hosting/smarterasp_setup.sql    shared-hosting replacement for 00 (see docs/release/SMARTERASP-DEPLOY.md)
   tools/convert.py         generates 01_schema.sql from the PostgreSQL schema
   tools/export_data.py     generates 02_seed_data.sql from the current content
 src/
