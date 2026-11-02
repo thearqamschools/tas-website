@@ -193,7 +193,7 @@ jobs:
           $base = $env:SMOKE_URL.TrimEnd('/')
           Start-Sleep -Seconds 10
           $lines = @("## Quick check of $base", "", "| Address | Status |", "|---|---|")
-          foreach ($path in '/', '/about', '/admissions', '/campuses', '/robots.txt', '/status') {
+          foreach ($path in '/', '/about', '/admissions', '/campuses', '/contact', '/franchise/apply', '/admin/login', '/robots.txt', '/sitemap.xml', '/status') {
             try {
               $r = Invoke-WebRequest -Uri "$base$path" -MaximumRedirection 5 -SkipHttpErrorCheck -TimeoutSec 60
               $lines += "| ``$path`` | $($r.StatusCode) |"
