@@ -56,7 +56,9 @@ function New-FtpRequest([string]$relative, [string]$method) {
     $request.EnableSsl = $true        # explicit FTPS; the password never travels in plain text
     $request.UsePassive = $true
     $request.UseBinary = $true
-    $request.KeepAlive = $true
+    # A new connection per request: with KeepAlive, FtpWebRequest resolves paths from the
+    # previous request's folder, so uploads into sub-folders (bin/...) fail with 550.
+    $request.KeepAlive = $false
     $request.Timeout = 60000
     $request.ReadWriteTimeout = 120000
     return $request
