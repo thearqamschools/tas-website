@@ -1,0 +1,32 @@
+@model PageSection
+@{
+    // "Our Journey": items { year, title, text }. Items without a year and title are skipped,
+    // so the school can fill them in the admin panel one by one.
+    var items = (Model.Data["items"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray())
+        .OfType<Newtonsoft.Json.Linq.JObject>()
+        .Where(i => !string.IsNullOrWhiteSpace(i.Value<string>("year")) && !string.IsNullOrWhiteSpace(i.Value<string>("title")))
+        .ToList();
+}
+@if (items.Count > 0)
+{
+    <section class="section tone-@Model.Tone("white")" @(Model.Anchor != null ? "id=" + Model.Anchor : "") aria-labelledby="h-@Model.Id">
+        <div class="container">
+            <div class="section-head">
+                <h2 class="h2" id="h-@Model.Id">@(string.IsNullOrEmpty(Model.Text("heading")) ? "Our journey" : Model.Text("heading"))</h2>
+                @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
+            </div>
+            <ol class="timeline">
+                @foreach (var i in items)
+                {
+                    <li class="timeline-item">
+                        <p class="timeline-year">@(i.Value<string>("year"))</p>
+                        <div class="timeline-body">
+                            <h3 class="h4">@(i.Value<string>("title"))</h3>
+                            @if (!string.IsNullOrWhiteSpace(i.Value<string>("text"))) { <p>@(i.Value<string>("text"))</p> }
+                        </div>
+                    </li>
+                }
+            </ol>
+        </div>
+    </section>
+}

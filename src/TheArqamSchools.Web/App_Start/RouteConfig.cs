@@ -35,6 +35,10 @@ namespace TheArqamSchools.Web
             routes.MapRoute("CampusDetail", "campuses/{city}/{slug}", new { controller = "Campuses", action = "Detail" });
             routes.MapRoute("CampusCity", "campuses/{city}", new { controller = "Campuses", action = "City" });
 
+            // News & Events (dbo.news and dbo.events), published in the admin panel.
+            routes.MapRoute("NewsEvents", "news-events", new { controller = "NewsEvents", action = "Index" });
+            routes.MapRoute("NewsEventsDetail", "news-events/{slug}", new { controller = "NewsEvents", action = "Detail" });
+
             // Admin panel. Every /admin address is handled here, never by the CMS catch-all.
             routes.MapRoute("AdminHome", "admin", new { controller = "AdminDashboard", action = "Index" });
             routes.MapRoute("AdminLogin", "admin/login", new { controller = "AdminAccount", action = "Login" });
@@ -75,6 +79,10 @@ namespace TheArqamSchools.Web
                 new { pageId = new GuidRouteConstraint(), sectionId = new GuidRouteConstraint() });
             routes.MapRoute("AdminPageEdit", "admin/pages/{id}", new { controller = "AdminPages", action = "Edit" },
                 new { id = new GuidRouteConstraint() });
+            routes.MapRoute("AdminNews", "admin/news", new { controller = "AdminNews", action = "Index" });
+            routes.MapRoute("AdminNewsNew", "admin/news/new/{kind}", new { controller = "AdminNews", action = "New" }, new { kind = "news|event" });
+            routes.MapRoute("AdminNewsEdit", "admin/news/{kind}/{id}", new { controller = "AdminNews", action = "Edit" },
+                new { kind = "news|event", id = new GuidRouteConstraint() });
             routes.MapRoute("AdminFranchise", "admin/franchise", new { controller = "AdminFranchise", action = "Index" });
             routes.MapRoute("AdminFranchiseExport", "admin/franchise/export.csv", new { controller = "AdminFranchise", action = "Export" });
             routes.MapRoute("AdminFranchiseStatus", "admin/franchise/{id}/status", new { controller = "AdminFranchise", action = "Status" },

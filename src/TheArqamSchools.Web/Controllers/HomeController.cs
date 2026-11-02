@@ -26,6 +26,8 @@ namespace TheArqamSchools.Web.Controllers
             // is left out (the view hides it when the lists are empty).
             ViewBag.Cities = Cache.GetOrLastGood("home:cities", () => CampusRepository.Cities(), () => new List<FilterOption>());
             ViewBag.Campuses = Cache.GetOrLastGood("home:campuses", () => CampusRepository.Featured(MaxHomepageCampuses), () => new List<Campus>());
+            // Newest three published news posts and events (cleared when one is saved in the admin panel).
+            ViewBag.News = Cache.GetOrLastGood("home:news", () => NewsRepository.Published(null, 3), () => new List<NewsItem>());
             SeoMetadata seo = null;
             try { seo = PageRepository.SeoForRoute("/"); }
             catch (Exception ex) when (Db.IsUnavailable(ex)) { /* use the default title and description below */ }

@@ -1,0 +1,36 @@
+@model PageSection
+@{
+    // Leadership: items { name, role, message }. Items without a name are skipped.
+    var items = (Model.Data["items"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray())
+        .OfType<Newtonsoft.Json.Linq.JObject>()
+        .Where(i => !string.IsNullOrWhiteSpace(i.Value<string>("name")))
+        .ToList();
+}
+@if (items.Count > 0)
+{
+    <section class="section tone-@Model.Tone("grey")" @(Model.Anchor != null ? "id=" + Model.Anchor : "") aria-labelledby="h-@Model.Id">
+        <div class="container">
+            <div class="section-head">
+                <h2 class="h2" id="h-@Model.Id">@(string.IsNullOrEmpty(Model.Text("heading")) ? "Our leadership" : Model.Text("heading"))</h2>
+                @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
+            </div>
+            <ul class="card-grid cols-3">
+                @foreach (var i in items)
+                {
+                    var name = i.Value<string>("name");
+                    var initials = string.Concat(name.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(w => char.IsLetter(w[0])).Take(2).Select(w => char.ToUpperInvariant(w[0])));
+                    <li>
+                        <article class="card leader-card">
+                            <div class="card-body">
+                                <span class="leader-initials" aria-hidden="true">@initials</span>
+                                <h3 class="h4">@name</h3>
+                                @if (!string.IsNullOrWhiteSpace(i.Value<string>("role"))) { <p class="card-meta">@(i.Value<string>("role"))</p> }
+                                @if (!string.IsNullOrWhiteSpace(i.Value<string>("message"))) { <p>@(i.Value<string>("message"))</p> }
+                            </div>
+                        </article>
+                    </li>
+                }
+            </ul>
+        </div>
+    </section>
+}

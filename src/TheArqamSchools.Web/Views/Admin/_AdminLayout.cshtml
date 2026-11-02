@@ -33,6 +33,10 @@
                 {
                     <a href="/admin/franchise">Franchise</a>
                 }
+                @if (adminUser.Can("news.view") || adminUser.Can("events.view"))
+                {
+                    <a href="/admin/news">News</a>
+                }
                 @if (adminUser.Can("pages.view"))
                 {
                     <a href="/admin/pages">Pages</a>

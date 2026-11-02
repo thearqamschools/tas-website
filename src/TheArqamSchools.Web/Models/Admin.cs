@@ -544,4 +544,54 @@ namespace TheArqamSchools.Web.Models
         public DateTimeOffset SubmittedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
     }
+
+    /// <summary>News post or event edit form. Lengths match the dbo.news / dbo.events columns.</summary>
+    public class NewsEditForm
+    {
+        public static readonly string[] Categories = { "achievement", "campus", "announcement" };
+
+        public Guid Id { get; set; }
+        public string Kind { get; set; }
+
+        [Required(ErrorMessage = "Please enter a title.")]
+        [StringLength(160, MinimumLength = 3, ErrorMessage = "The title must be 3 to 160 characters.")]
+        public string Title { get; set; }
+
+        [StringLength(120)]
+        [RegularExpression(@"^[a-z0-9]+(-[a-z0-9]+)*$", ErrorMessage = "Use lowercase letters, digits and hyphens only.")]
+        public string Slug { get; set; }
+
+        [StringLength(300, ErrorMessage = "The summary can be at most 300 characters.")]
+        public string Summary { get; set; }
+
+        [StringLength(20000, ErrorMessage = "The text is too long.")]
+        public string Text { get; set; }
+
+        public string Body { get; set; }
+        public Guid? BranchId { get; set; }
+        public string Category { get; set; }
+        public bool IsFeatured { get; set; }
+        public DateTimeOffset? StartsAt { get; set; }
+        public DateTimeOffset? EndsAt { get; set; }
+        public bool IsAllDay { get; set; }
+
+        [StringLength(200)]
+        public string Venue { get; set; }
+
+        public string Status { get; set; }
+    }
+
+    public class NewsEditViewModel
+    {
+        public NewsEditForm Form { get; set; }
+        public IList<CampusListRow> Campuses { get; set; }
+        public bool IsNew { get; set; }
+        public bool CanEdit { get; set; }
+        public bool CanPublish { get; set; }
+        public string Notice { get; set; }
+        public string StartDate { get; set; }
+        public string StartTime { get; set; }
+        public string EndDate { get; set; }
+        public string EndTime { get; set; }
+    }
 }

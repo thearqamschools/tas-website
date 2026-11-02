@@ -100,6 +100,7 @@
     <Compile Include="Controllers\AdminFranchiseController.cs" />
     <Compile Include="Controllers\AdminInboxController.cs" />
     <Compile Include="Controllers\AdminMenusController.cs" />
+    <Compile Include="Controllers\AdminNewsController.cs" />
     <Compile Include="Controllers\AdminPagesController.cs" />
     <Compile Include="Controllers\AdminSettingsController.cs" />
     <Compile Include="Controllers\AdminUsersController.cs" />
@@ -107,6 +108,7 @@
     <Compile Include="Controllers\ContactController.cs" />
     <Compile Include="Controllers\ErrorController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Controllers\NewsEventsController.cs" />
     <Compile Include="Controllers\PagesController.cs" />
     <Compile Include="Controllers\SeoController.cs" />
     <Compile Include="Controllers\StatusController.cs" />
@@ -122,6 +124,7 @@
     <Compile Include="Data\InquiryRepository.cs" />
     <Compile Include="Data\MenuAdminRepository.cs" />
     <Compile Include="Data\NavigationRepository.cs" />
+    <Compile Include="Data\NewsRepository.cs" />
     <Compile Include="Data\PageAdminRepository.cs" />
     <Compile Include="Data\PageRepository.cs" />
     <Compile Include="Data\RedirectRepository.cs" />
@@ -180,6 +183,8 @@
     <Content Include="Views\Admin\Inbox\Index.cshtml" />
     <Content Include="Views\Admin\Menus\Edit.cshtml" />
     <Content Include="Views\Admin\Menus\Index.cshtml" />
+    <Content Include="Views\Admin\News\Edit.cshtml" />
+    <Content Include="Views\Admin\News\Index.cshtml" />
     <Content Include="Views\Admin\Pages\Edit.cshtml" />
     <Content Include="Views\Admin\Pages\Index.cshtml" />
     <Content Include="Views\Admin\Pages\Section.cshtml" />
@@ -188,6 +193,8 @@
     <Content Include="Views\Admin\Users\Index.cshtml" />
     <Content Include="Views\Campuses\Detail.cshtml" />
     <Content Include="Views\Home\Index.cshtml" />
+    <Content Include="Views\NewsEvents\Detail.cshtml" />
+    <Content Include="Views\NewsEvents\Index.cshtml" />
     <Content Include="Views\Pages\Show.cshtml" />
     <Content Include="Views\Shared\Error.cshtml" />
     <Content Include="Views\Shared\NotFound.cshtml" />
@@ -200,10 +207,12 @@
     <Content Include="Views\Shared\Sections\_faq.cshtml" />
     <Content Include="Views\Shared\Sections\_franchise_form.cshtml" />
     <Content Include="Views\Shared\Sections\_info_list.cshtml" />
+    <Content Include="Views\Shared\Sections\_leadership.cshtml" />
     <Content Include="Views\Shared\Sections\_page_header.cshtml" />
     <Content Include="Views\Shared\Sections\_process_steps.cshtml" />
     <Content Include="Views\Shared\Sections\_rich_text.cshtml" />
     <Content Include="Views\Shared\Sections\_split_feature.cshtml" />
+    <Content Include="Views\Shared\Sections\_timeline.cshtml" />
     <Content Include="Views\Shared\Sections\_values.cshtml" />
     <Content Include="Views\Shared\Sections\_vision_mission.cshtml" />
     <Content Include="Views\Shared\_Breadcrumbs.cshtml" />

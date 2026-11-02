@@ -81,6 +81,29 @@
     below.forEach(function (el) { seen.observe(el); });
   })();
 
+  // News & Events filter buttons: show one category without reloading. The links still work without JavaScript.
+  (function () {
+    var buttons = document.querySelectorAll("[data-news-filter]");
+    if (!buttons.length) return;
+    var items = document.querySelectorAll("[data-news-category]");
+    var status = document.querySelector("[data-news-status]");
+    buttons.forEach(function (b) {
+      b.addEventListener("click", function (e) {
+        e.preventDefault();
+        var key = b.getAttribute("data-news-filter");
+        var shown = 0;
+        items.forEach(function (li) {
+          var match = !key || li.getAttribute("data-news-category") === key;
+          li.hidden = !match;
+          if (match) shown++;
+        });
+        buttons.forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+        if (status) status.textContent = shown + (shown === 1 ? " item" : " items") + " shown";
+        if (window.history && history.replaceState) history.replaceState(null, "", b.getAttribute("href"));
+      });
+    });
+  })();
+
   // Required consent checkboxes: browsers check them before sending; the server checks everything again.
   document.querySelectorAll("form[novalidate]").forEach(function (f) {
     f.addEventListener("submit", function (e) {

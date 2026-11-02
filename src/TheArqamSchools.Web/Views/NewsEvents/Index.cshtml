@@ -1,0 +1,54 @@
+@model NewsListViewModel
+@using TheArqamSchools.Web.Data
+@using TheArqamSchools.Web.Helpers
+@{
+    ViewBag.Meta = Model.Meta;
+    var pk = TimeSpan.FromHours(5);
+}
+<section class="page-header tone-warm">
+    <div class="container">
+        @Html.Partial("_Breadcrumbs", new List<Breadcrumb> { new Breadcrumb("Home", "/"), new Breadcrumb("News & Events", null) })
+        <h1 class="h1">News &amp; Events</h1>
+        <p class="lead">Achievements, events and announcements from The Arqam Schools.</p>
+    </div>
+</section>
+<section class="section tone-white" aria-labelledby="news-list-h">
+    <div class="container">
+        <h2 class="sr-only" id="news-list-h">All news and events</h2>
+        @if (Model.Items.Count == 0)
+        {
+            <p class="lead">News and events will appear here soon.</p>
+        }
+        else
+        {
+            <div class="news-filters" role="group" aria-label="Show">
+                <a href="/news-events" class="news-filter" data-news-filter="" aria-pressed="@(Model.Filter == null ? "true" : "false")">All</a>
+                @foreach (var key in NewsRepository.FilterKeys.Where(k => Model.Items.Any(i => i.Category == k)))
+                {
+                    <a href="/news-events?type=@key" class="news-filter" data-news-filter="@key" aria-pressed="@(Model.Filter == key ? "true" : "false")">@NewsRepository.FilterLabel(key)</a>
+                }
+            </div>
+            <p class="sr-only" role="status" data-news-status></p>
+            <ul class="card-grid cols-3 news-grid">
+                @foreach (var n in Model.Items)
+                {
+                    var hidden = Model.Filter != null && n.Category != Model.Filter;
+                    <li data-news-category="@n.Category" @(hidden ? "hidden" : null)>
+                        <article class="card card-link news-card">
+                            <div class="card-body">
+                                <p class="news-meta">
+                                    <span class="news-badge news-badge-@n.Category">@NewsRepository.FilterLabel(n.Category)</span>
+                                    <time datetime="@n.Date.ToString("yyyy-MM-dd")">@n.Date.ToOffset(pk).ToString("d MMMM yyyy")</time>
+                                </p>
+                                <h3 class="h4"><a href="@n.Url">@n.Title</a></h3>
+                                @if (!string.IsNullOrEmpty(n.Summary)) { <p>@n.Summary</p> }
+                                @if (n.IsEvent && !string.IsNullOrEmpty(n.Venue)) { <p class="news-venue">@Icons.Svg("map-pin", 16) @n.Venue</p> }
+                                <span class="card-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
+                            </div>
+                        </article>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</section>

@@ -81,4 +81,31 @@ namespace TheArqamSchools.Web.Models
         public string Label { get; private set; }
         public string Url { get; private set; }
     }
+
+    /// <summary>A news post or an event, as shown on the public News &amp; Events page and in the admin list.</summary>
+    public class NewsItem
+    {
+        public string Kind { get; set; }
+        public Guid Id { get; set; }
+        public string Slug { get; set; }
+        public string Title { get; set; }
+        public string Summary { get; set; }
+        public string Body { get; set; }
+        public string Category { get; set; }
+        public DateTimeOffset Date { get; set; }
+        public DateTimeOffset? EndsAt { get; set; }
+        public string Venue { get; set; }
+        public string CampusName { get; set; }
+        public bool IsFeatured { get; set; }
+        public string Status { get; set; }
+        public bool IsEvent { get { return Kind == "event"; } }
+        public string Url { get { return "/news-events/" + Slug; } }
+    }
+
+    public class NewsListViewModel
+    {
+        public IList<NewsItem> Items { get; set; }
+        public string Filter { get; set; }
+        public PageMeta Meta { get; set; }
+    }
 }

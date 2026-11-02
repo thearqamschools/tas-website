@@ -28,6 +28,7 @@ Address: `/admin`. Built in ASP.NET MVC 5 inside the website (no extra packages)
 | Messages | `/admin/messages` | `inquiries.view`, `inquiries.update` |
 | Franchise applications | `/admin/franchise` | `franchise.view`, `franchise.update` (status), `franchise.export` (CSV) |
 | Pages and sections | `/admin/pages` | `pages.view`, `pages.update` (drafts), `pages.publish` |
+| News & Events | `/admin/news` | news: `news.view`, `.create`, `.update`, `.publish`; events: `events.view`, `.create`, `.update`, `.publish` |
 | Campuses | `/admin/campuses` | `branches.view`, `.create`, `.update`, `.publish`, `.delete` (archive) |
 | Menus | `/admin/menus` | `navigation.view`, `.create`, `.update` |
 | Settings | `/admin/settings` | `settings.view`, `settings.update` |
@@ -48,6 +49,10 @@ assignments count.
   and switches only; technical values stay as they are.
 - Content Editors (pages.update without pages.publish) save drafts; a Content
   Manager or Super Admin publishes or discards them.
+- News and event text is plain text (no HTML); a blank line starts a new paragraph.
+  Without the publish permission, posts are saved as drafts.
+- The About page has hidden "Our journey" (timeline) and "Our leadership" sections
+  (script 08). Fill them in Pages > About Us, then press "Show on website".
 - Links must start with `/`, `#`, `https://`, `mailto:` or `tel:`.
 
 ## Known limits (from the independent review, 31 October 2026)
@@ -63,7 +68,7 @@ assignments count.
 ## Not built yet
 
 - Media library (uploading images), homepage editing (the homepage is in the code),
-  news, events, gallery, downloads and careers screens; franchise form settings
+  gallery, downloads and careers screens; franchise form settings
   (accepting applications, start timelines) are read from `dbo.franchise_settings` but not editable yet.
 - Region- or campus-limited roles.
 - Viewing the audit log in the panel (it is in the database).

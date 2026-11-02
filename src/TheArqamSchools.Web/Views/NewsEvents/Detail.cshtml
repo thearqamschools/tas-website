@@ -1,0 +1,40 @@
+@model NewsItem
+@using TheArqamSchools.Web.Data
+@using TheArqamSchools.Web.Helpers
+@{
+    var pk = TimeSpan.FromHours(5);
+    var text = NewsRepository.TextOf(Model.Body);
+    var paragraphs = text.Replace("\r\n", "\n").Split(new[] { "\n\n" }, StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).Where(p => p.Length > 0).ToList();
+}
+<section class="page-header tone-warm">
+    <div class="container">
+        @Html.Partial("_Breadcrumbs", new List<Breadcrumb> { new Breadcrumb("Home", "/"), new Breadcrumb("News & Events", "/news-events"), new Breadcrumb(Model.Title, null) })
+        <p class="news-meta">
+            <span class="news-badge news-badge-@Model.Category">@NewsRepository.FilterLabel(Model.Category)</span>
+            <time datetime="@Model.Date.ToString("yyyy-MM-dd")">@Model.Date.ToOffset(pk).ToString("dddd, d MMMM yyyy")</time>
+        </p>
+        <h1 class="h1">@Model.Title</h1>
+        @if (!string.IsNullOrEmpty(Model.Summary)) { <p class="lead">@Model.Summary</p> }
+    </div>
+</section>
+<section class="section tone-white">
+    <div class="container news-article">
+        @if (Model.IsEvent)
+        {
+            <ul class="news-facts">
+                <li>@Icons.Svg("clock", 18) @Model.Date.ToOffset(pk).ToString("d MMMM yyyy, h:mm tt")@(Model.EndsAt.HasValue ? " – " + Model.EndsAt.Value.ToOffset(pk).ToString("d MMMM yyyy, h:mm tt") : "")</li>
+                @if (!string.IsNullOrEmpty(Model.Venue)) { <li>@Icons.Svg("map-pin", 18) @Model.Venue</li> }
+                @if (!string.IsNullOrEmpty(Model.CampusName)) { <li>@Icons.Svg("graduation-cap", 18) @Model.CampusName</li> }
+            </ul>
+        }
+        else if (!string.IsNullOrEmpty(Model.CampusName))
+        {
+            <ul class="news-facts"><li>@Icons.Svg("graduation-cap", 18) @Model.CampusName</li></ul>
+        }
+        @foreach (var p in paragraphs)
+        {
+            <p class="pre-line">@p</p>
+        }
+        <p><a class="text-link" href="/news-events">@Icons.Svg("arrow-right", 18) All news and events</a></p>
+    </div>
+</section>

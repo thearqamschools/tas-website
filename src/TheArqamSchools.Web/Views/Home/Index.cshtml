@@ -41,6 +41,13 @@
     var campuses = ViewBag.Campuses as IList<Campus>;
     var hasCities = cities != null && cities.Count > 0;
     var hasCampuses = campuses != null && campuses.Count > 0;
+    var news = ViewBag.News as IList<NewsItem>;
+    var hasNews = news != null && news.Count > 0;
+    var settings = TheArqamSchools.Web.Data.SiteSettingsRepository.Public();
+    var phone = TheArqamSchools.Web.Data.SiteSettingsRepository.Text(settings, "contact.phone");
+    var phoneAlt = TheArqamSchools.Web.Data.SiteSettingsRepository.Text(settings, "contact.phone_alt");
+    var whatsapp = TheArqamSchools.Web.Data.SiteSettingsRepository.Text(settings, "contact.whatsapp");
+    var address = TheArqamSchools.Web.Data.SiteSettingsRepository.Text(settings, "contact.address");
 }
 <div class="home">
 
@@ -114,6 +121,26 @@
                         <div class="home-tile-text">
                             <h3 class="h4"><a href="/campuses">Campuses</a></h3>
                             <p>Find a campus by name, city, district or area.</p>
+                        </div>
+                        <span class="home-tile-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
+                    </article>
+                </li>
+                <li class="home-reveal">
+                    <article class="home-tile">
+                        <span class="home-tile-icon">@Icons.Svg("award", 26)</span>
+                        <div class="home-tile-text">
+                            <h3 class="h4"><a href="/news-events">News &amp; Events</a></h3>
+                            <p>Achievements, events and announcements.</p>
+                        </div>
+                        <span class="home-tile-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
+                    </article>
+                </li>
+                <li class="home-reveal">
+                    <article class="home-tile">
+                        <span class="home-tile-icon">@Icons.Svg("headset", 26)</span>
+                        <div class="home-tile-text">
+                            <h3 class="h4"><a href="/contact">Contact Us</a></h3>
+                            <p>Call, send a WhatsApp message or write to us.</p>
                         </div>
                         <span class="home-tile-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
                     </article>
@@ -231,6 +258,56 @@
             <div class="home-finder-foot">
                 <a class="text-link" href="/campuses">See all campuses @Icons.Svg("arrow-right", 18)</a>
             </div>
+        </div>
+    </section>
+
+    @* 6. Latest news and events: the newest three published items. Hidden until the school publishes some. *@
+    @if (hasNews)
+    {
+        <section class="section tone-white" aria-labelledby="news-h">
+            <div class="container">
+                <div class="section-head home-news-head">
+                    <h2 class="h2" id="news-h">Latest news &amp; events</h2>
+                    <a class="text-link" href="/news-events">All news and events @Icons.Svg("arrow-right", 18)</a>
+                </div>
+                <ul class="card-grid cols-3 news-grid">
+                    @foreach (var n in news)
+                    {
+                        <li class="home-reveal">
+                            <article class="card card-link news-card">
+                                <div class="card-body">
+                                    <p class="news-meta">
+                                        <span class="news-badge news-badge-@n.Category">@TheArqamSchools.Web.Data.NewsRepository.FilterLabel(n.Category)</span>
+                                        <time datetime="@n.Date.ToString("yyyy-MM-dd")">@n.Date.ToOffset(TimeSpan.FromHours(5)).ToString("d MMMM yyyy")</time>
+                                    </p>
+                                    <h3 class="h4"><a href="@n.Url">@n.Title</a></h3>
+                                    @if (!string.IsNullOrEmpty(n.Summary)) { <p>@n.Summary</p> }
+                                    <span class="card-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
+                                </div>
+                            </article>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </section>
+    }
+
+    @* 7. Get in touch: official contact details from the website settings. *@
+    <section class="section tone-warm" aria-labelledby="touch-h">
+        <div class="container home-touch home-reveal">
+            <div class="home-touch-text">
+                <h2 class="h2" id="touch-h">Get in touch</h2>
+                <p class="lead">Questions about admissions, academics or a franchise? We will be glad to help.</p>
+                <div class="btn-row">
+                    <a class="btn btn-primary" href="/contact">Contact us</a>
+                    @if (!string.IsNullOrEmpty(whatsapp)) { <a class="btn btn-outline" href="@Contact.WhatsAppUrl(whatsapp)" target="_blank" rel="noopener">WhatsApp us</a> }
+                </div>
+            </div>
+            <ul class="contact-list home-touch-list">
+                @if (!string.IsNullOrEmpty(phone)) { <li>@Icons.Svg("phone", 20) <span><a href="@Contact.TelUrl(phone)">@phone</a>@if (!string.IsNullOrEmpty(phoneAlt)) {<text>, <a href="@Contact.TelUrl(phoneAlt)">@phoneAlt</a></text>}</span></li> }
+                @if (!string.IsNullOrEmpty(whatsapp)) { <li>@Icons.Svg("whatsapp", 20) <a href="@Contact.WhatsAppUrl(whatsapp)" target="_blank" rel="noopener">WhatsApp @whatsapp</a></li> }
+                @if (!string.IsNullOrEmpty(address)) { <li>@Icons.Svg("map-pin", 20) <span class="pre-line">@address</span></li> }
+            </ul>
         </div>
     </section>
 </div>

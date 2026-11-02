@@ -1,0 +1,111 @@
+@model NewsEditViewModel
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    var f = Model.Form;
+    var isEvent = f.Kind == "event";
+    var what = isEvent ? "event" : "news";
+    ViewBag.Title = Model.IsNew ? "Add " + what : f.Title;
+    var action = Model.IsNew ? "/admin/news/new/" + f.Kind : "/admin/news/" + f.Kind + "/" + f.Id.ToString("D");
+    var ro = Model.CanEdit ? null : "disabled";
+    var cats = new Dictionary<string, string> { { "achievement", "Achievement" }, { "campus", "Campus news" }, { "announcement", "Announcement" } };
+}
+<p><a href="/admin/news">&larr; News &amp; Events</a></p>
+<div class="admin-page-head">
+    <h1>@(Model.IsNew ? (isEvent ? "Add event" : "Add news") : f.Title)</h1>
+    @if (!Model.IsNew && f.Status == "published") { <a href="/news-events/@f.Slug" target="_blank" rel="noopener">View on website</a> }
+</div>
+@if (Model.Notice != null) { <div class="admin-alert admin-alert--success" role="status"><p>@Model.Notice</p></div> }
+@Html.Partial("~/Views/Admin/_Errors.cshtml")
+<form method="post" action="@action" class="admin-form" novalidate>
+    @Html.AntiForgeryToken()
+    <section class="admin-card">
+        <div class="admin-field">
+            <label for="Title">Title</label>
+            <input type="text" id="Title" name="Title" value="@f.Title" maxlength="160" required aria-describedby="Title-error" @ro />
+            @Html.ValidationMessage("Title", null, new { id = "Title-error", @class = "admin-field-error" })
+        </div>
+        <div class="admin-grid-2">
+            @if (!isEvent)
+            {
+                <div class="admin-field">
+                    <label for="Category">Category</label>
+                    <select id="Category" name="Category" @ro>
+                        @foreach (var c in cats) { <option value="@c.Key" @(f.Category == c.Key ? "selected" : null)>@c.Value</option> }
+                    </select>
+                    @Html.ValidationMessage("Category", null, new { @class = "admin-field-error" })
+                </div>
+            }
+            <div class="admin-field">
+                <label for="BranchId">Campus (optional)</label>
+                <select id="BranchId" name="BranchId" @ro>
+                    <option value="">Whole network</option>
+                    @foreach (var c in Model.Campuses) { <option value="@c.Id" @(f.BranchId == c.Id ? "selected" : null)>@c.Name, @c.CityName</option> }
+                </select>
+            </div>
+        </div>
+        @if (isEvent)
+        {
+            <div class="admin-grid-2">
+                <div class="admin-field">
+                    <label for="StartDate">Starts on</label>
+                    <input type="date" id="StartDate" name="StartDate" value="@Model.StartDate" required aria-describedby="StartDate-error" @ro />
+                    @Html.ValidationMessage("StartDate", null, new { id = "StartDate-error", @class = "admin-field-error" })
+                </div>
+                <div class="admin-field">
+                    <label for="StartTime">Start time (optional)</label>
+                    <input type="time" id="StartTime" name="StartTime" value="@Model.StartTime" @ro />
+                </div>
+                <div class="admin-field">
+                    <label for="EndDate">Ends on (optional)</label>
+                    <input type="date" id="EndDate" name="EndDate" value="@Model.EndDate" aria-describedby="EndDate-error" @ro />
+                    @Html.ValidationMessage("EndDate", null, new { id = "EndDate-error", @class = "admin-field-error" })
+                </div>
+                <div class="admin-field">
+                    <label for="EndTime">End time (optional)</label>
+                    <input type="time" id="EndTime" name="EndTime" value="@Model.EndTime" @ro />
+                </div>
+            </div>
+            <div class="admin-field">
+                <label for="Venue">Venue (optional)</label>
+                <input type="text" id="Venue" name="Venue" value="@f.Venue" maxlength="200" @ro />
+            </div>
+        }
+        <div class="admin-field">
+            <label for="Summary">Short summary (optional)</label>
+            <textarea id="Summary" name="Summary" rows="2" maxlength="300" @ro>@f.Summary</textarea>
+            <p class="admin-hint">Shown on the cards. Up to 300 characters.</p>
+        </div>
+        <div class="admin-field">
+            <label for="Text">Full text</label>
+            <textarea id="Text" name="Text" rows="10" maxlength="20000" @ro>@f.Text</textarea>
+            <p class="admin-hint">Leave an empty line between paragraphs. Use only confirmed details and figures.</p>
+        </div>
+        <div class="admin-field">
+            <label for="Slug">Web address</label>
+            <input type="text" id="Slug" name="Slug" value="@f.Slug" maxlength="120" spellcheck="false" autocapitalize="none" aria-describedby="Slug-hint Slug-error" @ro />
+            <p class="admin-hint" id="Slug-hint">/news-events/<strong>this-part</strong>. Leave empty to make it from the title.</p>
+            @Html.ValidationMessage("Slug", null, new { id = "Slug-error", @class = "admin-field-error" })
+        </div>
+    </section>
+    <section class="admin-card">
+        <h2>Publishing</h2>
+        <div class="admin-field">
+            <label for="Status">Status</label>
+            <select id="Status" name="Status" @ro>
+                <option value="draft" @(f.Status == "draft" ? "selected" : null)>Draft (not on the website)</option>
+                @if (Model.CanPublish || f.Status == "published") { <option value="published" @(f.Status == "published" ? "selected" : null)>Published</option> }
+                <option value="archived" @(f.Status == "archived" ? "selected" : null)>Archived (hidden)</option>
+            </select>
+            @if (!Model.CanPublish) { <p class="admin-hint">A Content Manager or Super Admin publishes posts.</p> }
+        </div>
+        @if (!isEvent)
+        {
+            <div class="admin-check">
+                <input type="checkbox" id="IsFeatured" name="IsFeatured" value="true" @(f.IsFeatured ? "checked" : null) @ro />
+                <input type="hidden" name="IsFeatured" value="false" />
+                <label for="IsFeatured"><strong>Featured</strong><span class="admin-hint">Marked as important.</span></label>
+            </div>
+        }
+    </section>
+    @if (Model.CanEdit) { <div><button type="submit" class="admin-button">@(Model.IsNew ? "Save" : "Save changes")</button></div> }
+</form>

@@ -30,6 +30,8 @@ database and run, in this order:
 4. `Database/04_simplify_navigation.sql`
 5. `Database/05_franchise_header_button.sql`
 6. `Database/06_contact_franchise_forms.sql` (adds the contact and franchise application forms)
+7. `Database/07_news_and_flat_menu.sql` (news categories, flat main menu, footer "Explore")
+8. `Database/08_about_timeline_leadership.sql` (empty, hidden timeline and leadership sections on About)
 
 Skip `03_fulltext.sql` (optional, and Full-Text Search may not be offered).
 

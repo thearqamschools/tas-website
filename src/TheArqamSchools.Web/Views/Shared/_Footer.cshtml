@@ -8,6 +8,17 @@
     var quick = NavigationRepository.Menu("footer");
     var offices = HeadOfficeRepository.Published();
     var holder = SiteSettingsRepository.Text(settings, "legal.copyright_holder", "The Arqam Schools");
+    // Programs: the class stages from dbo.class_levels (Play Group to Matric), plus Hifz classes.
+    IList<string> stages = new List<string>();
+    try { stages = ClassLevelRepository.All().Select(c => c.Stage).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToList(); }
+    catch (Exception ex) { if (!Db.IsUnavailable(ex)) { throw; } }
+    // Social links from the website settings (admin panel > Settings).
+    var social = (SiteSettingsRepository.Json(settings, "social") as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray())
+        .OfType<Newtonsoft.Json.Linq.JObject>()
+        .Select(o => new { Platform = (string)o["platform"], Url = (string)o["url"] })
+        .Where(o => o.Url != null && o.Url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        .ToList();
+    if (social.Count == 0) { social.Add(new { Platform = "facebook", Url = "https://www.facebook.com/TASHeadOffice" }); }
 }
 <footer class="site-footer">
     @if (cta != null && !(ViewBag.HideFooterCta is bool && (bool)ViewBag.HideFooterCta))
@@ -31,7 +42,14 @@
                 </a>
                 @if (!string.IsNullOrEmpty(mission)) { <p>@mission</p> }
                 @if (!string.IsNullOrEmpty(tagline)) { <p class="footer-tagline">@tagline</p> }
-                <a class="icon-link" href="https://www.facebook.com/TASHeadOffice" target="_blank" rel="noopener">@Icons.Svg("facebook", 20)<span class="sr-only">Facebook (opens in a new tab)</span></a>
+                <ul class="footer-social">
+                    @foreach (var s in social)
+                    {
+                        var name = s.Platform == "x" ? "X" : s.Platform == "youtube" ? "YouTube" : s.Platform == "tiktok" ? "TikTok" : s.Platform == "linkedin" ? "LinkedIn" : s.Platform == "whatsapp" ? "WhatsApp" : string.IsNullOrEmpty(s.Platform) ? "Link" : char.ToUpperInvariant(s.Platform[0]) + s.Platform.Substring(1);
+                        var icon = s.Platform == "facebook" ? Icons.Svg("facebook", 20) : s.Platform == "whatsapp" ? Icons.Svg("whatsapp", 20) : Icons.Svg("external", 20);
+                        <li><a class="icon-link" href="@s.Url" target="_blank" rel="noopener">@icon<span class="sr-only">@name (opens in a new tab)</span></a></li>
+                    }
+                </ul>
             </div>
             @foreach (var group in quick)
             {
@@ -42,6 +60,16 @@
                         {
                             <li><a href="@l.Url">@l.Label</a></li>
                         }
+                    </ul>
+                </nav>
+            }
+            @if (stages.Count > 0)
+            {
+                <nav class="footer-links" aria-label="Our programs">
+                    <h2>Our programs</h2>
+                    <ul>
+                        @foreach (var st in stages) { <li><a href="/academics">@st</a></li> }
+                        @if (!stages.Any(st => st.IndexOf("Hifz", StringComparison.OrdinalIgnoreCase) >= 0)) { <li><a href="/academics">Hifz-e-Quran</a></li> }
                     </ul>
                 </nav>
             }
