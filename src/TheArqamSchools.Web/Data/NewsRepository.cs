@@ -121,6 +121,9 @@ namespace TheArqamSchools.Web.Data
                 if (!isNew)
                     oldStatus = db.ExecuteScalar<string>(
                         "SELECT status FROM " + (f.Kind == "event" ? "dbo.events" : "dbo.news") + " WITH (UPDLOCK) WHERE id = @Id", new { f.Id }, tx);
+                // Checked again under the lock: a publisher may have published the post a moment ago.
+                if (!canPublish && oldStatus != null && oldStatus != "draft")
+                    throw new InvalidOperationException("Only drafts can be changed without the publish permission.");
                 if (!canPublish && (f.Status == "published" || oldStatus == "published")) f.Status = oldStatus ?? "draft";
 
                 if (f.Kind == "event")

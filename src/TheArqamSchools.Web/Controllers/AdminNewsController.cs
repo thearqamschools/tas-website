@@ -114,7 +114,13 @@ namespace TheArqamSchools.Web.Controllers
                 ModelState.AddModelError("Slug", "Another post already uses this web address.");
             if (!ModelState.IsValid) return EditView(f, isNew, null);
 
-            var id = NewsRepository.Save(f, isNew, actor.Can(Perm(f.Kind, "publish")), actor.Id);
+            Guid id;
+            try { id = NewsRepository.Save(f, isNew, actor.Can(Perm(f.Kind, "publish")), actor.Id); }
+            catch (InvalidOperationException)
+            {
+                ModelState.AddModelError("", "This " + (f.Kind == "event" ? "event" : "post") + " was published a moment ago. Please ask a Content Manager to change it.");
+                return EditView(f, isNew, null);
+            }
             Cache.Remove("home:news");
             return Redirect("/admin/news/" + f.Kind + "/" + id.ToString("D") + "?saved=true");
         }
@@ -146,7 +152,7 @@ namespace TheArqamSchools.Web.Controllers
                 StartDate = f.StartsAt.HasValue ? f.StartsAt.Value.ToOffset(Pakistan).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : "",
                 StartTime = f.StartsAt.HasValue && !f.IsAllDay ? f.StartsAt.Value.ToOffset(Pakistan).ToString("HH:mm", CultureInfo.InvariantCulture) : "",
                 EndDate = f.EndsAt.HasValue ? f.EndsAt.Value.ToOffset(Pakistan).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : "",
-                EndTime = f.EndsAt.HasValue && !f.IsAllDay ? f.EndsAt.Value.ToOffset(Pakistan).ToString("HH:mm", CultureInfo.InvariantCulture) : "",
+                EndTime = f.EndsAt.HasValue && (!f.IsAllDay || f.EndsAt.Value.ToOffset(Pakistan).TimeOfDay != TimeSpan.Zero) ? f.EndsAt.Value.ToOffset(Pakistan).ToString("HH:mm", CultureInfo.InvariantCulture) : "",
             });
         }
 
