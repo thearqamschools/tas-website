@@ -40,7 +40,8 @@ namespace TheArqamSchools.Web.Helpers
                 var wa = SiteSettingsRepository.Text(settings, "contact.whatsapp");
                 if (!string.IsNullOrWhiteSpace(wa)) list.Add(new SocialLink { Platform = "whatsapp", Url = Contact.WhatsAppUrl(wa) });
             }
-            if (!list.Any(l => l.Platform == "facebook")) list.Add(new SocialLink { Platform = "facebook", Url = FacebookFallback });
+            // Only when the settings list no links at all (for example before they are filled in).
+            if (list.Count == 0) list.Add(new SocialLink { Platform = "facebook", Url = FacebookFallback });
 
             foreach (var l in list)
             {

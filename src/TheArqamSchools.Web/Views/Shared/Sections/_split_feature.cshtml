@@ -7,7 +7,8 @@
     var left = Model.Text("image_side") == "left";
     var body = d["body"];
     var link = d["link"];
-    var isIntro = d.Value<bool?>("page_intro") == true;
+    // Only the first section of the page is the page heading (Show.cshtml decides), so there is never a second h1.
+    var isIntro = ViewData["isPageIntro"] is bool && (bool)ViewData["isPageIntro"];
 }
 <section class="section tone-@Model.Tone("white")" @(Model.Anchor != null ? "id=" + Model.Anchor : "") aria-labelledby="h-@Model.Id">
     <div class="container split@(imgUrl == null ? " split-solo" : (left ? " split-image-left" : ""))">

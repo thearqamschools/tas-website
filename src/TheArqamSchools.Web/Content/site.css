@@ -1037,6 +1037,7 @@ ul.home-campus-grid { display: grid; grid-template-columns: repeat(auto-fill, mi
 
 /* Contact page: contact information (both head offices, with maps) on the left, the form card on the right. */
 .contact-info { display: grid; gap: 20px; min-width: 0; }
+.office-card address { font-style: normal; }
 .office-card { font-style: normal; padding: 20px; border-radius: var(--r-lg); background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
 .office-card .h4 { margin-bottom: 14px; color: var(--blue); }
 .office-rows { display: grid; gap: 14px; }

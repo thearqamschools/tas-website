@@ -7,7 +7,8 @@
 --  2. Menus: "Home" first in the main menu; "Contact" hidden in the top bar; "Student life"
 --     and "Parent information" hidden in the footer's Explore column.
 --  3. Social links: the Lahore Facebook page (TASHeadOffice) is replaced by the Faisalabad
---     page (thearqamfsdOfficial), as the owner asked.
+--     page (thearqamfsdOfficial), as the owner asked (removed if the Faisalabad page is already listed).
+--  Stops without changing anything if a changed page has a waiting (unpublished) draft.
 --  4. About: "One network, one purpose" becomes the page heading; Mission, Vision and Values
 --     as three cards (text taken from the existing sections); "Educational philosophy",
 --     "Why choose" and "Islamic values and character building" hidden; journey and leadership
@@ -39,12 +40,18 @@ DECLARE @admissions UNIQUEIDENTIFIER = (SELECT id FROM dbo.pages WHERE path = N'
 DECLARE @franchise UNIQUEIDENTIFIER = (SELECT id FROM dbo.pages WHERE path = N'/franchise' AND deleted_at IS NULL);
 IF @header IS NULL OR @footer IS NULL OR @about IS NULL OR @academics IS NULL OR @admissions IS NULL
     THROW 50009, N'09: a menu or page that this script changes was not found. Nothing was changed.', 1;
+-- A waiting draft would undo these changes when it is published later: publish or discard drafts first.
+IF EXISTS (SELECT 1 FROM dbo.page_sections s JOIN dbo.pages p ON p.id = s.page_id
+           WHERE s.draft_data IS NOT NULL AND p.path IN (N'/about', N'/academics', N'/admissions', N'/franchise', N'/privacy'))
+    THROW 50010, N'09: a section on About, Academics, Admissions, Franchise or Privacy has a waiting draft. Publish or discard it in the admin panel, then run 09 again. Nothing was changed.', 1;
 
 -- 1. Backups
 IF OBJECT_ID(N'archive.navigation_items_20261104') IS NULL
     SELECT * INTO archive.navigation_items_20261104 FROM dbo.navigation_items;
 IF OBJECT_ID(N'archive.page_sections_20261104') IS NULL
-    SELECT * INTO archive.page_sections_20261104 FROM dbo.page_sections WHERE page_id IN (@about, @academics, @admissions, @franchise);
+    SELECT * INTO archive.page_sections_20261104 FROM dbo.page_sections
+    WHERE page_id IN (@about, @academics, @admissions, @franchise)
+       OR page_id IN (SELECT id FROM dbo.pages WHERE path IN (N'/privacy', N'/terms'));
 IF OBJECT_ID(N'archive.pages_20261104') IS NULL
     SELECT * INTO archive.pages_20261104 FROM dbo.pages WHERE path IN (N'/privacy', N'/terms');
 IF OBJECT_ID(N'archive.site_settings_20261104') IS NULL
@@ -61,15 +68,26 @@ IF @utility IS NOT NULL
     WHERE i.menu_id = @utility AND i.is_visible = 1 AND COALESCE(i.url, p.path) = N'/contact';
 
 UPDATE c SET is_visible = 0, updated_at = SYSDATETIMEOFFSET()
-FROM dbo.navigation_items c JOIN dbo.navigation_items g ON g.id = c.parent_id
-WHERE c.menu_id = @footer AND g.label = N'Explore' AND c.url IN (N'/student-life', N'/parents') AND c.is_visible = 1;
+FROM dbo.navigation_items c JOIN dbo.navigation_items g ON g.id = c.parent_id LEFT JOIN dbo.pages p ON p.id = c.page_id
+WHERE c.menu_id = @footer AND g.label = N'Explore' AND COALESCE(c.url, p.path) IN (N'/student-life', N'/parents') AND c.is_visible = 1;
 
 -- 3. Social links: Faisalabad Facebook page instead of the Lahore one
-UPDATE dbo.site_settings
-SET [value] = REPLACE(REPLACE([value], N'https://www.facebook.com/TASHeadOffice/', N'https://www.facebook.com/thearqamfsdOfficial'),
-                      N'https://www.facebook.com/TASHeadOffice', N'https://www.facebook.com/thearqamfsdOfficial'),
-    updated_at = SYSDATETIMEOFFSET()
-WHERE [key] = N'social' AND [value] LIKE N'%facebook.com/TASHeadOffice%';
+DECLARE @fsd NVARCHAR(200) = N'https://www.facebook.com/thearqamfsdOfficial';
+DECLARE @social NVARCHAR(MAX) = (SELECT [value] FROM dbo.site_settings WHERE [key] = N'social');
+IF @social IS NOT NULL AND ISJSON(@social, ARRAY) = 1 AND @social LIKE N'%facebook.com/TASHeadOffice%'
+BEGIN
+    -- Drop the Lahore page when the Faisalabad page is already listed; otherwise put the Faisalabad page in its place.
+    DECLARE @hasFsd BIT = CASE WHEN EXISTS (SELECT 1 FROM OPENJSON(@social) j
+                                            WHERE JSON_VALUE(j.[value], '$.url') LIKE N'https://www.facebook.com/thearqamfsdOfficial%') THEN 1 ELSE 0 END;
+    UPDATE dbo.site_settings
+    SET [value] = N'[' + COALESCE((
+            SELECT STRING_AGG(CAST(CASE WHEN j.[type] = 5 AND JSON_VALUE(j.[value], '$.url') LIKE N'https://www.facebook.com/TASHeadOffice%'
+                                        THEN CASE WHEN @hasFsd = 1 THEN NULL ELSE JSON_MODIFY(j.[value], '$.url', @fsd) END
+                                        ELSE j.[value] END AS NVARCHAR(MAX)), N',') WITHIN GROUP (ORDER BY CAST(j.[key] AS INT))
+            FROM OPENJSON(@social) j), N'') + N']',
+        updated_at = SYSDATETIMEOFFSET()
+    WHERE [key] = N'social';
+END
 
 -- 4. About
 UPDATE dbo.page_sections SET data = JSON_MODIFY(data, '$.page_intro', CAST(1 AS BIT)), updated_at = SYSDATETIMEOFFSET()
@@ -86,6 +104,34 @@ IF NOT EXISTS (SELECT 1 FROM dbo.page_sections WHERE page_id = @about AND JSON_V
     INSERT INTO dbo.page_sections (page_id, [type], data, sort_order, is_visible)
     VALUES (@about, N'card_grid', N'{"anchor":"mission-vision-values","heading":"Our Mission, Vision and Values","tone":"white","columns":3,"items":[{"icon":"target","title":"Our Mission","summary":"Every campus of The Arqam Schools works to provide quality modern education, teach the Holy Quran and Islamic studies, develop discipline, honesty, good manners and responsibility, give children chances to speak, create, take part and lead, and keep a close partnership between home and school."},{"icon":"eye","title":"Our Vision","summary":"To raise a generation who combine knowledge with values: confident, capable and caring young Muslims who lead with good character, serve their families, their communities and Pakistan, and succeed in this world and the Hereafter."},{"icon":"heart","title":"Our Values","summary":"Faith and worship, honesty, respect and good manners, discipline and responsibility guide everyday life at our schools, so that children practise good character at school and at home."}]}', 2, 1);
 
+-- The three cards use the current wording of the vision, mission and values sections (as edited in the admin panel).
+DECLARE @vm NVARCHAR(MAX) = (SELECT TOP 1 data FROM dbo.page_sections WHERE page_id = @about AND [type] = N'vision_mission' ORDER BY sort_order);
+DECLARE @vals NVARCHAR(MAX) = (SELECT TOP 1 data FROM dbo.page_sections WHERE page_id = @about AND [type] = N'values' AND JSON_VALUE(data, '$.anchor') = N'values');
+DECLARE @vision NVARCHAR(4000) = NULLIF(LTRIM(RTRIM(JSON_VALUE(@vm, '$.vision.body'))), N'');
+DECLARE @mIntro NVARCHAR(4000) = NULLIF(LTRIM(RTRIM(JSON_VALUE(@vm, '$.mission.intro'))), N'');
+IF RIGHT(@mIntro, 1) = N':' SET @mIntro = LEFT(@mIntro, LEN(@mIntro) - 1);
+DECLARE @mCount INT = (SELECT COUNT(*) FROM OPENJSON(@vm, '$.mission.points') WHERE [type] = 1 AND LEN([value]) > 0);
+DECLARE @mission NVARCHAR(MAX) = (
+    SELECT STRING_AGG(CAST(CASE WHEN rn = @mCount AND @mCount > 1 THEN N'and ' ELSE N'' END + LOWER(LEFT(v, 1)) + SUBSTRING(v, 2, 4000) AS NVARCHAR(MAX)), N', ')
+           WITHIN GROUP (ORDER BY rn)
+    FROM (SELECT LTRIM(RTRIM([value])) AS v, ROW_NUMBER() OVER (ORDER BY CAST([key] AS INT)) AS rn
+          FROM OPENJSON(@vm, '$.mission.points') WHERE [type] = 1 AND LEN([value]) > 0) x);
+IF @mIntro IS NOT NULL AND @mission IS NOT NULL SET @mission = @mIntro + N' ' + @mission + N'.' ELSE SET @mission = NULL;
+DECLARE @vCount INT = (SELECT COUNT(*) FROM OPENJSON(@vals, '$.items') WHERE LEN(JSON_VALUE([value], '$.title')) > 0);
+DECLARE @values NVARCHAR(MAX) = (
+    SELECT STRING_AGG(CAST(CASE WHEN rn = @vCount AND @vCount > 1 THEN N'and ' ELSE N'' END + CASE WHEN rn = 1 THEN t ELSE LOWER(LEFT(t, 1)) + SUBSTRING(t, 2, 4000) END AS NVARCHAR(MAX)), N', ')
+           WITHIN GROUP (ORDER BY rn)
+    FROM (SELECT LTRIM(RTRIM(JSON_VALUE([value], '$.title'))) AS t, ROW_NUMBER() OVER (ORDER BY CAST([key] AS INT)) AS rn
+          FROM OPENJSON(@vals, '$.items') WHERE LEN(JSON_VALUE([value], '$.title')) > 0) x);
+IF @values IS NOT NULL SET @values = @values + N' guide everyday life at our schools, so that children practise good character at school and at home.';
+UPDATE dbo.page_sections
+SET data = JSON_MODIFY(JSON_MODIFY(JSON_MODIFY(data,
+               '$.items[0].summary', COALESCE(@mission, JSON_VALUE(data, '$.items[0].summary'))),
+               '$.items[1].summary', COALESCE(@vision, JSON_VALUE(data, '$.items[1].summary'))),
+               '$.items[2].summary', COALESCE(@values, JSON_VALUE(data, '$.items[2].summary')))
+WHERE page_id = @about AND JSON_VALUE(data, '$.anchor') = N'mission-vision-values'
+  AND NOT EXISTS (SELECT 1 FROM dbo.schema_migrations WHERE id = N'09_owner_review_changes');
+
 UPDATE dbo.page_sections SET is_visible = 1, updated_at = SYSDATETIMEOFFSET()
 WHERE page_id = @about AND [type] IN (N'timeline', N'leadership') AND is_visible = 0;
 
@@ -97,13 +143,13 @@ WHERE page_id = @academics AND is_visible = 1
 
 UPDATE s SET
     data = JSON_MODIFY(JSON_MODIFY(s.data, '$.layout', N'tabs'), '$.items', JSON_QUERY(
-        N'[' + (SELECT STRING_AGG(CAST(
+        N'[' + COALESCE((SELECT STRING_AGG(CAST(
                     JSON_MODIFY(JSON_MODIFY(j.[value], '$.ages', COALESCE(JSON_VALUE(j.[value], '$.ages'), N'')),
                                 '$.icon', COALESCE(JSON_VALUE(j.[value], '$.icon'),
                                     CASE JSON_VALUE(j.[value], '$.stage') WHEN N'Early Years' THEN N'smile' WHEN N'Primary' THEN N'pencil'
                                          WHEN N'Middle' THEN N'flask' WHEN N'Matric' THEN N'graduation-cap' WHEN N'Hifz' THEN N'moon-star'
                                          ELSE N'book-open' END)) AS NVARCHAR(MAX)), N',') WITHIN GROUP (ORDER BY CAST(j.[key] AS INT))
-                FROM OPENJSON(s.data, '$.items') j) + N']')),
+                FROM OPENJSON(s.data, '$.items') j), N'') + N']')),
     sort_order = 10, updated_at = SYSDATETIMEOFFSET()
 FROM dbo.page_sections s
 WHERE s.page_id = @academics AND s.[type] = N'academic_levels' AND JSON_VALUE(s.data, '$.layout') IS NULL
@@ -112,6 +158,22 @@ WHERE s.page_id = @academics AND s.[type] = N'academic_levels' AND JSON_VALUE(s.
 IF NOT EXISTS (SELECT 1 FROM dbo.page_sections WHERE page_id = @academics AND JSON_VALUE(data, '$.anchor') = N'what-sets-us-apart')
     INSERT INTO dbo.page_sections (page_id, [type], data, sort_order, is_visible)
     VALUES (@academics, N'card_grid', N'{"anchor":"what-sets-us-apart","heading":"What Sets Us Apart","tone":"grey","columns":4,"intro":"Lessons follow a simple rhythm that children come to know and trust: explain clearly, practise regularly, check understanding and give feedback.","items":[{"icon":"book-open","title":"Clear Explanation","summary":"New ideas are introduced step by step, in calm and orderly classrooms."},{"icon":"sparkles","title":"Active, Hands-on Learning","summary":"Discussion, group work, activities and projects bring lessons to life."},{"icon":"pencil","title":"Practice and Feedback","summary":"Classwork and homework help children remember; feedback shows them how to improve."},{"icon":"heart","title":"Values in Every Lesson","summary":"Teachers model honesty, respect and good manners as they teach."}]}', 20, 1);
+
+-- "What Sets Us Apart" uses the current wording of the teaching methodology cards (as edited in the admin panel).
+DECLARE @teach NVARCHAR(MAX) = (SELECT TOP 1 data FROM dbo.page_sections WHERE page_id = @academics AND [type] = N'card_grid' AND JSON_VALUE(data, '$.anchor') = N'teaching');
+IF @teach IS NOT NULL
+    UPDATE dbo.page_sections
+    SET data = JSON_MODIFY(JSON_MODIFY(JSON_MODIFY(JSON_MODIFY(JSON_MODIFY(JSON_MODIFY(JSON_MODIFY(JSON_MODIFY(JSON_MODIFY(data,
+            '$.intro', COALESCE(NULLIF(JSON_VALUE(@teach, '$.intro'), N''), JSON_VALUE(data, '$.intro'))),
+            '$.items[0].title', COALESCE(NULLIF(JSON_VALUE(@teach, '$.items[0].title'), N''), JSON_VALUE(data, '$.items[0].title'))),
+            '$.items[0].summary', COALESCE(NULLIF(JSON_VALUE(@teach, '$.items[0].summary'), N''), JSON_VALUE(data, '$.items[0].summary'))),
+            '$.items[1].title', COALESCE(NULLIF(JSON_VALUE(@teach, '$.items[1].title'), N''), JSON_VALUE(data, '$.items[1].title'))),
+            '$.items[1].summary', COALESCE(NULLIF(JSON_VALUE(@teach, '$.items[1].summary'), N''), JSON_VALUE(data, '$.items[1].summary'))),
+            '$.items[2].title', COALESCE(NULLIF(JSON_VALUE(@teach, '$.items[2].title'), N''), JSON_VALUE(data, '$.items[2].title'))),
+            '$.items[2].summary', COALESCE(NULLIF(JSON_VALUE(@teach, '$.items[2].summary'), N''), JSON_VALUE(data, '$.items[2].summary'))),
+            '$.items[3].title', COALESCE(NULLIF(JSON_VALUE(@teach, '$.items[3].title'), N''), JSON_VALUE(data, '$.items[3].title'))),
+            '$.items[3].summary', COALESCE(NULLIF(JSON_VALUE(@teach, '$.items[3].summary'), N''), JSON_VALUE(data, '$.items[3].summary')))
+    WHERE page_id = @academics AND JSON_VALUE(data, '$.anchor') = N'what-sets-us-apart';
 
 UPDATE dbo.page_sections SET sort_order = 30, updated_at = SYSDATETIMEOFFSET()
 WHERE page_id = @academics AND [type] = N'values' AND JSON_VALUE(data, '$.anchor') = N'development';
@@ -133,9 +195,9 @@ WHERE page_id = @admissions;
 
 UPDATE s SET
     data = JSON_MODIFY(s.data, '$.items', JSON_QUERY(
-        N'[' + (SELECT STRING_AGG(CAST(JSON_MODIFY(j.[value], '$.ages', COALESCE(JSON_VALUE(j.[value], '$.ages'), N'')) AS NVARCHAR(MAX)), N',')
+        N'[' + COALESCE((SELECT STRING_AGG(CAST(JSON_MODIFY(j.[value], '$.ages', COALESCE(JSON_VALUE(j.[value], '$.ages'), N'')) AS NVARCHAR(MAX)), N',')
                        WITHIN GROUP (ORDER BY CAST(j.[key] AS INT))
-                FROM OPENJSON(s.data, '$.items') j) + N']')),
+                FROM OPENJSON(s.data, '$.items') j), N'') + N']')),
     updated_at = SYSDATETIMEOFFSET()
 FROM dbo.page_sections s
 WHERE s.page_id = @admissions AND s.[type] = N'academic_levels' AND JSON_QUERY(s.data, '$.items') IS NOT NULL;
@@ -151,7 +213,7 @@ IF @privacy IS NOT NULL AND EXISTS (SELECT 1 FROM dbo.pages WHERE id = @privacy 
 BEGIN
     UPDATE dbo.pages SET title = N'Privacy Policy', status = N'published', published_at = COALESCE(published_at, SYSDATETIMEOFFSET()), updated_at = SYSDATETIMEOFFSET()
     WHERE id = @privacy;
-    UPDATE dbo.page_sections SET data = N'{"body":{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"This page is being reviewed by The Arqam Schools and may change."}]},{"type":"paragraph","content":[{"type":"text","text":"This notice explains how the website of The Arqam Schools uses the information you send us."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"What we collect"}]},{"type":"bulletList","content":[{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"Admission inquiries: the parent or guardian''s name, phone number, email address (if given), the child''s details, the campus and your message."}]}]},{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"Contact messages: your name, phone number or email address, and your message."}]}]},{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"Franchise applications: the details you enter about yourself and the proposed location."}]}]}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"How we use it"}]},{"type":"paragraph","content":[{"type":"text","text":"We use this information only to reply to you, to process admission inquiries and franchise applications, and to run our schools. We do not sell it, and we do not use it for advertising."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Who can see it"}]},{"type":"paragraph","content":[{"type":"text","text":"Only staff who need it for their work can see it, for example the admissions team of the campus you chose."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"How long we keep it"}]},{"type":"paragraph","content":[{"type":"text","text":"We keep information only for as long as it is needed for these purposes. When it is no longer needed, it is deleted."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Your choices"}]},{"type":"paragraph","content":[{"type":"text","text":"To ask about, correct or remove your information, contact us on 041-2660265 or 041-2406479, or write to us at Sanora Colony, Samanabad, Faisalabad."}]}]}}', updated_at = SYSDATETIMEOFFSET()
+    UPDATE dbo.page_sections SET data = N'{"body":{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"This page is being reviewed by The Arqam Schools and may change."}]},{"type":"paragraph","content":[{"type":"text","text":"This notice explains how the website of The Arqam Schools uses the information you send us."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"What we collect"}]},{"type":"bulletList","content":[{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"Admission inquiries: the parent or guardian''s name, phone number, email address (if given), the child''s details, the campus and your message."}]}]},{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"Contact messages: your name, phone number or email address, and your message."}]}]},{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"Franchise applications: the details you enter about yourself and the proposed location."}]}]}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"How we use it"}]},{"type":"paragraph","content":[{"type":"text","text":"We use this information only to reply to you, to process admission inquiries and franchise applications, and to run our schools. We do not sell it, and we do not use it for advertising."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Who can see it"}]},{"type":"paragraph","content":[{"type":"text","text":"Only staff who need it for their work can see it, for example the admissions team of the campus you chose. Form details are also sent to the school by email, and they are stored by the company that hosts our website."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"How long we keep it"}]},{"type":"paragraph","content":[{"type":"text","text":"We keep information only for as long as it is needed for these purposes."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Cookies and maps"}]},{"type":"paragraph","content":[{"type":"text","text":"The website uses a few small cookies that its forms and sign-in need to work securely. It does not use advertising cookies. The Contact page shows maps from Google Maps; when a map loads, Google receives your IP address and the page address, as described in Google''s own privacy policy."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Your choices"}]},{"type":"paragraph","content":[{"type":"text","text":"To ask about, correct or remove your information, contact us on 041-2660265 or 041-2406479, or write to us at Sanora Colony, Samanabad, Faisalabad."}]}]}}', updated_at = SYSDATETIMEOFFSET()
     WHERE page_id = @privacy AND [type] = N'rich_text';
 END
 
@@ -162,7 +224,7 @@ BEGIN
     OUTPUT inserted.id INTO @terms
     VALUES (N'Terms of Service', N'terms', N'/terms', N'default', N'The terms for using the website of The Arqam Schools.', N'published', SYSDATETIMEOFFSET());
     INSERT INTO dbo.page_sections (page_id, [type], data, sort_order, is_visible)
-    SELECT id, N'rich_text', N'{"body":{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"This page is being reviewed by The Arqam Schools and may change."}]},{"type":"paragraph","content":[{"type":"text","text":"These terms apply to the use of the website of The Arqam Schools. By using the website, you agree to them."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Information on this website"}]},{"type":"paragraph","content":[{"type":"text","text":"We try to keep the information on this website correct and up to date. Classes, admissions and other details can vary by campus and can change, so please confirm them with the campus before making a decision."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Forms"}]},{"type":"paragraph","content":[{"type":"text","text":"When you send an admission inquiry, a message or a franchise application, please give correct information. How we use it is explained in our Privacy Policy."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Name, logo and content"}]},{"type":"paragraph","content":[{"type":"text","text":"The name The Arqam Schools, the logo, and the text and pictures on this website belong to The Arqam Schools. Please do not copy or use them without our written permission."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Links to other websites"}]},{"type":"paragraph","content":[{"type":"text","text":"This website links to other websites, such as our social media pages and Google Maps. We are not responsible for the content of other websites."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Changes to these terms"}]},{"type":"paragraph","content":[{"type":"text","text":"We may update these terms from time to time. The latest version is always on this page."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Contact"}]},{"type":"paragraph","content":[{"type":"text","text":"For any question about these terms, contact us on 041-2660265 or 041-2406479, or WhatsApp 0339-2406479."}]}]}}', 1, 1 FROM @terms;
+    SELECT id, N'rich_text', N'{"body":{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"This page is being reviewed by The Arqam Schools and may change."}]},{"type":"paragraph","content":[{"type":"text","text":"These terms apply to the use of the website of The Arqam Schools. By using the website, you agree to them."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Information on this website"}]},{"type":"paragraph","content":[{"type":"text","text":"We try to keep the information on this website correct and up to date. Classes, admissions and other details can vary by campus and can change, so please confirm them with the campus before making a decision."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Forms"}]},{"type":"paragraph","content":[{"type":"text","text":"When you send an admission inquiry, a message or a franchise application, please give correct information. How we use it is explained in our Privacy Policy."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Name, logo and text"}]},{"type":"paragraph","content":[{"type":"text","text":"The name The Arqam Schools, the logo and the text on this website belong to The Arqam Schools. Please do not copy or use them without our written permission."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Links to other websites"}]},{"type":"paragraph","content":[{"type":"text","text":"This website links to other websites, such as our social media pages and Google Maps. We are not responsible for the content of other websites."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Changes to these terms"}]},{"type":"paragraph","content":[{"type":"text","text":"We may update these terms from time to time. The latest version is always on this page."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Contact"}]},{"type":"paragraph","content":[{"type":"text","text":"For any question about these terms, contact us on 041-2660265 or 041-2406479, or WhatsApp 0339-2406479."}]}]}}', 1, 1 FROM @terms;
 END
 
 INSERT INTO dbo.schema_migrations (id) VALUES (N'09_owner_review_changes');

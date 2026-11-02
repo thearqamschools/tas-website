@@ -42,5 +42,5 @@ else
 }
 @foreach (var s in sections.Where(s => s.Type != "page_header"))
 {
-    @Html.Partial("Sections/_" + s.Type, s, new ViewDataDictionary { { "page", Model } })
+    @Html.Partial("Sections/_" + s.Type, s, new ViewDataDictionary { { "page", Model }, { "isPageIntro", introFirst && cityName == null && s == first } })
 }
