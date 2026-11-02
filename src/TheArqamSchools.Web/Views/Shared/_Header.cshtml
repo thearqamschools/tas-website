@@ -12,7 +12,8 @@
     var campusCta = SiteSettingsRepository.Json(settings, "header.cta_branch");
     var campusHref = campusCta != null && campusCta.Type == Newtonsoft.Json.Linq.JTokenType.Object ? campusCta.Value<string>("href") : "/campuses";
     var campusLabel = campusCta != null && campusCta.Type == Newtonsoft.Json.Linq.JTokenType.Object ? campusCta.Value<string>("label") : "Find a campus";
-    var facebook = "https://www.facebook.com/TASHeadOffice";
+    var social = Social.Links(settings);
+    var tagline = SiteSettingsRepository.Text(settings, "site.tagline");
 }
 <header class="site-header" data-header>
     <div class="topbar">
@@ -30,14 +31,22 @@
                         }
                     </ul>
                 </nav>
-                <a class="icon-link" href="@facebook" target="_blank" rel="noopener">@Icons.Svg("facebook", 18)<span class="sr-only">Facebook (opens in a new tab)</span></a>
+                <ul class="social-list" aria-label="The Arqam Schools on social media">
+                    @foreach (var s in social)
+                    {
+                        <li><a class="icon-link" href="@s.Url" target="_blank" rel="noopener">@Icons.Svg(s.Icon, 18)<span class="sr-only">@s.Name (opens in a new tab)</span></a></li>
+                    }
+                </ul>
             </div>
         </div>
     </div>
     <div class="container header-bar">
         <a class="brand" href="/" aria-label="The Arqam Schools, home">
             <img src="~/Content/brand/the-arqam-schools-logo-official.png" alt="" width="52" height="52" />
-            <span>The Arqam Schools</span>
+            <span class="brand-text">
+                <span class="brand-name">The Arqam Schools</span>
+                @if (!string.IsNullOrEmpty(tagline)) { <span class="brand-tagline">@tagline</span> }
+            </span>
         </a>
         <nav class="main-nav" aria-label="Main">
             <ul>
@@ -99,7 +108,7 @@
         <div class="mobile-menu-head">
             <a class="brand" href="/" aria-label="The Arqam Schools, home">
                 <img src="~/Content/brand/the-arqam-schools-logo-official.png" alt="" width="44" height="44" />
-                <span>The Arqam Schools</span>
+                <span class="brand-text"><span class="brand-name">The Arqam Schools</span></span>
             </a>
             <button type="button" class="menu-button" data-menu-close>@Icons.Svg("x", 24)<span class="sr-only">Close menu</span></button>
         </div>

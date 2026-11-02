@@ -133,6 +133,7 @@
     <Compile Include="Data\UserAdminRepository.cs" />
     <Compile Include="Helpers\Contact.cs" />
     <Compile Include="Helpers\Icons.cs" />
+    <Compile Include="Helpers\Social.cs" />
     <Compile Include="Helpers\Media.cs" />
     <Compile Include="Helpers\RichText.cs" />
     <Compile Include="Helpers\Site.cs" />

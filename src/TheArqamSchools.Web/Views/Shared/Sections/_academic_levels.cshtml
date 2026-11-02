@@ -5,6 +5,8 @@
     var d = Model.Data;
     var items = d["items"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
     var compact = d.Value<bool?>("compact") ?? false;
+    // layout "tabs": one stage at a time, chosen with tab buttons (Academics page). Without JavaScript every stage shows.
+    var tabs = !compact && d.Value<string>("layout") == "tabs";
     // Class names come from dbo.class_levels, grouped by stage, so they always match the admission form.
     var levels = ClassLevelRepository.All();
 }
@@ -14,6 +16,60 @@
             <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
             @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
         </div>
+        @if (tabs)
+        {
+            <div class="level-tabs" data-tabs>
+                <div class="level-tablist" role="tablist" aria-label="@Model.Text("heading")" hidden data-tablist>
+                    @for (var i = 0; i < items.Count; i++)
+                    {
+                        var it = items[i];
+                        <button type="button" role="tab" class="level-tab" id="tab-@Model.Id-@i" aria-controls="panel-@Model.Id-@i" aria-selected="@(i == 0 ? "true" : "false")" tabindex="@(i == 0 ? "0" : "-1")">
+                            @Icons.Svg(string.IsNullOrEmpty(it.Value<string>("icon")) ? "graduation-cap" : it.Value<string>("icon"), 20) <span>@(it.Value<string>("title"))</span>
+                        </button>
+                    }
+                </div>
+                @for (var i = 0; i < items.Count; i++)
+                {
+                    var it = items[i];
+                    var stage = it.Value<string>("stage");
+                    var classes = levels.Where(l => l.Stage == stage).Select(l => l.Name).ToList();
+                    var img = it["image"];
+                    var imgUrl = Media.Url(img);
+                    var points = (it["points"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray()).Select(x => (string)x).Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
+                    <article class="level-panel" role="tabpanel" id="panel-@Model.Id-@i" aria-labelledby="tab-@Model.Id-@i" tabindex="0">
+                        @if (imgUrl != null)
+                        {
+                            <div class="media-frame ratio-4-3 level-panel-media">
+                                <img src="@imgUrl" alt="@Media.Alt(img)" width="@(img.Value<int?>("width") ?? 400)" height="@(img.Value<int?>("height") ?? 300)" loading="lazy" decoding="async" />
+                            </div>
+                        }
+                        <div class="level-panel-body">
+                            <div class="level-panel-head">
+                                <span class="icon-badge">@Icons.Svg(string.IsNullOrEmpty(it.Value<string>("icon")) ? "graduation-cap" : it.Value<string>("icon"), 22)</span>
+                                <h3 class="h3">@(it.Value<string>("title"))</h3>
+                                @if (!string.IsNullOrWhiteSpace(it.Value<string>("ages"))) { <span class="level-ages">@(it.Value<string>("ages"))</span> }
+                            </div>
+                            @if (!string.IsNullOrEmpty(it.Value<string>("summary"))) { <p class="level-panel-summary">@(it.Value<string>("summary"))</p> }
+                            @if (classes.Count > 0 && !(classes.Count == 1 && classes[0] == it.Value<string>("title")))
+                            {
+                                <p class="level-panel-label">Classes</p>
+                                <ul class="level-chips">
+                                    @foreach (var c in classes) { <li>@c</li> }
+                                </ul>
+                            }
+                            @if (points.Count > 0)
+                            {
+                                <ul class="level-points">
+                                    @foreach (var pt in points) { <li>@pt</li> }
+                                </ul>
+                            }
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+        else
+        {
         <ul class="levels@(compact ? " levels-compact" : "")">
             @foreach (var it in items)
             {
@@ -30,6 +86,7 @@
                     }
                     <div class="card-body">
                         <h3 class="h4">@(it.Value<string>("title"))</h3>
+                        @if (!string.IsNullOrWhiteSpace(it.Value<string>("ages"))) { <p class="level-ages">@(it.Value<string>("ages"))</p> }
                         @if (classes.Count > 0 && !(classes.Count == 1 && classes[0] == it.Value<string>("title")))
                         {
                             <p class="level-classes">@(classes.Count > 3 ? classes.First() + " to " + classes.Last() : string.Join(", ", classes))</p>
@@ -39,6 +96,7 @@
                 </li>
             }
         </ul>
+        }
         @if (d["link"] != null)
         {
             <p class="section-foot">@Html.Partial("_Button", d["link"], new ViewDataDictionary { { "variant", "link" } })</p>

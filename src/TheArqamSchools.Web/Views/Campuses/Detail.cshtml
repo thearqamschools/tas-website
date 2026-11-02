@@ -26,7 +26,6 @@
 <section class="campus-hero">
     <div class="container campus-hero-grid">
         <div>
-            @Html.Partial("_Breadcrumbs", Model.Breadcrumbs)
             <span class="badge badge-@(c.AdmissionStatus ?? "contact_campus")">@c.AdmissionLabel</span>
             <h1 class="h1">@c.Name</h1>
             <p class="lead">@Icons.Svg("map-pin", 20) @c.Locality</p>

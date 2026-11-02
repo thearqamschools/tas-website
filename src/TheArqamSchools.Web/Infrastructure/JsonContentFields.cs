@@ -30,7 +30,7 @@ namespace TheArqamSchools.Web.Infrastructure
 
         private static readonly HashSet<string> HiddenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            "id", "type", "icon", "variant", "layout", "style", "theme", "align", "alignment", "tone", "anchor",
+            "id", "type", "icon", "variant", "layout", "page_intro", "style", "theme", "align", "alignment", "tone", "anchor",
             "bucket", "storage_path", "path", "media", "image", "image_url", "src", "background", "color", "colour", "width", "height"
         };
 

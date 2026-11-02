@@ -967,3 +967,118 @@ ul.home-campus-grid { display: grid; grid-template-columns: repeat(auto-fill, mi
 @media (min-width: 48rem) { .timeline-item { grid-template-columns: 7rem 1fr; gap: 24px; align-items: baseline; } }
 .leader-card .card-body { align-items: flex-start; }
 .leader-initials { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 50%; background: var(--blue); color: #fff; font-weight: 700; font-size: 1.125rem; margin-bottom: 6px; }
+
+/* ===== 3 November 2026: owner's review (header, homepage, footer, pages) ===== */
+
+/* Brand name in capitals, in the title font (Helvetica Inserat when installed; a condensed fallback otherwise). */
+:root { --brand-font: "Helvetica Inserat LT Std", "Helvetica Inserat", "HelveticaInserat-Roman", "Arial Narrow", "Helvetica Neue", Arial, sans-serif; }
+.brand-text { display: flex; flex-direction: column; min-width: 0; }
+.brand .brand-name { font-family: var(--brand-font); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; font-size: 1.125rem; line-height: 1.1; font-stretch: condensed; }
+.brand .brand-tagline { font-family: var(--brand-font); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); line-height: 1.3; margin-top: 3px; }
+@media (min-width: 64rem) { .brand .brand-name { font-size: 1.3125rem; } }
+.brand-light .brand-tagline { color: rgba(255,255,255,.7); }
+
+/* Top bar: social icons, WhatsApp first. */
+.social-list { display: flex; align-items: center; gap: 2px; }
+.topbar .icon-link { width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; text-decoration: none; }
+@media (hover: hover) and (pointer: fine) { .topbar .icon-link:hover { background: rgba(255,255,255,.12); } }
+
+/* Floating WhatsApp button. */
+.wa-float { position: fixed; right: 16px; bottom: 16px; z-index: 40; width: 56px; height: 56px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #25d366; color: #fff; box-shadow: 0 6px 18px rgba(15,23,42,.25); text-decoration: none; transition: transform 160ms var(--ease-out); }
+.wa-float .icon { stroke: #fff; }
+@media (hover: hover) and (pointer: fine) { .wa-float:hover { transform: scale(1.06); } }
+.wa-float:active { transform: scale(.96); }
+@media (min-width: 48rem) { .wa-float { right: 24px; bottom: 24px; width: 60px; height: 60px; } }
+
+/* Homepage hero: full-width photo. Phone: photo on top, text on navy below. Tablet and up: text over the photo's blue side. */
+.home-hero-photo { position: relative; padding: 0; background: var(--navy-900); color: #fff; overflow: hidden; }
+.home-hero-bg img { width: 100%; height: 280px; object-fit: cover; object-position: 50% 20%; }
+.home-hero-photo .home-hero-inner { position: relative; padding-block: 28px 36px; }
+.home-hero-photo .h1 { color: #fff; }
+.home-hero-photo .lead { color: rgba(255,255,255,.88); }
+.home-hero-badge { display: inline-block; margin-bottom: 14px; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.28); font-size: .8125rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.home-hero-photo :focus-visible { outline-color: #fff; }
+@media (min-width: 48rem) {
+  .home-hero-photo { min-height: 520px; display: flex; align-items: center; }
+  .home-hero-bg { position: absolute; inset: 0; }
+  .home-hero-bg img { height: 100%; object-position: 70% 50%; }
+  .home-hero-photo::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(90deg, rgba(23,37,84,.92) 0%, rgba(23,37,84,.78) 38%, rgba(23,37,84,.15) 70%, rgba(23,37,84,0) 100%); }
+  .home-hero-photo .home-hero-inner { z-index: 2; padding-block: 72px; }
+  .home-hero-photo .home-hero-text { max-width: 36rem; }
+}
+@media (min-width: 80rem) { .home-hero-photo { min-height: 600px; } }
+
+/* Figures band: four figures. */
+@media (min-width: 48rem) { .home-figures-list { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* Admissions banner. */
+.home-admit { display: grid; gap: 20px; align-items: center; padding: 32px 24px; border-radius: var(--r-lg); background: linear-gradient(120deg, var(--red) 0%, #ef4444 100%); color: #fff; }
+.home-admit .h2 { color: #fff; }
+.home-admit p { margin-top: 10px; max-width: 40rem; color: rgba(255,255,255,.92); font-size: var(--fs-lead); line-height: 1.6; }
+.home-admit :focus-visible { outline-color: #fff; }
+.btn-navy { background: var(--navy-900); color: #fff; justify-self: start; }
+@media (hover: hover) and (pointer: fine) { .btn-navy:hover { background: var(--ink); color: #fff; } }
+@media (min-width: 48rem) { .home-admit { grid-template-columns: 1fr auto; padding: 44px 48px; gap: 32px; } }
+
+/* Footer: even columns, no underlines, social icons in one row, legal links at the bottom. */
+.footer-main a { text-decoration: none; }
+@media (hover: hover) and (pointer: fine) { .footer-main a:hover { text-decoration: underline; } }
+.footer-grid { align-items: start; }
+.footer-identity p { margin-top: 14px; }
+.footer-social { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.footer-identity .footer-social .icon-link { width: 40px; height: 40px; margin: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; background: rgba(255,255,255,.08); }
+@media (hover: hover) and (pointer: fine) { .footer-identity .footer-social .icon-link:hover { background: rgba(255,255,255,.18); text-decoration: none; } }
+.footer-links li a, .footer-office li a { min-height: 36px; }
+.footer-office h2 { min-height: 2.8em; }
+.footer-legal { display: flex; flex-wrap: wrap; gap: 4px 20px; }
+@media (min-width: 40rem) { .footer-grid { grid-template-columns: 1fr 1fr; } .footer-identity { grid-column: 1 / -1; grid-row: auto; } }
+@media (min-width: 64rem) { .footer-grid { grid-template-columns: 1.3fr .8fr .9fr; } .footer-identity { grid-column: auto; grid-row: auto; } }
+@media (min-width: 80rem) { .footer-grid { grid-template-columns: 1.35fr .8fr .95fr 1.15fr 1.15fr; gap: 32px; } }
+
+/* Contact page: contact information (both head offices, with maps) on the left, the form card on the right. */
+.contact-info { display: grid; gap: 20px; min-width: 0; }
+.office-card { font-style: normal; padding: 20px; border-radius: var(--r-lg); background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
+.office-card .h4 { margin-bottom: 14px; color: var(--blue); }
+.office-rows { display: grid; gap: 14px; }
+.office-rows li { display: flex; gap: 14px; align-items: flex-start; min-width: 0; overflow-wrap: anywhere; }
+.office-icon { flex: none; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; background: var(--red-50); color: var(--red); }
+.office-label { display: block; font-weight: 600; color: var(--ink); line-height: 1.4; }
+.office-rows li > span:last-child { color: var(--muted); line-height: 1.5; }
+.office-map { margin-top: 16px; border-radius: var(--r-md); overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); aspect-ratio: 16 / 9; background: var(--grey); }
+.office-map iframe { width: 100%; height: 100%; border: 0; display: block; }
+.office-card .text-link { margin-top: 10px; display: inline-flex; }
+.form-card .h3 { margin-bottom: 6px; }
+.form-card-intro { color: var(--muted); margin-bottom: 18px; }
+@media (min-width: 64rem) { .contact-layout { grid-template-columns: 5fr 6fr; gap: 40px; } }
+
+/* Academic levels as tabs (Academics page). */
+.level-tabs { margin-top: 8px; }
+.level-tablist { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 20px; scrollbar-width: thin; }
+.level-tablist[hidden] { display: none; }
+.level-tab { flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink); font-weight: 600; cursor: pointer; transition: background-color .15s ease-out, color .15s ease-out, border-color .15s ease-out; }
+.level-tab[aria-selected="true"] { background: var(--blue); border-color: var(--blue); color: #fff; }
+@media (hover: hover) and (pointer: fine) { .level-tab[aria-selected="false"]:hover { border-color: var(--blue); color: var(--blue); } }
+.level-panel { display: grid; gap: 20px; padding: 20px; border-radius: var(--r-lg); background: #fff; box-shadow: inset 0 0 0 1px var(--line), var(--shadow); }
+.level-panel + .level-panel { margin-top: 20px; }
+.level-tabs .level-panel[hidden] { display: none; }
+.level-panel-media { border-radius: var(--r-md); overflow: hidden; }
+.level-panel-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.level-panel-summary { margin-top: 12px; color: var(--muted); font-size: var(--fs-lead); line-height: 1.6; }
+.level-panel-label { margin-top: 18px; font-weight: 600; }
+.level-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.level-chips li { padding: 6px 12px; border-radius: 999px; background: var(--blue-50); color: var(--blue); font-weight: 600; font-size: .9375rem; }
+.level-points { display: grid; gap: 8px; margin-top: 16px; }
+.level-points li { position: relative; padding-left: 18px; }
+.level-points li::before { content: ""; position: absolute; left: 0; top: .65em; width: 7px; height: 7px; border-radius: 50%; background: var(--red); }
+.level-ages { display: inline-block; padding: 3px 10px; border-radius: 999px; background: var(--blue-50); color: var(--blue); font-size: .875rem; font-weight: 600; }
+.level .level-ages { margin-top: 6px; }
+@media (min-width: 48rem) { .level-panel { grid-template-columns: 5fr 6fr; align-items: center; padding: 28px; gap: 32px; } }
+
+/* FAQ: full width of the page. */
+.faq .faq-list, .faq .h2 { max-width: none; }
+.faq-item p { max-width: none; }
+/* Brand on small screens: name on one line, tagline only where there is room. */
+.brand .brand-name, .brand .brand-tagline { white-space: nowrap; }
+@media (max-width: 47.99rem) { .site-header .brand .brand-tagline { display: none; } .site-header .brand .brand-name { font-size: 1rem; } }
+@media (max-width: 22rem) { .site-header .brand .brand-name { font-size: .875rem; letter-spacing: .02em; } }
+.footer-identity .brand .brand-name { white-space: normal; }

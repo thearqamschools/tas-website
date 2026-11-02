@@ -7,12 +7,20 @@
     var left = Model.Text("image_side") == "left";
     var body = d["body"];
     var link = d["link"];
+    var isIntro = d.Value<bool?>("page_intro") == true;
 }
 <section class="section tone-@Model.Tone("white")" @(Model.Anchor != null ? "id=" + Model.Anchor : "") aria-labelledby="h-@Model.Id">
     <div class="container split@(imgUrl == null ? " split-solo" : (left ? " split-image-left" : ""))">
         <div class="split-text">
             @if (!string.IsNullOrEmpty(Model.Text("eyebrow"))) { <p class="eyebrow">@Model.Text("eyebrow")</p> }
-            <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
+            @if (isIntro)
+            {
+                <h1 class="h1" id="h-@Model.Id">@Model.Text("heading")</h1>
+            }
+            else
+            {
+                <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
+            }
             <div class="prose-lg">
                 @if (body is Newtonsoft.Json.Linq.JArray)
                 {

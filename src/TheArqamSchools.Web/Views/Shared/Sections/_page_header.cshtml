@@ -14,7 +14,6 @@
 <section class="page-header page-header-feature tone-warm@(imgUrl != null ? " has-image" : "")">
     <div class="container page-header-grid">
         <div>
-            @Html.Partial("_Breadcrumbs", page.Breadcrumbs)
             @if (!string.IsNullOrEmpty(Model.Text("eyebrow"))) { <p class="eyebrow">@Model.Text("eyebrow")</p> }
             <h1 class="h1">@(string.IsNullOrEmpty(Model.Text("title")) ? page.Page.Title : Model.Text("title"))</h1>
             @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }

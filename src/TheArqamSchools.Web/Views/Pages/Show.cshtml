@@ -7,12 +7,20 @@
                                       "contact_form", "franchise_form", "timeline", "leadership" };
     var sections = Model.Sections.Where(s => known.Contains(s.Type)).ToList();
     var custom = sections.FirstOrDefault(s => s.Type == "page_header");
+    // A first section marked "page_intro" (for example the About page's "One network, one purpose") is the page's own
+    // heading, so the default page header is not shown above it.
+    var first = sections.FirstOrDefault(s => s.Type != "page_header");
+    var introFirst = custom == null && first != null && first.Data.Value<bool?>("page_intro") == true;
     var cityName = ViewBag.CityName as string;
     // The footer has its own call to action; skip it when the page already ends with one.
     var last = sections.LastOrDefault();
     ViewBag.HideFooterCta = (last != null && last.Type == "cta_band") || sections.Any(x => x.Type == "admission_inquiry" || x.Type == "contact_form" || x.Type == "franchise_form");
 }
-@if (custom != null && cityName == null)
+@if (introFirst && cityName == null)
+{
+    @* The first section renders the page heading (h1). *@
+}
+else if (custom != null && cityName == null)
 {
     @Html.Partial("Sections/_page_header", custom, new ViewDataDictionary { { "page", Model } })
 }
@@ -20,7 +28,6 @@ else
 {
     <section class="page-header tone-warm">
         <div class="container">
-            @Html.Partial("_Breadcrumbs", Model.Breadcrumbs)
             <h1 class="h1">@(cityName != null ? "Campuses in " + cityName : Model.Page.Title)</h1>
             @if (cityName == null && !string.IsNullOrWhiteSpace(Model.Page.Summary))
             {

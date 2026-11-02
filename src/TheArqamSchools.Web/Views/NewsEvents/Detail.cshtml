@@ -9,7 +9,6 @@
 }
 <section class="page-header tone-warm">
     <div class="container">
-        @Html.Partial("_Breadcrumbs", new List<Breadcrumb> { new Breadcrumb("Home", "/"), new Breadcrumb("News & Events", "/news-events"), new Breadcrumb(Model.Title, null) })
         <p class="news-meta">
             <span class="news-badge news-badge-@Model.Category">@NewsRepository.FilterLabel(Model.Category)</span>
             <time datetime="@Model.Date.ToOffset(pk).ToString("yyyy-MM-dd")">@Model.Date.ToOffset(pk).ToString("dddd, d MMMM yyyy")</time>

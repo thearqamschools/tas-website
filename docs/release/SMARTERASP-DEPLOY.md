@@ -32,6 +32,7 @@ database and run, in this order:
 6. `Database/06_contact_franchise_forms.sql` (adds the contact and franchise application forms)
 7. `Database/07_news_and_flat_menu.sql` (news categories, flat main menu, footer "Explore")
 8. `Database/08_about_timeline_leadership.sql` (empty, hidden timeline and leadership sections on About)
+9. `Database/09_owner_review_changes.sql` (owner's review: menus, About/Academics/Admissions layout, Facebook link, Privacy Policy and Terms of Service)
 
 Skip `03_fulltext.sql` (optional, and Full-Text Search may not be offered).
 

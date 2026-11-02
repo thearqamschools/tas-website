@@ -31,6 +31,7 @@ Database/
   06_contact_franchise_forms.sql  adds the message form to /contact and the application form to /franchise/apply
   07_news_and_flat_menu.sql       news categories, flat main menu (News & Events, Contact), footer "Explore"
   08_about_timeline_leadership.sql  empty, hidden "Our journey" and "Our leadership" sections on /about
+  09_owner_review_changes.sql       owner's review: Home menu item, About/Academics/Admissions layout, Privacy and Terms pages
   hosting/smarterasp_setup.sql    shared-hosting replacement for 00 (see docs/release/SMARTERASP-DEPLOY.md)
   tools/convert.py         generates 01_schema.sql from the PostgreSQL schema
   tools/export_data.py     generates 02_seed_data.sql from the current content

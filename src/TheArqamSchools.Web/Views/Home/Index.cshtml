@@ -36,6 +36,8 @@
 }
 @{
     ViewBag.Meta = ViewBag.Meta as PageMeta;
+    // The admissions banner at the end of the page replaces the footer call to action here.
+    ViewBag.HideFooterCta = true;
     // Campus finder data comes from the controller (published campuses only). Cast safely: either list may be missing or empty.
     var cities = ViewBag.Cities as IList<FilterOption>;
     var campuses = ViewBag.Campuses as IList<Campus>;
@@ -43,38 +45,36 @@
     var hasCampuses = campuses != null && campuses.Count > 0;
     var news = ViewBag.News as IList<NewsItem>;
     var hasNews = news != null && news.Count > 0;
-    var settings = TheArqamSchools.Web.Data.SiteSettingsRepository.Public();
-    var phone = TheArqamSchools.Web.Data.SiteSettingsRepository.Text(settings, "contact.phone");
-    var phoneAlt = TheArqamSchools.Web.Data.SiteSettingsRepository.Text(settings, "contact.phone_alt");
-    var whatsapp = TheArqamSchools.Web.Data.SiteSettingsRepository.Text(settings, "contact.whatsapp");
-    var address = TheArqamSchools.Web.Data.SiteSettingsRepository.Text(settings, "contact.address");
 }
 <div class="home">
 
-    @* 1. Hero: cream field, serif headline, two actions, labelled placeholder panel. Static on purpose (protects first paint). *@
-    <section class="home-hero tone-warm">
-        <div class="container home-hero-grid">
+    @* 1. Hero: full-width classroom photo; the text sits on the photo's blue left side. *@
+    <section class="home-hero home-hero-photo">
+        <picture class="home-hero-bg">
+            <source media="(min-width: 48rem)" srcset="/media/public-media/network/content/hero-students-classroom--20261014075037.jpg" />
+            <img src="/media/public-media/network/content/hero-mobile--20261014075037.jpg" alt="" fetchpriority="high" decoding="async" />
+        </picture>
+        <div class="container home-hero-inner">
             <div class="home-hero-text">
+                <p class="home-hero-badge">Admissions Open 2026-27</p>
                 <h1 class="h1"><span class="home-h1-line">Knowledge with values.</span> <span class="home-h1-line">Education with purpose.</span></h1>
                 <p class="lead">Modern education rooted in Islamic values, from Play Group to Matric, with Hifz classes, at 350+ campuses across Pakistan.</p>
                 <div class="btn-row">
-                    <a class="btn btn-primary btn-arrow" href="/admissions">Admissions @Icons.Svg("arrow-right", 18)</a>
-                    <a class="btn btn-outline" href="/campuses">Find a campus</a>
+                    <a class="btn btn-primary btn-arrow" href="/admissions">Apply for Admission @Icons.Svg("arrow-right", 18)</a>
+                    <a class="btn btn-outline-light" href="/campuses">Find a Campus</a>
                 </div>
-            </div>
-            <div class="home-hero-art">
-                @Placeholder("Placeholder: real TAS classroom photo to come", "home-ph-hero")
             </div>
         </div>
     </section>
 
-    @* 2. Figures band: the three approved figures as plain text. No animation, no other claims. *@
+    @* 2. Figures band: the approved figures, plus 34 years of excellence (given by the school, 3 November 2026). *@
     <section class="home-figures" aria-labelledby="home-figures-h">
         <div class="container">
             <h2 class="sr-only" id="home-figures-h">The Arqam Schools at a glance</h2>
             <ul class="home-figures-list">
-                <li><span class="home-fig">350+</span> <span class="home-fig-label">campuses</span></li>
-                <li><span class="home-fig">250,000+</span> <span class="home-fig-label">students</span></li>
+                <li><span class="home-fig">34</span> <span class="home-fig-label">Years of Excellence</span></li>
+                <li><span class="home-fig">350+</span> <span class="home-fig-label">Campuses</span></li>
+                <li><span class="home-fig">250,000+</span> <span class="home-fig-label">Students</span></li>
                 <li><span class="home-fig">20,000+</span> <span class="home-fig-label">Hafiz-e-Quran</span></li>
             </ul>
         </div>
@@ -193,7 +193,38 @@
         </div>
     </section>
 
-    @* 5. Campus finder: search form, city links and up to three campuses from the database. Nothing is hard-coded. *@
+    @* 5. Latest news and events: the newest three published items. Hidden until the school publishes some. *@
+    @if (hasNews)
+    {
+        <section class="section tone-white" aria-labelledby="news-h">
+            <div class="container">
+                <div class="section-head home-news-head">
+                    <h2 class="h2" id="news-h">Latest news &amp; events</h2>
+                    <a class="text-link" href="/news-events">All news and events @Icons.Svg("arrow-right", 18)</a>
+                </div>
+                <ul class="card-grid cols-3 news-grid">
+                    @foreach (var n in news)
+                    {
+                        <li class="home-reveal">
+                            <article class="card card-link news-card">
+                                <div class="card-body">
+                                    <p class="news-meta">
+                                        <span class="news-badge news-badge-@n.Category">@TheArqamSchools.Web.Data.NewsRepository.FilterLabel(n.Category)</span>
+                                        <time datetime="@n.Date.ToOffset(TimeSpan.FromHours(5)).ToString("yyyy-MM-dd")">@n.Date.ToOffset(TimeSpan.FromHours(5)).ToString("d MMMM yyyy")</time>
+                                    </p>
+                                    <h3 class="h4"><a href="@n.Url">@n.Title</a></h3>
+                                    @if (!string.IsNullOrEmpty(n.Summary)) { <p>@n.Summary</p> }
+                                    <span class="card-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
+                                </div>
+                            </article>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </section>
+    }
+
+    @* 6. Campus finder: search form, city links and up to three campuses from the database. Nothing is hard-coded. *@
     <section class="section tone-grey" id="find" aria-labelledby="finder-h">
         <div class="container">
             <div class="section-head">
@@ -261,53 +292,16 @@
         </div>
     </section>
 
-    @* 6. Latest news and events: the newest three published items. Hidden until the school publishes some. *@
-    @if (hasNews)
-    {
-        <section class="section tone-white" aria-labelledby="news-h">
-            <div class="container">
-                <div class="section-head home-news-head">
-                    <h2 class="h2" id="news-h">Latest news &amp; events</h2>
-                    <a class="text-link" href="/news-events">All news and events @Icons.Svg("arrow-right", 18)</a>
+    @* 7. Admissions banner (session 2026-27, given by the school). *@
+    <section class="section tone-white home-admit-wrap" aria-labelledby="admit-h">
+        <div class="container">
+            <div class="home-admit home-reveal">
+                <div class="home-admit-text">
+                    <h2 class="h2" id="admit-h">Admissions Open for 2026-27</h2>
+                    <p>Give your child a strong start with modern education rooted in Islamic values. Send an admission inquiry and the campus team will guide you through the next steps.</p>
                 </div>
-                <ul class="card-grid cols-3 news-grid">
-                    @foreach (var n in news)
-                    {
-                        <li class="home-reveal">
-                            <article class="card card-link news-card">
-                                <div class="card-body">
-                                    <p class="news-meta">
-                                        <span class="news-badge news-badge-@n.Category">@TheArqamSchools.Web.Data.NewsRepository.FilterLabel(n.Category)</span>
-                                        <time datetime="@n.Date.ToOffset(TimeSpan.FromHours(5)).ToString("yyyy-MM-dd")">@n.Date.ToOffset(TimeSpan.FromHours(5)).ToString("d MMMM yyyy")</time>
-                                    </p>
-                                    <h3 class="h4"><a href="@n.Url">@n.Title</a></h3>
-                                    @if (!string.IsNullOrEmpty(n.Summary)) { <p>@n.Summary</p> }
-                                    <span class="card-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
-                                </div>
-                            </article>
-                        </li>
-                    }
-                </ul>
+                <a class="btn btn-navy btn-arrow" href="/admissions#inquiry">Start Your Application @Icons.Svg("arrow-right", 18)</a>
             </div>
-        </section>
-    }
-
-    @* 7. Get in touch: official contact details from the website settings. *@
-    <section class="section tone-warm" aria-labelledby="touch-h">
-        <div class="container home-touch home-reveal">
-            <div class="home-touch-text">
-                <h2 class="h2" id="touch-h">Get in touch</h2>
-                <p class="lead">Questions about admissions, academics or a franchise? We will be glad to help.</p>
-                <div class="btn-row">
-                    <a class="btn btn-primary" href="/contact">Contact us</a>
-                    @if (!string.IsNullOrEmpty(whatsapp)) { <a class="btn btn-outline" href="@Contact.WhatsAppUrl(whatsapp)" target="_blank" rel="noopener">WhatsApp us</a> }
-                </div>
-            </div>
-            <ul class="contact-list home-touch-list">
-                @if (!string.IsNullOrEmpty(phone)) { <li>@Icons.Svg("phone", 20) <span><a href="@Contact.TelUrl(phone)">@phone</a>@if (!string.IsNullOrEmpty(phoneAlt)) {<text>, <a href="@Contact.TelUrl(phoneAlt)">@phoneAlt</a></text>}</span></li> }
-                @if (!string.IsNullOrEmpty(whatsapp)) { <li>@Icons.Svg("whatsapp", 20) <a href="@Contact.WhatsAppUrl(whatsapp)" target="_blank" rel="noopener">WhatsApp @whatsapp</a></li> }
-                @if (!string.IsNullOrEmpty(address)) { <li>@Icons.Svg("map-pin", 20) <span class="pre-line">@address</span></li> }
-            </ul>
         </div>
     </section>
 </div>

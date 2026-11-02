@@ -36,7 +36,7 @@
     <meta name="theme-color" content="#1e3a8a" />
     <link rel="icon" type="image/png" href="~/Content/brand/the-arqam-schools-logo-official.png" />
     <link rel="preload" href="~/Content/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="~/Content/site.css?v=20261107" />
+    <link rel="stylesheet" href="~/Content/site.css?v=20261103b" />
     @if (!string.IsNullOrEmpty(meta.StructuredDataJson))
     {
         <script type="application/ld+json">@Html.Raw(meta.StructuredDataJson)</script>
@@ -49,6 +49,16 @@
         @RenderBody()
     </main>
     @Html.Partial("_Footer")
-    <script src="~/Scripts/site.js?v=20261102" defer></script>
+    @{
+        // Floating WhatsApp button on every page: the official number from the website settings.
+        var waNumber = TheArqamSchools.Web.Data.SiteSettingsRepository.Text(TheArqamSchools.Web.Data.SiteSettingsRepository.Public(), "contact.whatsapp");
+    }
+    @if (!string.IsNullOrWhiteSpace(waNumber))
+    {
+        <a class="wa-float" href="@TheArqamSchools.Web.Helpers.Contact.WhatsAppUrl(waNumber)" target="_blank" rel="noopener">
+            @TheArqamSchools.Web.Helpers.Icons.Svg("whatsapp", 28)<span class="sr-only">Chat with us on WhatsApp @waNumber (opens in a new tab)</span>
+        </a>
+    }
+    <script src="~/Scripts/site.js?v=20261103b" defer></script>
 </body>
 </html>

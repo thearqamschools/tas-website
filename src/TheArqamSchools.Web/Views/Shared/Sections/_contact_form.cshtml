@@ -13,21 +13,66 @@
     var phoneAlt = SiteSettingsRepository.Text(settings, "contact.phone_alt");
     var whatsapp = SiteSettingsRepository.Text(settings, "contact.whatsapp");
     var address = SiteSettingsRepository.Text(settings, "contact.address");
+    var offices = HeadOfficeRepository.Published();
     var types = new Dictionary<string, string> { { "general", "General question" }, { "feedback", "Feedback or suggestion" }, { "careers", "Jobs and careers" }, { "media", "Media" }, { "other", "Something else" } };
 }
 <section class="section tone-@Model.Tone("white")" id="@(Model.Anchor ?? "contact")" aria-labelledby="h-@Model.Id">
-    <div class="container form-layout">
-        <div class="form-intro">
-            <h2 class="h2" id="h-@Model.Id">@(string.IsNullOrEmpty(Model.Text("heading")) ? "Send us a message" : Model.Text("heading"))</h2>
-            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
-            <ul class="contact-list">
-                @if (!string.IsNullOrEmpty(phone)) { <li>@Icons.Svg("phone", 20) <span><a href="@Contact.TelUrl(phone)">@phone</a>@if (!string.IsNullOrEmpty(phoneAlt)) {<text>, <a href="@Contact.TelUrl(phoneAlt)">@phoneAlt</a></text>}</span></li> }
-                @if (!string.IsNullOrEmpty(whatsapp)) { <li>@Icons.Svg("whatsapp", 20) <a href="@Contact.WhatsAppUrl(whatsapp)" target="_blank" rel="noopener">WhatsApp @whatsapp</a></li> }
-                @if (!string.IsNullOrEmpty(address)) { <li>@Icons.Svg("map-pin", 20) <span class="pre-line">@address</span></li> }
-            </ul>
+    <div class="container form-layout contact-layout">
+        <div class="contact-info">
+            <h2 class="h3">Contact Information</h2>
+            @if (offices.Count == 0)
+            {
+                <ul class="contact-list">
+                    @if (!string.IsNullOrEmpty(phone)) { <li>@Icons.Svg("phone", 20) <span><a href="@Contact.TelUrl(phone)">@phone</a>@if (!string.IsNullOrEmpty(phoneAlt)) {<text>, <a href="@Contact.TelUrl(phoneAlt)">@phoneAlt</a></text>}</span></li> }
+                    @if (!string.IsNullOrEmpty(whatsapp)) { <li>@Icons.Svg("whatsapp", 20) <a href="@Contact.WhatsAppUrl(whatsapp)" target="_blank" rel="noopener">WhatsApp @whatsapp</a></li> }
+                    @if (!string.IsNullOrEmpty(address)) { <li>@Icons.Svg("map-pin", 20) <span class="pre-line">@address</span></li> }
+                </ul>
+            }
+            @foreach (var o in offices)
+            {
+                var dash = o.Name.IndexOf(" — ", StringComparison.Ordinal);
+                var officeName = dash > 0 ? o.Name.Substring(dash + 3) : o.Name;
+                var phones = new[] { o.Phone, o.PhoneAlt }.Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
+                var mapLink = !string.IsNullOrEmpty(o.GoogleMapsUrl) && o.GoogleMapsUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ? o.GoogleMapsUrl
+                    : (string.IsNullOrEmpty(o.Address) ? null : "https://www.google.com/maps/search/?api=1&query=" + Uri.EscapeDataString(o.Address));
+                <address class="office-card">
+                    <h3 class="h4">@officeName</h3>
+                    <ul class="office-rows">
+                        @if (!string.IsNullOrEmpty(o.Address))
+                        {
+                            <li><span class="office-icon">@Icons.Svg("map-pin", 20)</span><span><span class="office-label">Address</span>@o.Address</span></li>
+                        }
+                        @if (phones.Count > 0)
+                        {
+                            <li><span class="office-icon">@Icons.Svg("phone", 20)</span><span><span class="office-label">Phone</span>@for (var i = 0; i < phones.Count; i++) { if (i > 0) { <text>, </text> } <a href="@Contact.TelUrl(phones[i])">@phones[i]</a> }</span></li>
+                        }
+                        @if (!string.IsNullOrEmpty(o.Whatsapp))
+                        {
+                            <li><span class="office-icon">@Icons.Svg("whatsapp", 20)</span><span><span class="office-label">Mobile / WhatsApp</span><a href="@Contact.WhatsAppUrl(o.Whatsapp)" target="_blank" rel="noopener">@o.Whatsapp</a></span></li>
+                        }
+                        @if (!string.IsNullOrEmpty(o.Email))
+                        {
+                            <li><span class="office-icon">@Icons.Svg("mail", 20)</span><span><span class="office-label">Email</span><a href="mailto:@o.Email">@o.Email</a></span></li>
+                        }
+                        @if (!string.IsNullOrEmpty(o.Hours))
+                        {
+                            <li><span class="office-icon">@Icons.Svg("clock", 20)</span><span><span class="office-label">Office Hours</span><span class="pre-line">@o.Hours</span></span></li>
+                        }
+                    </ul>
+                    @if (!string.IsNullOrEmpty(o.Address))
+                    {
+                        <div class="office-map">
+                            <iframe title="Map: @officeName" src="https://maps.google.com/maps?q=@Uri.EscapeDataString(o.Address)&amp;z=15&amp;output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                        </div>
+                    }
+                    @if (mapLink != null) { <p><a class="text-link" href="@mapLink" target="_blank" rel="noopener">Open in Google Maps @Icons.Svg("external", 16)</a></p> }
+                </address>
+            }
             <p class="muted">For admissions, please use the <a href="/admissions#inquiry">admission inquiry form</a> or contact your nearest campus on the <a href="/campuses">Campuses page</a>.</p>
         </div>
         <div class="form-card">
+            <h2 class="h3" id="h-@Model.Id">@(string.IsNullOrEmpty(Model.Text("heading")) ? "Send Us a Message" : Model.Text("heading"))</h2>
+            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="form-card-intro">@Model.Text("intro")</p> }
             @if (vm.Sent)
             {
                 <div class="alert alert-success" role="status" tabindex="-1" data-focus>
