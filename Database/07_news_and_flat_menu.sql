@@ -43,7 +43,7 @@ WHERE NOT EXISTS (SELECT 1 FROM dbo.categories c WHERE c.[type] = v.[type] AND c
 -- 3. Flat main menu: hide the two dropdown parents, add News & Events and Contact.
 UPDATE dbo.navigation_items
 SET is_visible = 0, updated_at = SYSDATETIMEOFFSET()
-WHERE menu_id = @header AND parent_id IS NULL
+WHERE menu_id = @header AND parent_id IS NULL AND url IN (N'/student-life', N'/parents')
   AND id IN (SELECT DISTINCT parent_id FROM dbo.navigation_items WHERE menu_id = @header AND parent_id IS NOT NULL);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.navigation_items WHERE menu_id = @header AND parent_id IS NULL AND url = N'/news-events')

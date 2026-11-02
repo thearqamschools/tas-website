@@ -278,7 +278,7 @@
                                 <div class="card-body">
                                     <p class="news-meta">
                                         <span class="news-badge news-badge-@n.Category">@TheArqamSchools.Web.Data.NewsRepository.FilterLabel(n.Category)</span>
-                                        <time datetime="@n.Date.ToString("yyyy-MM-dd")">@n.Date.ToOffset(TimeSpan.FromHours(5)).ToString("d MMMM yyyy")</time>
+                                        <time datetime="@n.Date.ToOffset(TimeSpan.FromHours(5)).ToString("yyyy-MM-dd")">@n.Date.ToOffset(TimeSpan.FromHours(5)).ToString("d MMMM yyyy")</time>
                                     </p>
                                     <h3 class="h4"><a href="@n.Url">@n.Title</a></h3>
                                     @if (!string.IsNullOrEmpty(n.Summary)) { <p>@n.Summary</p> }

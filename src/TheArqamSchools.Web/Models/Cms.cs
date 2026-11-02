@@ -97,6 +97,7 @@ namespace TheArqamSchools.Web.Models
         public string Venue { get; set; }
         public string CampusName { get; set; }
         public bool IsFeatured { get; set; }
+        public bool IsAllDay { get; set; }
         public string Status { get; set; }
         public bool IsEvent { get { return Kind == "event"; } }
         public string Url { get { return "/news-events/" + Slug; } }

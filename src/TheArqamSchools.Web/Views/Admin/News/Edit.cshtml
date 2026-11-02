@@ -52,8 +52,9 @@
                     @Html.ValidationMessage("StartDate", null, new { id = "StartDate-error", @class = "admin-field-error" })
                 </div>
                 <div class="admin-field">
-                    <label for="StartTime">Start time (optional)</label>
-                    <input type="time" id="StartTime" name="StartTime" value="@Model.StartTime" @ro />
+                    <label for="StartTime">Start time (leave empty for an all-day event)</label>
+                    <input type="time" id="StartTime" name="StartTime" value="@Model.StartTime" aria-describedby="StartTime-error" @ro />
+                    @Html.ValidationMessage("StartTime", null, new { id = "StartTime-error", @class = "admin-field-error" })
                 </div>
                 <div class="admin-field">
                     <label for="EndDate">Ends on (optional)</label>
@@ -62,7 +63,8 @@
                 </div>
                 <div class="admin-field">
                     <label for="EndTime">End time (optional)</label>
-                    <input type="time" id="EndTime" name="EndTime" value="@Model.EndTime" @ro />
+                    <input type="time" id="EndTime" name="EndTime" value="@Model.EndTime" aria-describedby="EndTime-error" @ro />
+                    @Html.ValidationMessage("EndTime", null, new { id = "EndTime-error", @class = "admin-field-error" })
                 </div>
             </div>
             <div class="admin-field">

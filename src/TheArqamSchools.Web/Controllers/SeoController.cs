@@ -26,6 +26,9 @@ namespace TheArqamSchools.Web.Controllers
                 urls.Add(UrlNode(ns, "/campuses/" + city, null));
             foreach (var c in campuses)
                 urls.Add(UrlNode(ns, c.Url, c.UpdatedAt.UtcDateTime.ToString("yyyy-MM-dd")));
+            urls.Add(UrlNode(ns, "/news-events", null));
+            foreach (var n in NewsRepository.Published(null, 500))
+                urls.Add(UrlNode(ns, n.Url, null));
             var doc = new XDocument(new XDeclaration("1.0", "utf-8", null), urls);
             return Content(doc.Declaration + "\n" + doc.ToString(), "application/xml", Encoding.UTF8);
         }

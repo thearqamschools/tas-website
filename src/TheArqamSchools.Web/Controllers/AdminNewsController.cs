@@ -36,7 +36,7 @@ namespace TheArqamSchools.Web.Controllers
             kind = kind == "event" ? "event" : "news";
             if (!AdminAuth.Current(HttpContext).Can(Perm(kind, "create"))) return Forbidden();
             var f = new NewsEditForm { Kind = kind, Status = "draft", Category = "announcement" };
-            if (kind == "event") f.StartsAt = DateTimeOffset.UtcNow.ToOffset(Pakistan).Date.AddDays(7).AddHours(9);
+            if (kind == "event") f.StartsAt = new DateTimeOffset(DateTimeOffset.UtcNow.ToOffset(Pakistan).Date.AddDays(7).AddHours(9), Pakistan);
             return EditView(f, true, null);
         }
 
@@ -93,11 +93,21 @@ namespace TheArqamSchools.Web.Controllers
 
             if (f.Kind == "event")
             {
+                if (!TimeOk(posted["StartTime"])) ModelState.AddModelError("StartTime", "Please enter the start time as hours and minutes, for example 09:30.");
+                if (!TimeOk(posted["EndTime"])) ModelState.AddModelError("EndTime", "Please enter the end time as hours and minutes, for example 13:00.");
+                f.IsAllDay = string.IsNullOrWhiteSpace(posted["StartTime"]);
                 f.StartsAt = ParseLocal(posted["StartDate"], posted["StartTime"]);
                 f.EndsAt = string.IsNullOrWhiteSpace(posted["EndDate"]) ? (DateTimeOffset?)null : ParseLocal(posted["EndDate"], posted["EndTime"]);
                 if (f.StartsAt == null) ModelState.AddModelError("StartDate", "Please enter the date the event starts.");
                 if (!string.IsNullOrWhiteSpace(posted["EndDate"]) && f.EndsAt == null) ModelState.AddModelError("EndDate", "Please enter a valid end date.");
                 if (f.StartsAt != null && f.EndsAt != null && f.EndsAt < f.StartsAt) ModelState.AddModelError("EndDate", "The event cannot end before it starts.");
+            }
+            if (!isNew && !actor.Can(Perm(f.Kind, "publish")))
+            {
+                // Like pages: without the publish permission, only drafts can be changed.
+                var stored = NewsRepository.Get(f.Kind, f.Id);
+                if (stored != null && stored.Status != "draft")
+                    ModelState.AddModelError("", "This " + (f.Kind == "event" ? "event" : "post") + " is " + (stored.Status == "published" ? "on the website" : "archived") + ". Please ask a Content Manager to change it.");
             }
             if (f.BranchId.HasValue && !CampusAdminRepository.List(null).Any(c => c.Id == f.BranchId.Value)) f.BranchId = null;
             if (ModelState.IsValid && NewsRepository.SlugTaken(f.Slug, f.Id))
@@ -107,6 +117,12 @@ namespace TheArqamSchools.Web.Controllers
             var id = NewsRepository.Save(f, isNew, actor.Can(Perm(f.Kind, "publish")), actor.Id);
             Cache.Remove("home:news");
             return Redirect("/admin/news/" + f.Kind + "/" + id.ToString("D") + "?saved=true");
+        }
+
+        private static bool TimeOk(string time)
+        {
+            TimeSpan t;
+            return string.IsNullOrWhiteSpace(time) || TimeSpan.TryParseExact(time.Trim(), @"hh\:mm", CultureInfo.InvariantCulture, out t);
         }
 
         private static DateTimeOffset? ParseLocal(string date, string time)
@@ -128,9 +144,9 @@ namespace TheArqamSchools.Web.Controllers
                 CanEdit = actor.Can(Perm(f.Kind, isNew ? "create" : "update")),
                 CanPublish = actor.Can(Perm(f.Kind, "publish")),
                 StartDate = f.StartsAt.HasValue ? f.StartsAt.Value.ToOffset(Pakistan).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : "",
-                StartTime = f.StartsAt.HasValue ? f.StartsAt.Value.ToOffset(Pakistan).ToString("HH:mm", CultureInfo.InvariantCulture) : "",
+                StartTime = f.StartsAt.HasValue && !f.IsAllDay ? f.StartsAt.Value.ToOffset(Pakistan).ToString("HH:mm", CultureInfo.InvariantCulture) : "",
                 EndDate = f.EndsAt.HasValue ? f.EndsAt.Value.ToOffset(Pakistan).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : "",
-                EndTime = f.EndsAt.HasValue ? f.EndsAt.Value.ToOffset(Pakistan).ToString("HH:mm", CultureInfo.InvariantCulture) : "",
+                EndTime = f.EndsAt.HasValue && !f.IsAllDay ? f.EndsAt.Value.ToOffset(Pakistan).ToString("HH:mm", CultureInfo.InvariantCulture) : "",
             });
         }
 

@@ -3,6 +3,7 @@
 @using TheArqamSchools.Web.Helpers
 @{
     var pk = TimeSpan.FromHours(5);
+    var timeFormat = Model.IsAllDay ? "d MMMM yyyy" : "d MMMM yyyy, h:mm tt";
     var text = NewsRepository.TextOf(Model.Body);
     var paragraphs = text.Replace("\r\n", "\n").Split(new[] { "\n\n" }, StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).Where(p => p.Length > 0).ToList();
 }
@@ -11,7 +12,7 @@
         @Html.Partial("_Breadcrumbs", new List<Breadcrumb> { new Breadcrumb("Home", "/"), new Breadcrumb("News & Events", "/news-events"), new Breadcrumb(Model.Title, null) })
         <p class="news-meta">
             <span class="news-badge news-badge-@Model.Category">@NewsRepository.FilterLabel(Model.Category)</span>
-            <time datetime="@Model.Date.ToString("yyyy-MM-dd")">@Model.Date.ToOffset(pk).ToString("dddd, d MMMM yyyy")</time>
+            <time datetime="@Model.Date.ToOffset(pk).ToString("yyyy-MM-dd")">@Model.Date.ToOffset(pk).ToString("dddd, d MMMM yyyy")</time>
         </p>
         <h1 class="h1">@Model.Title</h1>
         @if (!string.IsNullOrEmpty(Model.Summary)) { <p class="lead">@Model.Summary</p> }
@@ -22,7 +23,7 @@
         @if (Model.IsEvent)
         {
             <ul class="news-facts">
-                <li>@Icons.Svg("clock", 18) @Model.Date.ToOffset(pk).ToString("d MMMM yyyy, h:mm tt")@(Model.EndsAt.HasValue ? " – " + Model.EndsAt.Value.ToOffset(pk).ToString("d MMMM yyyy, h:mm tt") : "")</li>
+                <li>@Icons.Svg("clock", 18) @Model.Date.ToOffset(pk).ToString(timeFormat)@(Model.EndsAt.HasValue ? " – " + Model.EndsAt.Value.ToOffset(pk).ToString(timeFormat) : "")</li>
                 @if (!string.IsNullOrEmpty(Model.Venue)) { <li>@Icons.Svg("map-pin", 18) @Model.Venue</li> }
                 @if (!string.IsNullOrEmpty(Model.CampusName)) { <li>@Icons.Svg("graduation-cap", 18) @Model.CampusName</li> }
             </ul>
