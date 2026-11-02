@@ -1,6 +1,6 @@
 # Testing deployment on SmarterASP.NET (thearqamschools.com)
 
-Status: prepared, **not deployed yet**. The site stays hidden from search engines
+Status: **live for testing since 2 November 2026** at https://thearqamschools.com (hidden from search engines). The site stays hidden from search engines
 (`Site:NoIndex = true`) during testing. Every step that changes the live site,
 DNS or the database needs the owner's go-ahead.
 
@@ -85,3 +85,19 @@ the development branch runs the same steps as a dry run without uploading.
 
 `/robots.txt` must say `Disallow: /`. Then go through the pages, both forms, the
 admin inbox, campus and page editing, on a phone and a computer.
+
+## What happened on the first deployment (2 November 2026)
+
+- The trial plan allows one database and one FTP user. The existing database was MSSQL 2022;
+  it was empty, so it was deleted and recreated as **MSSQL 2025** (`db_ad0939_tasweb`,
+  server `sql8012.site4now.net`). The upload uses the default FTP user with folder `/site1`.
+- The database was set up by the `Database setup (SmarterASP testing)` workflow.
+- `FtpWebRequest` failed on sub-folders (550), so `Publish-Ftp.ps1` now uses `curl.exe`.
+- Every page answered 401 until the account's **Security Lock** was turned off
+  (SmarterASP account Dashboard: verify the account with two-step verification).
+- The free SSL (Let's Encrypt, HTTP validation) needs `/.well-known/` to be served as static
+  files without the HTTPS redirect; `.well-known/web.config` does that. It failed while the
+  Security Lock was on (401 in the validation log) and succeeded after.
+- DNS at Cloudflare: `A @` and `A www` → `208.98.35.184`, **DNS only** (grey cloud).
+- GitHub variables now: `SITE_URL` and `SMOKE_URL` = `https://thearqamschools.com`,
+  `FTP_REMOTE_DIR` = `/site1`.
