@@ -14,9 +14,15 @@ DNS or the database needs the owner's go-ahead.
 4. Note the site's **IP address** (needed for Cloudflare DNS) and its temporary
    test address, if one is shown.
 
-## 2. Database (SSMS, "Remote Connect" from the panel details)
+## 2. Database
 
-Connect to the new, empty database and run, in this order:
+**Easiest (no SSMS):** after the `DB_CONNECTION_STRING` secret is set (step 3), push the
+branch `deploy/smarterasp-db`. The workflow `Database setup (SmarterASP testing)` checks the
+server is SQL Server 2025, runs the scripts below on an empty database, and on later runs
+only the numbered change scripts (each one runs once).
+
+**By hand (SSMS, "Remote Connect" from the panel details):** connect to the new, empty
+database and run, in this order:
 
 1. `Database/hosting/smarterasp_setup.sql` (replaces `00`, which cannot run on shared hosting)
 2. `Database/01_schema.sql`

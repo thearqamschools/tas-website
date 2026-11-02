@@ -18,9 +18,10 @@
 
 SET NOCOUNT ON;
 
-IF DB_NAME() IN (N'master', N'model', N'msdb', N'tempdb')
+DECLARE @db SYSNAME = DB_NAME();
+IF @db IN (N'master', N'model', N'msdb', N'tempdb')
 BEGIN
-    RAISERROR(N'Connect to your own website database first (not %s).', 16, 1, DB_NAME()) WITH NOWAIT;
+    RAISERROR(N'Connect to your own website database first (not %s).', 16, 1, @db) WITH NOWAIT;
     SET NOEXEC ON;
 END;
 
