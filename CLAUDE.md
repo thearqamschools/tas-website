@@ -110,7 +110,7 @@ tools/compile-check/      Mono C# compile check with stub MVC/Dapper types (does
 - Official contacts: The Arqam Schools, Sanora Colony, Samanabad, Faisalabad, Pakistan;
   phone 041-2660265, 041-2406479; mobile/WhatsApp 0339-2406479; www.thearqam.com;
   Facebook https://www.facebook.com/TASHeadOffice and https://www.facebook.com/thearqamfsdOfficial.
-  The Lahore head office number in `02_seed_data.sql` (042-36520008) is not yet confirmed.
+  Lahore head office: 163-Tufail Block, Canal Bank Housing Scheme, Lahore; 042-36520008 (number confirmed by the owner, 3 November 2026).
 - Tone: professional, warm, clear; modern education with Islamic values. No guaranteed
   results or exaggerated claims. If a fact is missing, mark it as needing confirmation.
 - Languages: English and Urdu only (Roman Urdu for chat). Never Hindi or Devanagari script.

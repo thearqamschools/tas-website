@@ -3,6 +3,8 @@
    Breakpoints: 40rem (640px), 48rem (768px), 64rem (1024px), 80rem (1280px). */
 
 @font-face { font-family: "Inter"; src: url(fonts/inter-latin-var.woff2) format("woff2"); font-weight: 100 900; font-display: swap; }
+/* Brand title font, supplied by the school (3 November 2026). A heavy condensed face, so it is used at weight 400 without synthetic bold. */
+@font-face { font-family: "Helvetica Inserat"; src: url(fonts/helvetica-inserat-lt-std-roman.ttf) format("truetype"); font-weight: 400; font-style: normal; font-display: swap; }
 @font-face { font-family: "Source Serif 4"; src: url(fonts/source-serif-4-latin-var.woff2) format("woff2"); font-weight: 200 900; font-style: normal; font-display: swap; }
 
 :root {
@@ -973,9 +975,9 @@ ul.home-campus-grid { display: grid; grid-template-columns: repeat(auto-fill, mi
 /* Brand name in capitals, in the title font (Helvetica Inserat when installed; a condensed fallback otherwise). */
 :root { --brand-font: "Helvetica Inserat LT Std", "Helvetica Inserat", "HelveticaInserat-Roman", "Arial Narrow", "Helvetica Neue", Arial, sans-serif; }
 .brand-text { display: flex; flex-direction: column; min-width: 0; }
-.brand .brand-name { font-family: var(--brand-font); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; font-size: 1.125rem; line-height: 1.1; font-stretch: condensed; }
-.brand .brand-tagline { font-family: var(--brand-font); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); line-height: 1.3; margin-top: 3px; }
-@media (min-width: 64rem) { .brand .brand-name { font-size: 1.3125rem; } }
+.brand .brand-name { font-family: var(--brand-font); font-weight: 400; font-synthesis: none; text-transform: uppercase; letter-spacing: .03em; font-size: 1.25rem; line-height: 1.1; }
+.brand .brand-tagline { font-family: var(--brand-font); font-weight: 400; font-synthesis: none; font-size: .8125rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); line-height: 1.3; margin-top: 3px; }
+@media (min-width: 64rem) { .brand .brand-name { font-size: 1.5rem; } }
 .brand-light .brand-tagline { color: rgba(255,255,255,.7); }
 
 /* Top bar: social icons, WhatsApp first. */
@@ -1080,6 +1082,6 @@ ul.home-campus-grid { display: grid; grid-template-columns: repeat(auto-fill, mi
 .faq-item p { max-width: none; }
 /* Brand on small screens: name on one line, tagline only where there is room. */
 .brand .brand-name, .brand .brand-tagline { white-space: nowrap; }
-@media (max-width: 47.99rem) { .site-header .brand .brand-tagline { display: none; } .site-header .brand .brand-name { font-size: 1rem; } }
-@media (max-width: 22rem) { .site-header .brand .brand-name { font-size: .875rem; letter-spacing: .02em; } }
+@media (max-width: 47.99rem) { .site-header .brand .brand-tagline { display: none; } .site-header .brand .brand-name { font-size: 1.125rem; } }
+@media (max-width: 22rem) { .site-header .brand .brand-name { font-size: 1rem; letter-spacing: .02em; } }
 .footer-identity .brand .brand-name { white-space: normal; }
