@@ -1085,3 +1085,14 @@ ul.home-campus-grid { display: grid; grid-template-columns: repeat(auto-fill, mi
 @media (max-width: 47.99rem) { .site-header .brand .brand-tagline { display: none; } .site-header .brand .brand-name { font-size: 1.125rem; } }
 @media (max-width: 22rem) { .site-header .brand .brand-name { font-size: 1rem; letter-spacing: .02em; } }
 .footer-identity .brand .brand-name { white-space: normal; }
+/* Brand lock-up (owner, 3 November 2026): name in the logo's purple, text block as tall as the logo and centred on it. */
+:root { --logo-purple: #3e4095; }
+.site-header .brand { gap: 12px; align-items: center; }
+.site-header .brand img { width: 56px; height: 56px; }
+.site-header .brand-text { justify-content: center; }
+.site-header .brand .brand-name { color: var(--logo-purple); font-size: 1.875rem; line-height: .95; letter-spacing: .02em; }
+.site-header .brand .brand-tagline { color: var(--logo-purple); opacity: .8; font-size: .875rem; line-height: 1.1; letter-spacing: .08em; margin-top: 6px; }
+@media (max-width: 63.99rem) { .site-header .brand .brand-name { font-size: 1.5rem; } .site-header .brand img { width: 50px; height: 50px; } }
+@media (max-width: 47.99rem) { .site-header .brand img, .mobile-menu .brand img { width: 44px; height: 44px; } .site-header .brand .brand-name { font-size: 1.375rem; } }
+@media (max-width: 22rem) { .site-header .brand .brand-name { font-size: 1.125rem; } }
+.mobile-menu .brand .brand-name { color: var(--logo-purple); font-size: 1.375rem; line-height: .95; }
