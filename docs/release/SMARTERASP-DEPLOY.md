@@ -103,3 +103,10 @@ admin inbox, campus and page editing, on a phone and a computer.
 - DNS at Cloudflare: `A @` and `A www` → `208.98.35.184`, **DNS only** (grey cloud).
 - GitHub variables now: `SITE_URL` and `SMOKE_URL` = `https://thearqamschools.com`,
   `FTP_REMOTE_DIR` = `/site1`.
+
+## 2 November 2026: News & Events update
+
+- `07_news_and_flat_menu` and `08_about_timeline_leadership` ran on the testing database
+  through `deploy/smarterasp-db` (04-06 reported "already applied").
+- The site (commit 2e0d91e) was uploaded through `deploy/smarterasp`; the quick check
+  answered 200 for all pages. `/news-events` is now in that check too.
