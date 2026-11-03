@@ -34,7 +34,9 @@ database and run, in this order:
 8. `Database/08_about_timeline_leadership.sql` (empty, hidden timeline and leadership sections on About)
 9. `Database/09_owner_review_changes.sql` (owner's review: menus, About/Academics/Admissions layout, Facebook link, Privacy Policy and Terms of Service)
 10. `Database/10_faisalabad_region_campuses.sql` (93 Faisalabad region campuses, with their cities and districts)
-11. `Database/11_owner_second_review.sql` (motto, Facebook link, class names, level ages and key points, journey 1993)
+11. `Database/11_owner_second_review.sql` (motto, Facebook link, class names, level ages and key points, journey 1993).
+    It contains Arabic text and is saved as UTF-8: by hand on Windows use `sqlcmd ... -f 65001 -i Database\11_owner_second_review.sql`,
+    or check in SSMS that the Arabic looks right before pressing Execute. The GitHub workflow (Linux sqlcmd) reads it correctly.
 
 Skip `03_fulltext.sql` (optional, and Full-Text Search may not be offered).
 

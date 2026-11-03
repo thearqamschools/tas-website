@@ -166,6 +166,7 @@
     <Content Include="Content\brand\the-arqam-schools-logo-192.png" />
     <Content Include="Content\fonts\inter-latin-var.woff2" />
     <Content Include="Content\fonts\helvetica-inserat-lt-std-roman.ttf" />
+    <Content Include="Content\fonts\scheherazade-new-bold-motto.woff2" />
     <Content Include="Content\fonts\source-serif-4-latin-var.woff2" />
     <Content Include="Content\site.css" />
     <Content Include="Content\admin.css" />

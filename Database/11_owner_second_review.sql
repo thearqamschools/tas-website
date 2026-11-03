@@ -70,6 +70,9 @@ BEGIN
 END
 
 -- 3. Class names
+IF EXISTS (SELECT 1 FROM dbo.class_levels a JOIN dbo.class_levels b ON b.id <> a.id AND b.name = LTRIM(RTRIM(REPLACE(a.name, N'(Matric)', N'')))
+           WHERE a.name LIKE N'%(Matric)%')
+    THROW 50013, N'11: a class called "Class 9" or "Class 10" already exists next to "Class 9 (Matric)" / "Class 10 (Matric)". Rename or hide one in the admin panel, then run 11 again. Nothing was changed.', 1;
 UPDATE dbo.class_levels SET name = LTRIM(RTRIM(REPLACE(name, N'(Matric)', N''))), updated_at = SYSDATETIMEOFFSET()
 WHERE name LIKE N'%(Matric)%';
 

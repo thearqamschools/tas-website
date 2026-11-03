@@ -19,7 +19,6 @@ namespace TheArqamSchools.Web.Helpers
             return BaseUrl + (path.StartsWith("/") ? path : "/" + path);
         }
 
-        /// <summary>Links from the CMS are only used if they are site-relative, https, mailto, tel or an in-page anchor.</summary>
         /// <summary>True when the text contains Arabic letters (for example the school's motto), so it can be shown right to left with lang="ar".</summary>
         public static bool IsArabic(string text)
         {
@@ -28,6 +27,7 @@ namespace TheArqamSchools.Web.Helpers
             return false;
         }
 
+        /// <summary>Links from the CMS are only used if they are site-relative, https, mailto, tel or an in-page anchor.</summary>
         public static bool IsSafeHref(string href)
         {
             if (string.IsNullOrWhiteSpace(href)) return false;

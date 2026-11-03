@@ -104,6 +104,28 @@
     });
   })();
 
+  // Header motto (Arabic): make it exactly as wide as the name above it, left and right.
+  function fitMotto() {
+    document.querySelectorAll(".site-header .brand-text").forEach(function (t) {
+      var name = t.querySelector(".brand-name"), motto = t.querySelector('.brand-tagline[lang="ar"]');
+      if (!name || !motto || motto.offsetParent === null) return;
+      var target = name.getBoundingClientRect().width;
+      var size = parseFloat(getComputedStyle(motto).fontSize) || 16;
+      for (var i = 0; i < 4; i++) {
+        var w = motto.getBoundingClientRect().width;
+        if (!w || Math.abs(w - target) < 0.5) break;
+        size = size * target / w;
+        motto.style.fontSize = size + "px";
+      }
+    });
+  }
+  fitMotto();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitMotto);
+  window.addEventListener("resize", function () {
+    document.querySelectorAll('.site-header .brand-tagline[lang="ar"]').forEach(function (m) { m.style.fontSize = ""; });
+    fitMotto();
+  });
+
   // Required consent checkboxes: browsers check them before sending; the server checks everything again.
   document.querySelectorAll("form[novalidate]").forEach(function (f) {
     f.addEventListener("submit", function (e) {
