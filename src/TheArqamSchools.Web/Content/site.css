@@ -1134,7 +1134,7 @@ ul.home-campus-grid { display: grid; grid-template-columns: repeat(auto-fill, mi
 .footer-tagline[lang="ar"] { font-size: 1.3125rem; white-space: nowrap; }
 
 /* Motto in Scheherazade New, exactly as wide as the name above it (site.js sets the size). */
-:root { --arabic-font: "Scheherazade New", "Traditional Arabic", "Arabic Typesetting", "Noto Naskh Arabic", "Amiri", "Geeza Pro", "Segoe UI", serif; --motto-word-spacing: normal; }
+:root { --arabic-font: "Scheherazade New", "Traditional Arabic", "Arabic Typesetting", "Noto Naskh Arabic", "Amiri", "Geeza Pro", "Segoe UI", serif; --motto-word-spacing: -0.2em; }
 .site-header .brand-text { align-items: flex-start; }
 .brand .brand-tagline[lang="ar"], .site-header .brand .brand-tagline[lang="ar"], .footer-tagline[lang="ar"] { font-weight: 700; word-spacing: var(--motto-word-spacing); }
 .site-header .brand .brand-tagline[lang="ar"] { display: inline-block; white-space: nowrap; line-height: 1.25; margin-top: 2px; }
