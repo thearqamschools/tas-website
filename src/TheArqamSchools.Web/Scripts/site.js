@@ -118,8 +118,8 @@
         size = size * target / w;
         motto.style.fontSize = size + "px";
       }
-      // Owner (3 November 2026): about 2 points smaller than full width, centred under the name.
-      motto.style.fontSize = Math.max(size - 2.7, 10) + "px";
+      // Owner (3 November 2026): about 1 point smaller than full width, centred under the name.
+      motto.style.fontSize = Math.max(size - 1.35, 10) + "px";
       motto.style.width = target + "px";
     });
   }
