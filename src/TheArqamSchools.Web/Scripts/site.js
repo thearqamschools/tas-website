@@ -104,11 +104,12 @@
     });
   })();
 
-  // Header motto (Arabic): make it exactly as wide as the name above it, left and right.
+  // Header motto (Arabic): sized from the width of the name above it and centred under it.
   function fitMotto() {
     document.querySelectorAll(".site-header .brand-text").forEach(function (t) {
       var name = t.querySelector(".brand-name"), motto = t.querySelector('.brand-tagline[lang="ar"]');
       if (!name || !motto || motto.offsetParent === null) return;
+      motto.style.width = ""; motto.style.fontSize = "";   // start from the CSS size each time
       var target = name.getBoundingClientRect().width;
       var size = parseFloat(getComputedStyle(motto).fontSize) || 16;
       for (var i = 0; i < 4; i++) {
@@ -117,12 +118,14 @@
         size = size * target / w;
         motto.style.fontSize = size + "px";
       }
+      // Owner (3 November 2026): about 2 points smaller than full width, centred under the name.
+      motto.style.fontSize = Math.max(size - 2.7, 10) + "px";
+      motto.style.width = target + "px";
     });
   }
   fitMotto();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitMotto);
   window.addEventListener("resize", function () {
-    document.querySelectorAll('.site-header .brand-tagline[lang="ar"]').forEach(function (m) { m.style.fontSize = ""; });
     fitMotto();
   });
 

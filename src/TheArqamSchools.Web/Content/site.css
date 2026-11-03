@@ -1142,3 +1142,6 @@ ul.home-campus-grid { display: grid; grid-template-columns: repeat(auto-fill, mi
 /* Icon cards in a grid (What Sets Us Apart, Why choose us, Mission/Vision/Values): icon and text centred. */
 .card-centered .card-body { text-align: center; align-items: center; }
 .card-centered .icon-badge { margin-inline: auto; }
+.site-header .brand .brand-tagline[lang="ar"] { text-align: center; line-height: 1.15; }
+.site-header .brand .brand-tagline[lang="ar"] { line-height: .95; margin-top: 0; }
+.site-header .brand .brand-tagline[lang="ar"] { margin-top: 5px; }
