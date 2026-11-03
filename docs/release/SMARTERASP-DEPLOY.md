@@ -115,3 +115,13 @@ admin inbox, campus and page editing, on a phone and a computer.
   through `deploy/smarterasp-db` (04-06 reported "already applied").
 - The site (commit 2e0d91e) was uploaded through `deploy/smarterasp`; the quick check
   answered 200 for all pages. `/news-events` is now in that check too.
+
+## 3 November 2026: owner's second review and Faisalabad region campuses
+
+- `09_owner_review_changes` (2 November), `10_faisalabad_region_campuses` and `11_owner_second_review`
+  ran on the testing database through `deploy/smarterasp-db`; earlier scripts reported "already applied".
+- The site (commit 8e5cbf2) was uploaded through `deploy/smarterasp` (156 files); the quick check answered
+  200 for every page.
+- Open items for the owner: founding year (1992 or 1993), Google Maps share links for both head offices,
+  the real address of Pir Mahal Campus (hidden for now), two phone numbers (Multan 061-457888,
+  Fatyana 0405-312248), the other regions' campus lists, Helvetica Inserat web-font licence.
