@@ -18,10 +18,6 @@
 <header class="site-header" data-header>
     <div class="topbar">
         <div class="container topbar-inner">
-            @if (!string.IsNullOrEmpty(phone))
-            {
-                <a class="topbar-link" href="@Contact.TelUrl(phone)">@Icons.Svg("phone", 16) @phone</a>
-            }
             <div class="topbar-right">
                 <nav aria-label="Utility">
                     <ul class="topbar-menu">
@@ -42,10 +38,10 @@
     </div>
     <div class="container header-bar">
         <a class="brand" href="/" aria-label="The Arqam Schools, home">
-            <img src="~/Content/brand/the-arqam-schools-logo-official.png" alt="" width="52" height="52" />
+            <img src="~/Content/brand/the-arqam-schools-logo-128.png" srcset="@Url.Content("~/Content/brand/the-arqam-schools-logo-64.png") 64w, @Url.Content("~/Content/brand/the-arqam-schools-logo-128.png") 128w, @Url.Content("~/Content/brand/the-arqam-schools-logo-192.png") 192w" sizes="56px" alt="" width="56" height="56" />
             <span class="brand-text">
                 <span class="brand-name">The Arqam Schools</span>
-                @if (!string.IsNullOrEmpty(tagline)) { <span class="brand-tagline">@tagline</span> }
+                @if (!string.IsNullOrEmpty(tagline)) { <span class="brand-tagline" lang="@(Site.IsArabic(tagline) ? "ar" : null)" dir="@(Site.IsArabic(tagline) ? "rtl" : null)">@tagline</span> }
             </span>
         </a>
         <nav class="main-nav" aria-label="Main">
@@ -95,10 +91,6 @@
         </nav>
         <div class="header-actions">
             <a class="btn btn-primary btn-sm header-cta" href="@applyHref">@applyLabel</a>
-            @if (!string.IsNullOrEmpty(phone))
-            {
-                <a class="call-button" href="@Contact.TelUrl(phone)">@Icons.Svg("phone", 22)<span class="sr-only">Call @phone</span></a>
-            }
             <button type="button" class="menu-button" aria-controls="mobile-menu" aria-expanded="false" data-menu-open>
                 @Icons.Svg("menu", 24)<span class="sr-only">Open menu</span>
             </button>
@@ -107,7 +99,7 @@
     <dialog class="mobile-menu" id="mobile-menu" aria-label="Menu">
         <div class="mobile-menu-head">
             <a class="brand" href="/" aria-label="The Arqam Schools, home">
-                <img src="~/Content/brand/the-arqam-schools-logo-official.png" alt="" width="44" height="44" />
+                <img src="~/Content/brand/the-arqam-schools-logo-128.png" srcset="@Url.Content("~/Content/brand/the-arqam-schools-logo-64.png") 64w, @Url.Content("~/Content/brand/the-arqam-schools-logo-128.png") 128w, @Url.Content("~/Content/brand/the-arqam-schools-logo-192.png") 192w" sizes="44px" alt="" width="44" height="44" />
                 <span class="brand-text"><span class="brand-name">The Arqam Schools</span></span>
             </a>
             <button type="button" class="menu-button" data-menu-close>@Icons.Svg("x", 24)<span class="sr-only">Close menu</span></button>

@@ -104,36 +104,6 @@
     });
   })();
 
-  // Academic levels as tabs (Academics page): one stage at a time; arrow keys, Home and End move between tabs.
-  document.querySelectorAll("[data-tabs]").forEach(function (box) {
-    var list = box.querySelector("[data-tablist]");
-    var tabs = Array.prototype.slice.call(box.querySelectorAll('[role="tab"]'));
-    var panels = Array.prototype.slice.call(box.querySelectorAll('[role="tabpanel"]'));
-    if (!list || tabs.length === 0) return;
-    list.hidden = false;
-    function select(i, focus) {
-      tabs.forEach(function (t, j) {
-        var on = i === j;
-        t.setAttribute("aria-selected", on ? "true" : "false");
-        t.tabIndex = on ? 0 : -1;
-        if (panels[j]) panels[j].hidden = !on;
-      });
-      if (focus) tabs[i].focus();
-    }
-    tabs.forEach(function (t, i) {
-      t.addEventListener("click", function () { select(i, false); });
-      t.addEventListener("keydown", function (e) {
-        var n = tabs.length, k = e.key, to = -1;
-        if (k === "ArrowRight" || k === "ArrowDown") to = (i + 1) % n;
-        else if (k === "ArrowLeft" || k === "ArrowUp") to = (i - 1 + n) % n;
-        else if (k === "Home") to = 0;
-        else if (k === "End") to = n - 1;
-        if (to >= 0) { e.preventDefault(); select(to, true); }
-      });
-    });
-    select(0, false);
-  });
-
   // Required consent checkboxes: browsers check them before sending; the server checks everything again.
   document.querySelectorAll("form[novalidate]").forEach(function (f) {
     f.addEventListener("submit", function (e) {

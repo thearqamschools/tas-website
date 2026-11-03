@@ -11,7 +11,7 @@
     var isIntro = ViewData["isPageIntro"] is bool && (bool)ViewData["isPageIntro"];
 }
 <section class="section tone-@Model.Tone("white")" @(Model.Anchor != null ? "id=" + Model.Anchor : "") aria-labelledby="h-@Model.Id">
-    <div class="container split@(imgUrl == null ? " split-solo" : (left ? " split-image-left" : ""))">
+    <div class="container split@(imgUrl == null ? " split-solo" : (left ? " split-image-left" : ""))@(isIntro ? " split-top" : "")">
         <div class="split-text">
             @if (!string.IsNullOrEmpty(Model.Text("eyebrow"))) { <p class="eyebrow">@Model.Text("eyebrow")</p> }
             @if (isIntro)

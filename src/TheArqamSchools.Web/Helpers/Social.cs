@@ -23,7 +23,7 @@ namespace TheArqamSchools.Web.Helpers
     /// </summary>
     public static class Social
     {
-        public const string FacebookFallback = "https://www.facebook.com/thearqamfsdOfficial";
+        public const string FacebookFallback = "https://www.facebook.com/TASHeadOffice";
 
         private static readonly string[] Order = { "whatsapp", "facebook", "instagram", "tiktok", "youtube", "linkedin", "x" };
 
