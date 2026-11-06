@@ -12,6 +12,7 @@
 --  2. News & Events: five posts marked "Sample:" (three news, two events) so the owner can see
 --     the layout. They say they are samples; archive them in the admin panel when real news exists.
 --  Changed rows are backed up in [archive].page_sections_20261106c. Nothing is deleted.
+--  Saved as UTF-8 (Arabic in the seal's description): on Windows run it with sqlcmd -f 65001.
 -- =============================================================================
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
@@ -37,14 +38,17 @@ UPDATE dbo.page_sections
 SET data = JSON_MODIFY(JSON_MODIFY(JSON_MODIFY(data, '$.eyebrow', N''), '$.heading', N'Our Journey'), '$.body', JSON_QUERY(N'["The Arqam Schools began in 1993 with a clear purpose: to give children a sound modern education rooted in the Quran and Sunnah, and to earn the pleasure of Allah through the work of teaching.","As parents'' trust grew, the school grew with it. From Faisalabad, The Arqam Schools expanded step by step to other cities, opening campuses in Lahore, Karachi and beyond, with head offices in both Faisalabad and Lahore.","Today, The Arqam Schools is a network of more than 350 branches across Pakistan, educating over 250,000 students from Play Group to Matric, including more than 20,000 Hifz-e-Quran students. The purpose remains what it was in 1993: excellence in this world and excellence in the Hereafter."]')),
     updated_at = SYSDATETIMEOFFSET()
 WHERE page_id = @about AND [type] = N'split_feature' AND JSON_VALUE(data, '$.anchor') = N'who-we-are';
+IF @@ROWCOUNT <> 1 THROW 50022, N'14: the About journey section (who-we-are) was not found. Nothing was changed.', 1;
 
-UPDATE dbo.page_sections SET data = N'{"anchor":"vision-mission","heading":"Our Vision and Mission","tone":"white","vision":{"title":"Our Vision","seal":{"bucket":"public-media","path":"network/content/hasana-seal.png","alt":"The Hasana seal: فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً, Excellence in this world and excellence in the Hereafter","width":938,"height":938},"body":"To raise a generation that excels in knowledge and character, and succeeds in this world and the Hereafter."},"mission":{"title":"Our Mission","body":"To earn the pleasure of Allah through education, training and service, by giving every child a quality modern education within the framework of the Quran and Sunnah, and by building the discipline, confidence and noble character they need to lead responsibly in every walk of life."}}', is_visible = 1, sort_order = 2, updated_at = SYSDATETIMEOFFSET()
-WHERE page_id = @about AND [type] = N'vision_mission';
+UPDATE dbo.page_sections SET data = N'{"anchor":"vision-mission","heading":"Our Vision and Mission","tone":"white","vision":{"title":"Our Vision","seal":{"bucket":"public-media","path":"network/content/hasana-seal.png","alt":"The Hasana seal: فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً, Excellence in this world and excellence in the Hereafter","width":420,"height":420},"body":"To raise a generation that excels in knowledge and character, and succeeds in this world and the Hereafter."},"mission":{"title":"Our Mission","body":"To earn the pleasure of Allah through education, training and service, by giving every child a quality modern education within the framework of the Quran and Sunnah, and by building the discipline, confidence and noble character they need to lead responsibly in every walk of life."}}', is_visible = 1, sort_order = 2, updated_at = SYSDATETIMEOFFSET()
+WHERE page_id = @about AND [type] = N'vision_mission' AND JSON_VALUE(data, '$.anchor') = N'vision-mission';
+IF @@ROWCOUNT <> 1 THROW 50023, N'14: the About vision and mission section was not found. Nothing was changed.', 1;
 UPDATE dbo.page_sections SET is_visible = 0, updated_at = SYSDATETIMEOFFSET()
 WHERE page_id = @about AND (JSON_VALUE(data, '$.anchor') IN (N'mission-vision-values', N'journey'));
 
 UPDATE dbo.page_sections SET data = JSON_MODIFY(data, '$.badge', JSON_QUERY(N'{"bucket":"public-media","path":"network/content/core-values-badge.png","alt":"Core Values badge: we believe in citizenship, commitment, leadership, respect, excellence and responsibility","width":600,"height":600}')), updated_at = SYSDATETIMEOFFSET()
 WHERE page_id = @about AND [type] = N'values' AND JSON_VALUE(data, '$.anchor') = N'core-values';
+IF @@ROWCOUNT <> 1 THROW 50024, N'14: the About core values section was not found. Nothing was changed.', 1;
 
 -- 2. Sample news and events (skipped when a post with the same web address already exists)
 DECLARE @news TABLE (title NVARCHAR(160), slug NVARCHAR(120), category NVARCHAR(40), excerpt NVARCHAR(300), body NVARCHAR(MAX), n INT);
@@ -55,8 +59,8 @@ INSERT INTO @news VALUES
 INSERT INTO dbo.news (title, slug, excerpt, body, category_id, is_featured, status, published_at)
 SELECT x.title, x.slug, x.excerpt, x.body, c.id, 0, N'published', DATEADD(MINUTE, -x.n, SYSDATETIMEOFFSET())
 FROM @news x LEFT JOIN dbo.categories c ON c.[type] = N'news' AND c.slug = x.category
-WHERE NOT EXISTS (SELECT 1 FROM dbo.news n WHERE n.slug = x.slug AND n.deleted_at IS NULL)
-  AND NOT EXISTS (SELECT 1 FROM dbo.events e WHERE e.slug = x.slug AND e.deleted_at IS NULL);
+WHERE NOT EXISTS (SELECT 1 FROM dbo.news n WHERE n.slug = x.slug)
+  AND NOT EXISTS (SELECT 1 FROM dbo.events e WHERE e.slug = x.slug);
 
 DECLARE @events TABLE (title NVARCHAR(160), slug NVARCHAR(120), starts_at DATETIMEOFFSET(3), ends_at DATETIMEOFFSET(3), venue NVARCHAR(200), summary NVARCHAR(300), body NVARCHAR(MAX));
 INSERT INTO @events VALUES
@@ -65,8 +69,8 @@ INSERT INTO @events VALUES
 INSERT INTO dbo.events (title, slug, summary, body, starts_at, ends_at, is_all_day, timezone, venue, status, published_at)
 SELECT x.title, x.slug, x.summary, x.body, x.starts_at, x.ends_at, 0, N'Asia/Karachi', x.venue, N'published', SYSDATETIMEOFFSET()
 FROM @events x
-WHERE NOT EXISTS (SELECT 1 FROM dbo.events e WHERE e.slug = x.slug AND e.deleted_at IS NULL)
-  AND NOT EXISTS (SELECT 1 FROM dbo.news n WHERE n.slug = x.slug AND n.deleted_at IS NULL);
+WHERE NOT EXISTS (SELECT 1 FROM dbo.events e WHERE e.slug = x.slug)
+  AND NOT EXISTS (SELECT 1 FROM dbo.news n WHERE n.slug = x.slug);
 
 INSERT INTO dbo.schema_migrations (id) VALUES (N'14_about_notes_and_sample_news');
 COMMIT TRANSACTION;

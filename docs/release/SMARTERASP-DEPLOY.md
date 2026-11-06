@@ -139,3 +139,6 @@ admin inbox, campus and page editing, on a phone and a computer.
   4d61a5b) was uploaded. The first upload stopped with FTP 550 on `bin/TheArqamSchools.Web.dll` (file still in use
   on the server) and left the "being updated" page; re-running the failed job uploaded all 156 files and every page
   answered 200. If this happens again, re-run the failed job (Actions → the run → Re-run failed jobs).
+
+**Before launch (Site:NoIndex = false):** archive the five sample posts from Database/14 (web addresses starting
+`sample-`) in the admin panel (News & Events), so they leave the homepage, /news-events and the sitemap.

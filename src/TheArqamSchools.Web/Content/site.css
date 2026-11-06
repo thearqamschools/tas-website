@@ -1175,8 +1175,6 @@ ul.home-campus-grid { display: grid; grid-template-columns: repeat(auto-fill, mi
 .footer-identity .footer-tagline { margin-top: 14px; }
 .footer-identity .footer-statement { margin-top: 10px; color: #fff; font-weight: 600; }
 .footer-identity .footer-statement-2 { margin-top: 4px; }
-/* Intro text under headings uses the width of the page instead of breaking early. */
-.page-header .lead, .section-head .lead { max-width: 62rem; }
 /* About: "Our Journey" as the page heading, in blue. */
 #who-we-are .h1 { color: var(--blue); }
 /* About: Vision (with the Hasana seal) and Mission, two equal cards. */
@@ -1195,7 +1193,7 @@ ul.home-campus-grid { display: grid; grid-template-columns: repeat(auto-fill, mi
 /* About: founder card in the centre. */
 #founder .card-grid { display: flex; justify-content: center; }
 #founder .card-grid > li { width: 100%; max-width: 22rem; }
-/* Admissions: classes boxes centred, with an icon and a gentle lift on hover or keyboard focus. */
+/* Admissions: classes boxes centred, with an icon and a gentle lift on hover. */
 .levels-compact .level { align-items: center; text-align: center; transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out), border-color 200ms var(--ease-out); }
 .levels-compact .card-body { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 22px 16px; height: 100%; }
 .levels-compact .level-icon { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: #fff; color: var(--blue); box-shadow: inset 0 0 0 1px rgba(30, 58, 138, .18); transition: background-color 200ms var(--ease-out), color 200ms var(--ease-out); }
@@ -1205,7 +1203,6 @@ ul.home-campus-grid { display: grid; grid-template-columns: repeat(auto-fill, mi
   .levels-compact .level:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: var(--blue); }
   .levels-compact .level:hover .level-icon { background: var(--blue); color: #fff; }
 }
-.levels-compact .level:focus-within { border-color: var(--blue); box-shadow: var(--shadow); }
 @media (prefers-reduced-motion: reduce) { .levels-compact .level:hover { transform: none; } }
-.section-head { max-width: 62rem; }
+/* Intro text under headings uses the width of the page instead of breaking early. */
 .section-head, .section-head .lead, .page-header .lead { max-width: none; }

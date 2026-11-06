@@ -36,11 +36,13 @@
                 @if (!string.IsNullOrEmpty(tagline)) { <p class="footer-tagline" lang="@(Site.IsArabic(tagline) ? "ar" : null)" dir="@(Site.IsArabic(tagline) ? "rtl" : null)">@tagline</p> }
                 @if (!string.IsNullOrEmpty(mission))
                 {
-                    var cut = mission.IndexOf("purpose. ", StringComparison.OrdinalIgnoreCase);
-                    if (cut > 0)
+                    var marker = "Education with purpose.";
+                    var cut = mission.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+                    var rest = cut >= 0 ? mission.Substring(cut + marker.Length).Trim() : "";
+                    if (cut >= 0 && rest.Length > 0)
                     {
-                        <p class="footer-statement">@mission.Substring(0, cut + 8)</p>
-                        <p class="footer-statement-2">@mission.Substring(cut + 9)</p>
+                        <p class="footer-statement">@mission.Substring(0, cut + marker.Length)</p>
+                        <p class="footer-statement-2">@rest</p>
                     }
                     else
                     {
