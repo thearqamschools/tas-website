@@ -76,6 +76,12 @@
                         </div>
                     }
                     <div class="card-body">
+                        @if (compact)
+                        {
+                            var stageIcon = !string.IsNullOrEmpty(it.Value<string>("icon")) ? it.Value<string>("icon")
+                                : stage == "Early Years" ? "smile" : stage == "Primary" ? "pencil" : stage == "Middle" ? "flask" : stage == "Matric" ? "graduation-cap" : stage == "Hifz" ? "moon-star" : "book-open";
+                            <span class="level-icon" aria-hidden="true">@Icons.Svg(stageIcon, 24)</span>
+                        }
                         <h3 class="h4">@(it.Value<string>("title"))</h3>
                         @if (!string.IsNullOrWhiteSpace(it.Value<string>("ages"))) { <p class="level-ages">@(it.Value<string>("ages"))</p> }
                         @if (classes.Count > 0 && !(classes.Count == 1 && classes[0] == it.Value<string>("title")))

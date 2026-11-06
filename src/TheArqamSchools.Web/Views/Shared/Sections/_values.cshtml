@@ -4,9 +4,12 @@
     var d = Model.Data;
     var items = d["items"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
     var quote = d["quote"];
+    // Optional badge image (the Core Values badge): shown in the centre, with the heading and statement above it.
+    var badge = d["badge"];
+    var badgeUrl = Media.Url(badge);
 }
 <section class="section tone-@Model.Tone("warm")" @(Model.Anchor != null ? "id=" + Model.Anchor : "") aria-labelledby="h-@Model.Id">
-    <div class="container values@(items.Count > 4 ? " values-wide" : "")">
+    <div class="container values@(items.Count > 4 ? " values-wide" : "")@(badgeUrl != null ? " values-with-badge" : "")">
         <div class="values-intro">
             <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
             @if (!string.IsNullOrEmpty(Model.Text("body"))) { <p class="lead">@Model.Text("body")</p> }
@@ -16,6 +19,12 @@
                     <p>@(quote.Value<string>("text"))</p>
                     @if (!string.IsNullOrEmpty(quote.Value<string>("source"))) { <footer>@(quote.Value<string>("source"))</footer> }
                 </blockquote>
+            }
+            @if (badgeUrl != null)
+            {
+                <figure class="values-badge">
+                    <img src="@badgeUrl" alt="@Media.Alt(badge)" width="@(badge.Value<int?>("width") ?? 600)" height="@(badge.Value<int?>("height") ?? 600)" loading="lazy" decoding="async" />
+                </figure>
             }
         </div>
         <ul class="values-grid@(items.Count == 4 ? " values-grid-4" : "")">

@@ -1168,3 +1168,44 @@ ul.home-campus-grid { display: grid; grid-template-columns: repeat(auto-fill, mi
 .leader-card .card-body { align-items: center; text-align: center; }
 #founder .card-grid, #leadership .card-grid { justify-content: center; }
 @media (min-width: 64rem) { #founder .card-grid li, #leadership .card-grid li { max-width: 22rem; } }
+
+/* ===== Owner's notes, 6 November 2026 ===== */
+/* Footer: "THE ARQAM SCHOOLS" on one line; motto, then the statement on two lines. */
+.footer-identity .brand .brand-name { white-space: nowrap; font-size: 1.25rem; }
+.footer-identity .footer-tagline { margin-top: 14px; }
+.footer-identity .footer-statement { margin-top: 10px; color: #fff; font-weight: 600; }
+.footer-identity .footer-statement-2 { margin-top: 4px; }
+/* Intro text under headings uses the width of the page instead of breaking early. */
+.page-header .lead, .section-head .lead { max-width: 62rem; }
+/* About: "Our Journey" as the page heading, in blue. */
+#who-we-are .h1 { color: var(--blue); }
+/* About: Vision (with the Hasana seal) and Mission, two equal cards. */
+.vm-grid-2 { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+@media (min-width: 48rem) { .vm-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.vm-card-centred { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; padding: 28px 24px; }
+.vm-card-centred .h3 { margin-bottom: 0; }
+.vm-seal { width: 180px; height: 180px; object-fit: contain; }
+@media (min-width: 64rem) { .vm-seal { width: 210px; height: 210px; } }
+/* About: Core Values with the badge in the centre. */
+.values-with-badge { display: block; }
+.values-with-badge .values-intro { text-align: center; max-width: 46rem; margin: 0 auto 28px; }
+.values-with-badge .values-intro .quote { display: inline-block; text-align: left; }
+.values-badge { margin: 20px auto 0; width: min(320px, 80%); }
+.values-badge img { width: 100%; height: auto; }
+/* About: founder card in the centre. */
+#founder .card-grid { display: flex; justify-content: center; }
+#founder .card-grid > li { width: 100%; max-width: 22rem; }
+/* Admissions: classes boxes centred, with an icon and a gentle lift on hover or keyboard focus. */
+.levels-compact .level { align-items: center; text-align: center; transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out), border-color 200ms var(--ease-out); }
+.levels-compact .card-body { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 22px 16px; height: 100%; }
+.levels-compact .level-icon { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: #fff; color: var(--blue); box-shadow: inset 0 0 0 1px rgba(30, 58, 138, .18); transition: background-color 200ms var(--ease-out), color 200ms var(--ease-out); }
+.levels-compact .level-ages { margin-top: 0; }
+.levels-compact .level-classes { margin-top: 2px; }
+@media (hover: hover) and (pointer: fine) {
+  .levels-compact .level:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: var(--blue); }
+  .levels-compact .level:hover .level-icon { background: var(--blue); color: #fff; }
+}
+.levels-compact .level:focus-within { border-color: var(--blue); box-shadow: var(--shadow); }
+@media (prefers-reduced-motion: reduce) { .levels-compact .level:hover { transform: none; } }
+.section-head { max-width: 62rem; }
+.section-head, .section-head .lead, .page-header .lead { max-width: none; }

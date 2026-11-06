@@ -40,6 +40,7 @@ database and run, in this order:
 12. `Database/12_approved_content_v1_4.sql` (approved content v1.4: head offices, About, Academics, Admissions, FAQ,
     footer; adds head_offices.mobile and facebook_url; UTF-8, same note as 11)
 13. `Database/13_undo_content_except_about.sql` (undoes 12 everywhere except About Us, from the 12 backups)
+14. `Database/14_about_notes_and_sample_news.sql` (About: journey heading and text, Vision seal, Core Values badge; five "Sample:" news posts; UTF-8)
 
 Skip `03_fulltext.sql` (optional, and Full-Text Search may not be offered).
 

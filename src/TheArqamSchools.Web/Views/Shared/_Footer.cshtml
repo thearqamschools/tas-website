@@ -31,8 +31,22 @@
                     <img src="~/Content/brand/the-arqam-schools-logo-128.png" srcset="@Url.Content("~/Content/brand/the-arqam-schools-logo-64.png") 64w, @Url.Content("~/Content/brand/the-arqam-schools-logo-128.png") 128w, @Url.Content("~/Content/brand/the-arqam-schools-logo-192.png") 192w" sizes="64px" alt="" width="64" height="64" />
                     <span class="brand-text"><span class="brand-name">The Arqam Schools</span></span>
                 </a>
-                @if (!string.IsNullOrEmpty(mission)) { <p>@mission</p> }
+                @* Order (owner, 6 November 2026): logo and name, the Arabic motto, then the footer text; the text
+                   breaks after its first sentence pair ("... Education with purpose.") onto a new line. *@
                 @if (!string.IsNullOrEmpty(tagline)) { <p class="footer-tagline" lang="@(Site.IsArabic(tagline) ? "ar" : null)" dir="@(Site.IsArabic(tagline) ? "rtl" : null)">@tagline</p> }
+                @if (!string.IsNullOrEmpty(mission))
+                {
+                    var cut = mission.IndexOf("purpose. ", StringComparison.OrdinalIgnoreCase);
+                    if (cut > 0)
+                    {
+                        <p class="footer-statement">@mission.Substring(0, cut + 8)</p>
+                        <p class="footer-statement-2">@mission.Substring(cut + 9)</p>
+                    }
+                    else
+                    {
+                        <p class="footer-statement">@mission</p>
+                    }
+                }
                 <ul class="footer-social" aria-label="The Arqam Schools on social media">
                     @foreach (var s in social)
                     {
