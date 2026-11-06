@@ -134,3 +134,7 @@ admin inbox, campus and page editing, on a phone and a computer.
 - `12_approved_content_v1_4` ran on the testing database through `deploy/smarterasp-db` (earlier scripts:
   "already applied"). The site (commit 7338cf2, header lock-up in Scheherazade New, content v1.4, brand colours
   and fonts) was uploaded through `deploy/smarterasp` (160 files); every page in the quick check answered 200.
+- Same day, owner's decision: `13_undo_content_except_about` ran through `deploy/smarterasp-db`; the site (commit
+  4d61a5b) was uploaded. The first upload stopped with FTP 550 on `bin/TheArqamSchools.Web.dll` (file still in use
+  on the server) and left the "being updated" page; re-running the failed job uploaded all 156 files and every page
+  answered 200. If this happens again, re-run the failed job (Actions → the run → Re-run failed jobs).
