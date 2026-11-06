@@ -38,7 +38,8 @@
                             <div class="card-body">
                                 <h3 class="h4">@name</h3>
                                 @{
-                                    // Role on one line and the organisation on the next ("Chief Executive Officer" / "The Arqam Schools Pakistan").
+                                    // Only the role ("Chief Executive Officer"): the site is The Arqam Schools' own, so the
+                                    // organisation after the comma ("The Arqam Schools Pakistan") is not repeated (owner, 7 November 2026).
                                     var role = i.Value<string>("role") ?? "";
                                     var comma = role.IndexOf(", ", StringComparison.Ordinal);
                                 }
@@ -47,7 +48,7 @@
                                     <p class="card-meta leader-role">
                                         @if (comma > 0)
                                         {
-                                            <span>@role.Substring(0, comma)</span><br /><span class="leader-org">@role.Substring(comma + 2)</span>
+                                            @role.Substring(0, comma)
                                         }
                                         else
                                         {
