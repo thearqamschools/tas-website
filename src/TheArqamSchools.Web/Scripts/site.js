@@ -118,9 +118,17 @@
         size = size * target / w;
         motto.style.fontSize = size + "px";
       }
-      // Owner (3 November 2026): about 1 point smaller than full width, centred under the name.
+      // Owner: about 1 point smaller than full width, centred under the name.
       motto.style.fontSize = Math.max(size - 1.35, 10) + "px";
       motto.style.width = target + "px";
+      // Logo as tall as the name and the motto together (top of the name to the bottom of the motto).
+      var logo = t.parentNode && t.parentNode.querySelector("img");
+      if (logo) {
+        logo.style.width = ""; logo.style.height = "";
+        var top = name.getBoundingClientRect().top, bottom = motto.getBoundingClientRect().bottom;
+        var h = Math.round(bottom - top);
+        if (h > 30 && h < 120) { logo.style.width = h + "px"; logo.style.height = h + "px"; }
+      }
     });
   }
   fitMotto();

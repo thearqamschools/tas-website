@@ -5,9 +5,9 @@
 @font-face { font-family: "Inter"; src: url(fonts/inter-latin-var.woff2) format("woff2"); font-weight: 100 900; font-display: swap; }
 /* Brand title font, supplied by the school (3 November 2026). A heavy condensed face, so it is used at weight 400 without synthetic bold. */
 @font-face { font-family: "Helvetica Inserat"; src: url(fonts/helvetica-inserat-lt-std-roman.ttf) format("truetype"); font-weight: 400; font-style: normal; font-display: swap; }
-/* Amiri Bold (SIL Open Font License 1.1), chosen by the owner for the Arabic motto. Subset to the motto's letters;
-   other Arabic text falls back to the system fonts in --arabic-font. */
-@font-face { font-family: "Amiri"; src: url(fonts/amiri-bold-motto.woff2) format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+/* Scheherazade New Regular (SIL Open Font License 1.1), the owner's final choice for the Arabic motto (6 November 2026).
+   Subset to the motto's letters; other Arabic text falls back to the system fonts in --arabic-font. */
+@font-face { font-family: "Scheherazade New"; src: url(fonts/scheherazade-new-regular-motto.woff2) format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
 @font-face { font-family: "Source Serif 4"; src: url(fonts/source-serif-4-latin-var.woff2) format("woff2"); font-weight: 200 900; font-style: normal; font-display: swap; }
 
 :root {
@@ -1146,3 +1146,10 @@ ul.home-campus-grid { display: grid; grid-template-columns: repeat(auto-fill, mi
 .site-header .brand .brand-tagline[lang="ar"] { line-height: .95; margin-top: 0; }
 .site-header .brand .brand-tagline[lang="ar"] { margin-top: 5px; }
 .site-header .brand .brand-tagline[lang="ar"] { margin-top: 9px; }
+
+/* Header lock-up (owner, 6 November 2026): motto in Scheherazade New, not bold, inside the width of the name with a small
+   gap; the logo is as tall as the name and motto together (site.js sets the logo size). */
+:root { --arabic-font: "Scheherazade New", "Traditional Arabic", "Arabic Typesetting", "Noto Naskh Arabic", "Geeza Pro", "Segoe UI", serif; }
+.brand .brand-tagline[lang="ar"], .site-header .brand .brand-tagline[lang="ar"], .footer-tagline[lang="ar"] { font-weight: 400; }
+.site-header .brand .brand-tagline[lang="ar"] { margin-top: 6px; line-height: 1.1; }
+.site-header .brand img { object-fit: contain; }
