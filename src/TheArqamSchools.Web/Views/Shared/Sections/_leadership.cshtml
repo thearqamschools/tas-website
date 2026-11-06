@@ -37,7 +37,24 @@
                             </div>
                             <div class="card-body">
                                 <h3 class="h4">@name</h3>
-                                @if (!string.IsNullOrWhiteSpace(i.Value<string>("role"))) { <p class="card-meta">@(i.Value<string>("role"))</p> }
+                                @{
+                                    // Role on one line and the organisation on the next ("Chief Executive Officer" / "The Arqam Schools Pakistan").
+                                    var role = i.Value<string>("role") ?? "";
+                                    var comma = role.IndexOf(", ", StringComparison.Ordinal);
+                                }
+                                @if (!string.IsNullOrWhiteSpace(role))
+                                {
+                                    <p class="card-meta leader-role">
+                                        @if (comma > 0)
+                                        {
+                                            <span>@role.Substring(0, comma)</span><br /><span class="leader-org">@role.Substring(comma + 2)</span>
+                                        }
+                                        else
+                                        {
+                                            @role
+                                        }
+                                    </p>
+                                }
                                 @if (!string.IsNullOrWhiteSpace(i.Value<string>("message"))) { <p>@(i.Value<string>("message"))</p> }
                             </div>
                         </article>
