@@ -145,3 +145,6 @@ admin inbox, campus and page editing, on a phone and a computer.
 `sample-`) in the admin panel (News & Events), so they leave the homepage, /news-events and the sitemap.
 - 6 November 2026 (later): `14_about_notes_and_sample_news` ran through `deploy/smarterasp-db`; the site (commit
   4fecbd1) was uploaded (158 files) and every page in the quick check answered 200.
+- 7 November 2026: `15_about_photos_and_core_values` ran through `deploy/smarterasp-db`; the site (commit 971227d)
+  went up on the second attempt (FTP 550 on `bin/TheArqamSchools.Web.dll` again; "Re-run failed jobs" uploaded
+  all 161 files and every page answered 200).
