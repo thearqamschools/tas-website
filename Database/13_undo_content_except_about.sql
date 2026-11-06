@@ -90,7 +90,7 @@ BEGIN
         WHERE page_id = @about AND JSON_VALUE(data, '$.anchor') = N'mission-vision-values';
     UPDATE dbo.page_sections SET is_visible = 0, updated_at = SYSDATETIMEOFFSET() WHERE page_id = @about AND [type] = N'vision_mission';
     -- The page heading names the page; "Our journey" stays the heading of the journey section below.
-    UPDATE dbo.page_sections SET data = JSON_MODIFY(JSON_MODIFY(data, '$.eyebrow', N'Our Journey'), '$.heading', N'About The Arqam Schools'), updated_at = SYSDATETIMEOFFSET()
+    UPDATE dbo.page_sections SET data = JSON_MODIFY(JSON_MODIFY(data, '$.eyebrow', N'Our Journey'), '$.heading', N'About Us'), updated_at = SYSDATETIMEOFFSET()
     WHERE page_id = @about AND [type] = N'split_feature' AND JSON_VALUE(data, '$.anchor') = N'who-we-are' AND JSON_VALUE(data, '$.heading') = N'Our Journey';
     UPDATE x SET is_visible = 1, sort_order = v.s, updated_at = SYSDATETIMEOFFSET()
     FROM dbo.page_sections x
