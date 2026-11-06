@@ -149,3 +149,5 @@ admin inbox, campus and page editing, on a phone and a computer.
 - 7 November 2026: `15_about_photos_and_core_values` ran through `deploy/smarterasp-db`; the site (commit 971227d)
   went up on the second attempt (FTP 550 on `bin/TheArqamSchools.Web.dll` again; "Re-run failed jobs" uploaded
   all 161 files and every page answered 200).
+- 7 November 2026: `16_photo_asad_sakhawat_ali` ran through `deploy/smarterasp-db`; the site went up as commit
+  fc9e09b and then cacbb67 (leadership cards show only the role), 162 files each, every page 200.
