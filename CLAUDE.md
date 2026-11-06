@@ -206,5 +206,5 @@ tools/compile-check/      Mono C# compile check with stub MVC/Dapper types (does
   text of `docs/content/TAS-Website-Content.md` (sections 3 and 4) in the earlier page layout; the other pages
   keep their earlier text, colours and fonts. The header shows the logo and the name only (no motto under it).
 - The branding rules above still apply to any new text. Do not re-apply the rest of v1.4 (pages, colours,
-  Poppins) without the owner asking; some earlier text, such as the FAQ transport answer, is back by the
-  owner's decision.
+  Poppins) without the owner asking. The footer keeps the Arabic motto and "Knowledge with values. Education with
+  purpose." (owner's decision); the FAQ has no transport question.

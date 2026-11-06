@@ -13,6 +13,7 @@
 --     and Values cards (text from the approved document, without the Arabic motto), then
 --     Core Values, the journey, Founder, Leadership, Name and its significance, Our Basic Idea
 --     and the closing band.
+--  4. FAQ: the transport question is removed (the owner: transport is not available).
 --  Changed rows are backed up in [archive].*_20261106b. Nothing is deleted.
 -- =============================================================================
 SET NOCOUNT ON;
@@ -57,6 +58,14 @@ WHERE s.page_id IN (SELECT id FROM @others) AND NOT EXISTS (SELECT 1 FROM archiv
 UPDATE p SET title = a.title, summary = a.summary, updated_at = SYSDATETIMEOFFSET()
 FROM dbo.pages p JOIN archive.pages_20261106 a ON a.id = p.id
 WHERE p.id IN (SELECT id FROM @others);
+-- FAQ: no transport question (the owner: transport is not available).
+UPDATE s SET updated_at = SYSDATETIMEOFFSET(),
+    data = JSON_MODIFY(s.data, '$.items', JSON_QUERY(N'[' + COALESCE((SELECT STRING_AGG(CAST(j.[value] AS NVARCHAR(MAX)), N',') WITHIN GROUP (ORDER BY CAST(j.[key] AS INT))
+            FROM OPENJSON(s.data, '$.items') j
+            WHERE j.[type] <> 5 OR COALESCE(JSON_VALUE(j.[value], '$.question'), N'') NOT LIKE N'%transport%'), N'') + N']'))
+FROM dbo.page_sections s JOIN dbo.pages p ON p.id = s.page_id
+WHERE p.path IN (N'/faq', N'/admissions') AND s.[type] = N'faq' AND JSON_QUERY(s.data, '$.items') IS NOT NULL
+  AND s.data LIKE N'%transport%';
 
 -- 2. Head offices, settings, search text, stored homepage content as before 12
 -- office_number is unique (1-9): move the backed-up offices to 9, 8, 7 ... first, then put back the earlier numbers.
