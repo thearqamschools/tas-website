@@ -37,6 +37,7 @@ Database/
   12_approved_content_v1_4.sql      approved website content v1.4 (docs/content/TAS-Website-Content.md)
   13_undo_content_except_about.sql  undoes the content v1.4 update everywhere except About Us (owner, 6 Nov 2026)
   14_about_notes_and_sample_news.sql About: Our Journey heading, Vision seal, Core Values badge; five "Sample:" news posts
+  15_about_photos_and_core_values.sql founder and CEO photos on About; Core Values without the intro line and statement
   hosting/smarterasp_setup.sql    shared-hosting replacement for 00 (see docs/release/SMARTERASP-DEPLOY.md)
   tools/convert.py         generates 01_schema.sql from the PostgreSQL schema
   tools/export_data.py     generates 02_seed_data.sql from the current content

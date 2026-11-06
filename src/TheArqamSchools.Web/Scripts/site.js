@@ -131,8 +131,27 @@
       }
     });
   }
-  fitMotto();
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitMotto);
+  // Footer motto (Arabic): centred under the logo and name, as wide as both together.
+  function fitFooterMotto() {
+    document.querySelectorAll(".footer-identity").forEach(function (box) {
+      var brand = box.querySelector(".brand"), motto = box.querySelector('.footer-tagline[lang="ar"]');
+      if (!brand || !motto || motto.offsetParent === null) return;
+      motto.style.fontSize = ""; motto.style.width = "";
+      var target = brand.getBoundingClientRect().width;
+      var size = parseFloat(getComputedStyle(motto).fontSize) || 20;
+      for (var i = 0; i < 4; i++) {
+        var r = document.createRange(); r.selectNodeContents(motto);
+        var w = r.getBoundingClientRect().width;
+        if (!w || Math.abs(w - target) < 0.5) break;
+        size = size * target / w;
+        motto.style.fontSize = size + "px";
+      }
+      motto.style.width = target + "px";
+    });
+  }
+  fitMotto(); fitFooterMotto();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fitMotto(); fitFooterMotto(); });
+  window.addEventListener("resize", fitFooterMotto);
   window.addEventListener("resize", function () {
     fitMotto();
   });
