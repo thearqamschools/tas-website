@@ -59,18 +59,24 @@ FROM dbo.pages p JOIN archive.pages_20261106 a ON a.id = p.id
 WHERE p.id IN (SELECT id FROM @others);
 
 -- 2. Head offices, settings, search text, stored homepage content as before 12
--- office_number is unique: move both out of the way first, then put back the earlier numbers.
-UPDATE h SET office_number = CASE WHEN h.office_number = 1 THEN 8 ELSE 9 END FROM dbo.head_offices h WHERE h.id IN (SELECT id FROM archive.head_offices_20261106);
+-- office_number is unique (1-9): move the backed-up offices to 9, 8, 7 ... first, then put back the earlier numbers.
+WITH x AS (SELECT office_number, ROW_NUMBER() OVER (ORDER BY office_number) AS rn
+           FROM dbo.head_offices WHERE id IN (SELECT id FROM archive.head_offices_20261106))
+UPDATE x SET office_number = 10 - rn;
 UPDATE h SET office_number = a.office_number, name = a.name, city = a.city, address = a.address, phone = a.phone, phone_alt = a.phone_alt,
        whatsapp = a.whatsapp, email = a.email, google_maps_url = a.google_maps_url, hours = a.hours, is_published = a.is_published,
        mobile = NULL, facebook_url = NULL, updated_at = SYSDATETIMEOFFSET()
 FROM dbo.head_offices h JOIN archive.head_offices_20261106 a ON a.id = h.id;
 UPDATE s SET [value] = a.[value], updated_at = SYSDATETIMEOFFSET()
 FROM dbo.site_settings s JOIN archive.site_settings_20261106 a ON a.[key] = s.[key]
-WHERE s.[value] <> a.[value] OR (s.[value] IS NULL AND a.[value] IS NOT NULL);
-UPDATE m SET meta_title = a.meta_title, meta_description = a.meta_description, og_description = a.og_description, updated_at = SYSDATETIMEOFFSET()
+-- Only the settings 12 changed; anything edited in the admin panel since then is kept.
+WHERE s.[key] IN (N'footer.mission', N'footer.cta', N'site.description', N'social')
+  AND (s.[value] <> a.[value] OR (s.[value] IS NULL AND a.[value] IS NOT NULL));
+-- Only what 12 changed: the homepage title, and the descriptions of Home, Academics, Admissions, Contact and Student life.
+UPDATE m SET meta_title = CASE WHEN m.route_path = N'/' THEN a.meta_title ELSE m.meta_title END,
+       meta_description = a.meta_description, og_description = a.og_description, updated_at = SYSDATETIMEOFFSET()
 FROM dbo.seo_metadata m JOIN archive.seo_metadata_20261106 a ON a.id = m.id
-WHERE m.id <> COALESCE((SELECT seo_id FROM dbo.pages WHERE id = @about), '00000000-0000-0000-0000-000000000000');
+WHERE m.route_path = N'/' OR m.id IN (SELECT seo_id FROM dbo.pages WHERE path IN (N'/academics', N'/admissions', N'/contact', N'/student-life') AND seo_id IS NOT NULL);
 UPDATE h SET data = a.data, updated_at = SYSDATETIMEOFFSET()
 FROM dbo.homepage_content h JOIN archive.homepage_content_20261106 a ON a.id = h.id;
 
@@ -83,6 +89,9 @@ BEGIN
         UPDATE dbo.page_sections SET data = N'{"anchor":"mission-vision-values","heading":"Our Mission, Vision and Values","tone":"white","columns":3,"items":[{"icon":"target","title":"Our Mission","summary":"To earn the pleasure of Allah through education, training and service, by giving every child a quality modern education within the framework of the Quran and Sunnah, and by building the discipline, confidence and noble character they need to lead responsibly in every walk of life."},{"icon":"eye","title":"Our Vision","summary":"To raise a generation that excels in knowledge and character, and succeeds in this world and the Hereafter."},{"icon":"heart","title":"Our Values","summary":"We believe in citizenship, commitment, leadership, respect, excellence and responsibility."}]}', updated_at = SYSDATETIMEOFFSET()
         WHERE page_id = @about AND JSON_VALUE(data, '$.anchor') = N'mission-vision-values';
     UPDATE dbo.page_sections SET is_visible = 0, updated_at = SYSDATETIMEOFFSET() WHERE page_id = @about AND [type] = N'vision_mission';
+    -- The page heading names the page; "Our journey" stays the heading of the journey section below.
+    UPDATE dbo.page_sections SET data = JSON_MODIFY(JSON_MODIFY(data, '$.eyebrow', N'Our Journey'), '$.heading', N'About The Arqam Schools'), updated_at = SYSDATETIMEOFFSET()
+    WHERE page_id = @about AND [type] = N'split_feature' AND JSON_VALUE(data, '$.anchor') = N'who-we-are' AND JSON_VALUE(data, '$.heading') = N'Our Journey';
     UPDATE x SET is_visible = 1, sort_order = v.s, updated_at = SYSDATETIMEOFFSET()
     FROM dbo.page_sections x
     JOIN (VALUES (N'who-we-are', 1), (N'mission-vision-values', 2), (N'core-values', 3), (N'journey', 4), (N'founder', 5),

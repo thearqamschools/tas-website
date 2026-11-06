@@ -13,7 +13,6 @@
     var campusHref = campusCta != null && campusCta.Type == Newtonsoft.Json.Linq.JTokenType.Object ? campusCta.Value<string>("href") : "/campuses";
     var campusLabel = campusCta != null && campusCta.Type == Newtonsoft.Json.Linq.JTokenType.Object ? campusCta.Value<string>("label") : "Find a campus";
     var social = Social.Links(settings);
-    var tagline = SiteSettingsRepository.Text(settings, "site.tagline");
 }
 <header class="site-header" data-header>
     <div class="topbar">

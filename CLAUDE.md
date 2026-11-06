@@ -102,15 +102,23 @@ tools/compile-check/      Mono C# compile check with stub MVC/Dapper types (does
 
 ## Branding and content rules
 
+- **Approved content source:** `docs/content/TAS-Website-Content.md` (v1.4, 6 November 2026) is the single
+  approved source for website text. Use only what it says; mark anything missing as `[TO BE PROVIDED]`.
 - The name is always **The Arqam Schools**. Never "The Arqam School", "Arqam School",
-  "Dar-e-Arqam" or "Darul Arqam".
-- Use **campuses**, not "branches", in visitor-facing text (the table is still `dbo.branches`).
-- Approved figures: **350+ campuses, 250,000+ students, 20,000+ Hafiz-e-Quran**. Do not
-  invent or change figures, fees, dates, results, addresses, programmes or phone numbers.
-- Official contacts: The Arqam Schools, Sanora Colony, Samanabad, Faisalabad, Pakistan;
-  phone 041-2660265, 041-2406479; mobile/WhatsApp 0339-2406479; www.thearqam.com;
-  Facebook https://www.facebook.com/TASHeadOffice and https://www.facebook.com/thearqamfsdOfficial.
-  Lahore head office: 163-Tufail Block, Canal Bank Housing Scheme, Lahore; 042-36520008 (number confirmed by the owner, 3 November 2026).
+  "Dar-e-Arqam" or "Darul Arqam" (Dar-e-Arqam Schools is a different organisation).
+- Motto / only tagline: **فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً** — "Excellence in this world and excellence in the Hereafter".
+  "Learn Today, Lead Tomorrow" is not ours: never use it. "Knowledge with values. Education with purpose." is a
+  values statement for the Core Values section only.
+- Key figures: **350+ branches, 250,000+ students, 20,000+ Hifz-e-Quran students**; founded in Faisalabad in 1993.
+  Do not invent or change figures, fees, dates, results, addresses, programmes or phone numbers.
+  Do not advertise transport or smart classrooms; do not publish fees or board results.
+- Official contacts: Head Office, Lahore: 163-Tufail Block, Canal Bank Housing Scheme, Lahore 54000; 042-36520008;
+  mobile 0331-1304001; https://www.facebook.com/TASHeadOffice. Head Office, Faisalabad: Sanora Colony, Samanabad,
+  Faisalabad; 041-2660265, 041-2406479; mobile/WhatsApp 0339-2406479; https://www.facebook.com/thearqamschoolsfsd.
+  Email thearqamschools@gmail.com; www.thearqam.com. Never use the old Lahore number 042-36520235.
+- Colours: Arqam Red #EC3237, Arqam Blue #3E4095, Seal Navy #2B3990, Deep Red #D62839 (buttons), Ink #1B1D45,
+  Muted #545675, Blue Tint #EEF0F9, Red Tint #FDECED, Line #D9DBEC. Fonts: Helvetica Inserat (upper case) for the
+  name and big headlines, Poppins for everything else, Scheherazade New for the Arabic motto.
 - Tone: professional, warm, clear; modern education with Islamic values. No guaranteed
   results or exaggerated claims. If a fact is missing, mark it as needing confirmation.
 - Languages: English and Urdu only (Roman Urdu for chat). Never Hindi or Devanagari script.
@@ -196,4 +204,7 @@ tools/compile-check/      Mono C# compile check with stub MVC/Dapper types (does
 
 - The owner reversed the content v1.4 update everywhere except **About Us** (Database/13). About Us uses the
   text of `docs/content/TAS-Website-Content.md` (sections 3 and 4) in the earlier page layout; the other pages
-  keep their earlier text. The header shows the logo and the name only (no motto under it).
+  keep their earlier text, colours and fonts. The header shows the logo and the name only (no motto under it).
+- The branding rules above still apply to any new text. Do not re-apply the rest of v1.4 (pages, colours,
+  Poppins) without the owner asking; some earlier text, such as the FAQ transport answer, is back by the
+  owner's decision.
