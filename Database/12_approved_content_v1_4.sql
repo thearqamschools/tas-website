@@ -17,6 +17,8 @@
 --  6. FAQ: transport question removed; head office contact answer as in the file.
 --     Student life: the activities list is replaced by the co-curricular text from the file.
 --  7. "Learn Today. Lead Tomorrow." removed from the homepage title and stored homepage content.
+--  8. Search-result descriptions of the changed pages from the approved wording; old /about and
+--     /academics addresses point to sections that still show.
 --  Changed rows are backed up in [archive].*_20261106. Nothing is deleted; old sections are hidden.
 --  Stops without changes if a changed page has a waiting draft.
 -- =============================================================================
@@ -56,7 +58,9 @@ IF OBJECT_ID(N'archive.head_offices_20261106') IS NULL SELECT * INTO archive.hea
 IF OBJECT_ID(N'archive.site_settings_20261106') IS NULL SELECT * INTO archive.site_settings_20261106 FROM dbo.site_settings;
 IF OBJECT_ID(N'archive.pages_20261106') IS NULL SELECT * INTO archive.pages_20261106 FROM dbo.pages WHERE id IN (@about, @academics, @admissions, @faq, @life);
 IF OBJECT_ID(N'archive.page_sections_20261106') IS NULL SELECT * INTO archive.page_sections_20261106 FROM dbo.page_sections WHERE page_id IN (@about, @academics, @admissions, @faq, @life);
-IF OBJECT_ID(N'archive.seo_metadata_20261106') IS NULL SELECT * INTO archive.seo_metadata_20261106 FROM dbo.seo_metadata WHERE route_path = N'/';
+IF OBJECT_ID(N'archive.seo_metadata_20261106') IS NULL SELECT * INTO archive.seo_metadata_20261106 FROM dbo.seo_metadata
+    WHERE route_path = N'/' OR id IN (SELECT seo_id FROM dbo.pages WHERE path IN (N'/about', N'/academics', N'/admissions', N'/contact', N'/student-life'));
+IF OBJECT_ID(N'archive.redirects_20261106') IS NULL SELECT * INTO archive.redirects_20261106 FROM dbo.redirects WHERE to_path LIKE N'/about#%' OR to_path LIKE N'/academics#%';
 IF OBJECT_ID(N'archive.homepage_content_20261106') IS NULL SELECT * INTO archive.homepage_content_20261106 FROM dbo.homepage_content;
 
 -- 1. Head offices (Lahore first, as in the file)
@@ -126,6 +130,10 @@ SELECT @about, v.t, v.d, v.s, 1 FROM (VALUES
     (N'split_feature', N'{"anchor":"name","tone":"warm","heading":"Name and its significance","body":["\"The Arqam\" has special importance and unique grace in the history of Islam. It was the pioneer educational institution of the Muslim society, which came into existence under the leadership of Rasool Allah ﷺ. It was the basic school of Islamic thought, established at the residence of Hazrat Zaid Bin Arqam (R.A.), the well-known companion of the Holy Prophet ﷺ, with a view to building the character of the people coming into the circle of Islam. Keeping that first glorious Islamic educational academy in view, this institution has been named \"The Arqam Schools\". The basic aim of the school is to teach and train the present Muslim generation with the Islamic spirit. May Allah accept it and bless us with strength for betterment."]}', 6, N'name'),
     (N'split_feature', N'{"anchor":"basic-idea","tone":"white","heading":"Our Basic Idea","body":["The basic aim and idea of The Arqam Schools is to earn the blessing of Allah through the acts of education, training and human service, in accordance with the teachings of Allah and the sayings of the Holy Prophet ﷺ."]}', 7, N'basic-idea')) v(t, d, s, a)
 WHERE NOT EXISTS (SELECT 1 FROM dbo.page_sections x WHERE x.page_id = @about AND JSON_VALUE(x.data, '$.anchor') = v.a);
+UPDATE x SET is_visible = 1, sort_order = v.s, updated_at = SYSDATETIMEOFFSET()
+FROM dbo.page_sections x JOIN (VALUES (N'core-values', 3), (N'founder', 4), (N'name', 6), (N'basic-idea', 7)) v(a, s)
+  ON JSON_VALUE(x.data, '$.anchor') = v.a
+WHERE x.page_id = @about;
 
 -- 4. Academics
 UPDATE dbo.pages SET summary = N'The Arqam Schools follows its own curriculum, approved by the Government of Pakistan education boards.', updated_at = SYSDATETIMEOFFSET() WHERE id = @academics;
@@ -140,18 +148,22 @@ FROM dbo.page_sections s
 WHERE s.page_id = @academics AND s.[type] = N'academic_levels' AND JSON_QUERY(s.data, '$.items') IS NOT NULL;
 INSERT INTO dbo.page_sections (page_id, [type], data, sort_order, is_visible)
 SELECT @academics, v.t, v.d, v.s, 1 FROM (VALUES
-    (N'card_grid', N'{"anchor":"curriculum","heading":"Curriculum","tone":"white","columns":3,"items":[{"icon":"book-open","title":"Curriculum","summary":"The Arqam Schools follows its own curriculum, approved by the Government of Pakistan education boards."},{"icon":"graduation-cap","title":"Classes","summary":"Play Group to Matric."},{"icon":"languages","title":"Medium of instruction","summary":"English, alongside Urdu."}]}', 1, N'curriculum'),
+    (N'card_grid', N'{"anchor":"curriculum","heading":"Academics at a glance","tone":"white","columns":3,"items":[{"icon":"book-open","title":"Curriculum","summary":"The Arqam Schools follows its own curriculum, approved by the Government of Pakistan education boards."},{"icon":"graduation-cap","title":"Classes","summary":"Play Group to Matric."},{"icon":"languages","title":"Medium of instruction","summary":"English, alongside Urdu."}]}', 1, N'curriculum'),
     (N'card_grid', N'{"anchor":"quranic-education","heading":"Quranic Education","tone":"grey","columns":4,"intro":"Taught alongside general education.","items":[{"icon":"moon-star","title":"Hifz-e-Quran","summary":"Memorisation of the Holy Quran with experienced, devoted teachers."},{"icon":"sparkles","title":"Tajweed","summary":"Correct pronunciation and recitation of the Quran."},{"icon":"book-open","title":"Nazra","summary":"Quran reading for every student."},{"icon":"heart","title":"Islamic practice","summary":"Namaz, Qira''at and the fundamentals of Islam, taught through easy methods and practised daily."}]}', 3, N'quranic-education'),
     (N'split_feature', N'{"anchor":"co-curricular","tone":"white","heading":"Co-curricular Activities","image_side":"right","body":["Husn-e-Qira''at, Naat Khawani, morning assembly presentations, Urdu and English debates and speech competitions, art and craft, theme days and educational trips — all designed to build confidence and help students overcome shyness."],"image":{"bucket":"public-media","path":"network/content/creative-projects--20261014075037.jpg","alt":"Children painting pictures outdoors on the school lawn with their teacher","width":1365,"height":1024}}', 4, N'co-curricular'),
     (N'card_grid', N'{"anchor":"facilities","heading":"Facilities","tone":"grey","columns":4,"items":[{"icon":"monitor","title":"Computer Lab","summary":""},{"icon":"flask","title":"Science Laboratory","summary":""},{"icon":"book-open","title":"Library","summary":""},{"icon":"video","title":"CCTV-monitored campuses","summary":""}]}', 5, N'facilities')) v(t, d, s, a)
 WHERE NOT EXISTS (SELECT 1 FROM dbo.page_sections x WHERE x.page_id = @academics AND JSON_VALUE(x.data, '$.anchor') = v.a);
+UPDATE x SET is_visible = 1, sort_order = v.s, updated_at = SYSDATETIMEOFFSET()
+FROM dbo.page_sections x JOIN (VALUES (N'curriculum', 1), (N'quranic-education', 3), (N'co-curricular', 4), (N'facilities', 5)) v(a, s)
+  ON JSON_VALUE(x.data, '$.anchor') = v.a
+WHERE x.page_id = @academics;
 
 -- 5. Admissions
 UPDATE dbo.pages SET summary = N'Admissions open at the start of the academic session; the new session begins in the first week of March.', updated_at = SYSDATETIMEOFFSET() WHERE id = @admissions;
 UPDATE dbo.page_sections SET is_visible = 0, updated_at = SYSDATETIMEOFFSET()
 WHERE page_id = @admissions AND [type] IN (N'process_steps', N'faq', N'card_grid');
 UPDATE dbo.page_sections SET sort_order = 1, updated_at = SYSDATETIMEOFFSET(),
-    data = JSON_MODIFY(JSON_MODIFY(JSON_MODIFY(JSON_MODIFY(JSON_MODIFY(data, '$.eyebrow', N'Admissions'), '$.title', N'Admissions'),
+    data = JSON_MODIFY(JSON_MODIFY(JSON_MODIFY(JSON_MODIFY(JSON_MODIFY(data, '$.eyebrow', N''), '$.title', N'Admissions'),
         '$.intro', N'Admissions open at the start of the academic session; the new session begins in the first week of March.'),
         '$.primary_cta', JSON_QUERY(N'{"href":"https://wa.me/923392406479","label":"WhatsApp 0339-2406479"}')),
         '$.secondary_cta', JSON_QUERY(N'{"href":"tel:03392406479","label":"Call 0339-2406479"}'))
@@ -187,6 +199,23 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM dbo.page_sections WHERE page_id = @life AND JSON_VALUE(data, '$.anchor') = N'co-curricular')
         INSERT INTO dbo.page_sections (page_id, [type], data, sort_order, is_visible) VALUES (@life, N'split_feature', N'{"anchor":"co-curricular","tone":"white","heading":"Co-curricular Activities","image_side":"right","body":["Husn-e-Qira''at, Naat Khawani, morning assembly presentations, Urdu and English debates and speech competitions, art and craft, theme days and educational trips — all designed to build confidence and help students overcome shyness."],"image":{"bucket":"public-media","path":"network/content/creative-projects--20261014075037.jpg","alt":"Children painting pictures outdoors on the school lawn with their teacher","width":1365,"height":1024}}', 0, 1);
 END
+
+-- 8. Search-result descriptions from the approved wording
+UPDATE m SET meta_description = v.d, og_description = CASE WHEN m.og_description IS NULL THEN NULL ELSE v.d END, updated_at = SYSDATETIMEOFFSET()
+FROM dbo.seo_metadata m
+JOIN (VALUES
+    (N'/', N'The Arqam Schools: a trusted educational institution combining modern education with Islamic values. Play Group to Matric and Hifz-e-Quran.'),
+    (N'/about', N'The Arqam Schools began in 1993 in Faisalabad. Today: 350+ branches, 250,000+ students and 20,000+ Hifz-e-Quran students across Pakistan.'),
+    (N'/contact', N'Head Office, Lahore: 042-36520008. Head Office, Faisalabad: 041-2660265, 041-2406479. WhatsApp 0339-2406479. thearqamschools@gmail.com'),
+    (N'/admissions', N'Admissions open at the start of the academic session; the new session begins in the first week of March. Enquiries: call or WhatsApp 0339-2406479.'),
+    (N'/academics', N'Our own curriculum, approved by the Government of Pakistan education boards: Play Group to Matric, Quranic education and co-curricular activities.'),
+    (N'/student-life', N'Co-curricular activities at The Arqam Schools that build confidence and help students overcome shyness.')) v(p, d)
+  ON (v.p = N'/' AND m.route_path = N'/') OR m.id = (SELECT seo_id FROM dbo.pages WHERE path = v.p AND deleted_at IS NULL);
+
+-- 9. Old addresses that pointed at sections which are now hidden
+UPDATE dbo.redirects SET to_path = N'/about#core-values', updated_at = SYSDATETIMEOFFSET() WHERE to_path = N'/about#values';
+UPDATE dbo.redirects SET to_path = N'/about', updated_at = SYSDATETIMEOFFSET() WHERE to_path IN (N'/about#philosophy', N'/about#why-choose-us');
+UPDATE dbo.redirects SET to_path = N'/academics', updated_at = SYSDATETIMEOFFSET() WHERE to_path = N'/academics#teaching';
 
 INSERT INTO dbo.schema_migrations (id) VALUES (N'12_approved_content_v1_4');
 COMMIT TRANSACTION;

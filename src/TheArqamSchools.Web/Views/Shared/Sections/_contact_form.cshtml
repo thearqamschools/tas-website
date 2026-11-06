@@ -59,7 +59,7 @@
                         {
                             <li><span class="office-icon">@Icons.Svg("mail", 20)</span><span><span class="office-label">Email</span><a href="mailto:@o.Email">@o.Email</a></span></li>
                         }
-                        @if (!string.IsNullOrEmpty(o.FacebookUrl) && o.FacebookUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                        @if (!string.IsNullOrEmpty(o.FacebookUrl) && o.FacebookUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase) && Site.IsSafeHref(o.FacebookUrl))
                         {
                             <li><span class="office-icon">@Icons.Svg("facebook", 20)</span><span><span class="office-label">Facebook</span><a href="@o.FacebookUrl" target="_blank" rel="noopener">@o.FacebookUrl.Replace("https://www.", "").Replace("https://", "")</a></span></li>
                         }

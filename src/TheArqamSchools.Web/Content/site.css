@@ -1190,3 +1190,7 @@ ul.home-campus-grid { display: grid; grid-template-columns: repeat(auto-fill, mi
 .vm-motto-en { font-style: italic; color: var(--muted); }
 .vm-card .vm-motto { font-family: var(--arabic-font); font-size: 1.875rem; line-height: 1.5; color: var(--arqam-blue); }
 .vm-card .vm-motto-en { font-style: italic; }
+
+/* Admissions banner: flat Deep Red with solid white text (WCAG AA 4.97:1). */
+.home-admit { background: var(--red); }
+.home-admit p { color: #fff; }
