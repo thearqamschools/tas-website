@@ -42,6 +42,7 @@ database and run, in this order:
 13. `Database/13_undo_content_except_about.sql` (undoes 12 everywhere except About Us, from the 12 backups)
 14. `Database/14_about_notes_and_sample_news.sql` (About: journey heading and text, Vision seal, Core Values badge; five "Sample:" news posts; UTF-8)
 15. `Database/15_about_photos_and_core_values.sql` (founder and CEO photos on About; Core Values without "We believe in:" and the statement)
+16. `Database/16_photo_asad_sakhawat_ali.sql` (photo of Mr. Asad Sakhawat Ali on About > Leadership)
 
 Skip `03_fulltext.sql` (optional, and Full-Text Search may not be offered).
 
