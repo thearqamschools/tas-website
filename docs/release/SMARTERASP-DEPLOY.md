@@ -142,3 +142,5 @@ admin inbox, campus and page editing, on a phone and a computer.
 
 **Before launch (Site:NoIndex = false):** archive the five sample posts from Database/14 (web addresses starting
 `sample-`) in the admin panel (News & Events), so they leave the homepage, /news-events and the sitemap.
+- 6 November 2026 (later): `14_about_notes_and_sample_news` ran through `deploy/smarterasp-db`; the site (commit
+  4fecbd1) was uploaded (158 files) and every page in the quick check answered 200.
