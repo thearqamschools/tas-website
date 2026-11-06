@@ -19,7 +19,8 @@
                 @foreach (var i in items)
                 {
                     var name = i.Value<string>("name");
-                    var initials = string.Concat(name.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(w => char.IsLetter(w[0])).Take(2).Select(w => char.ToUpperInvariant(w[0])));
+                    var titles = new[] { "mr.", "mrs.", "ms.", "dr.", "prof.", "mr", "mrs", "ms", "dr", "prof" };
+                    var initials = string.Concat(name.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(w => char.IsLetter(w[0]) && !titles.Contains(w.ToLowerInvariant())).Take(2).Select(w => char.ToUpperInvariant(w[0])));
                     var img = i["image"];
                     var imgUrl = TheArqamSchools.Web.Helpers.Media.Url(img);
                     <li>
@@ -27,7 +28,7 @@
                             <div class="leader-photo">
                                 @if (imgUrl != null)
                                 {
-                                    <img src="@imgUrl" alt="@name" width="400" height="480" loading="lazy" decoding="async" />
+                                    <img src="@imgUrl" alt="@(string.IsNullOrEmpty(TheArqamSchools.Web.Helpers.Media.Alt(img)) ? name : TheArqamSchools.Web.Helpers.Media.Alt(img))" width="@(img.Value<int?>("width") ?? 400)" height="@(img.Value<int?>("height") ?? 480)" loading="lazy" decoding="async" />
                                 }
                                 else
                                 {
