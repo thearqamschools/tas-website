@@ -37,6 +37,8 @@ database and run, in this order:
 11. `Database/11_owner_second_review.sql` (motto, Facebook link, class names, level ages and key points, journey 1993).
     It contains Arabic text and is saved as UTF-8: by hand on Windows use `sqlcmd ... -f 65001 -i Database\11_owner_second_review.sql`,
     or check in SSMS that the Arabic looks right before pressing Execute. The GitHub workflow (Linux sqlcmd) reads it correctly.
+12. `Database/12_approved_content_v1_4.sql` (approved content v1.4: head offices, About, Academics, Admissions, FAQ,
+    footer; adds head_offices.mobile and facebook_url; UTF-8, same note as 11)
 
 Skip `03_fulltext.sql` (optional, and Full-Text Search may not be offered).
 

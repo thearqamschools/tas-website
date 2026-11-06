@@ -2,6 +2,11 @@
    Layout: header (top bar + main bar), page header, sections in alternating tones, footer.
    Breakpoints: 40rem (640px), 48rem (768px), 64rem (1024px), 80rem (1280px). */
 
+/* Poppins (SIL Open Font License 1.1): body, sub-headings, labels and buttons (approved content v1.4, section 1). */
+@font-face { font-family: "Poppins"; src: url(fonts/poppins-latin-400.woff2) format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Poppins"; src: url(fonts/poppins-latin-500.woff2) format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "Poppins"; src: url(fonts/poppins-latin-600.woff2) format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "Poppins"; src: url(fonts/poppins-latin-700.woff2) format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
 @font-face { font-family: "Inter"; src: url(fonts/inter-latin-var.woff2) format("woff2"); font-weight: 100 900; font-display: swap; }
 /* Brand title font, supplied by the school (3 November 2026). A heavy condensed face, so it is used at weight 400 without synthetic bold. */
 @font-face { font-family: "Helvetica Inserat"; src: url(fonts/helvetica-inserat-lt-std-roman.ttf) format("truetype"); font-weight: 400; font-style: normal; font-display: swap; }
@@ -1153,3 +1158,35 @@ ul.home-campus-grid { display: grid; grid-template-columns: repeat(auto-fill, mi
 .brand .brand-tagline[lang="ar"], .site-header .brand .brand-tagline[lang="ar"], .footer-tagline[lang="ar"] { font-weight: 400; }
 .site-header .brand .brand-tagline[lang="ar"] { margin-top: 6px; line-height: 1.1; }
 .site-header .brand img { object-fit: contain; }
+
+/* ===== Approved brand colours and fonts (content v1.4, section 1, 6 November 2026) ===== */
+:root {
+  --arqam-red: #EC3237; --arqam-blue: #3E4095; --seal-navy: #2B3990;
+  --blue: #3E4095; --blue-700: #2B3990; --red: #D62839; --red-700: #B51F2E;
+  --ink: #1B1D45; --muted: #545675; --line: #D9DBEC; --blue-50: #EEF0F9; --red-50: #FDECED; --navy-900: #2B3990;
+  --sans: "Poppins", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --headline: "Helvetica Inserat", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+}
+/* Big headlines in Helvetica Inserat, upper case; sub-headings, body, labels and buttons in Poppins. */
+.h1, .h2 { font-family: var(--headline); font-weight: 400; font-synthesis: none; text-transform: uppercase; letter-spacing: .02em; color: var(--arqam-blue); line-height: 1.1; }
+.tone-navy .h1, .tone-navy .h2, .home-hero-photo .h1, .home-admit .h2, .footer-cta .h2 { color: #fff; }
+.h3, .h4 { font-family: var(--sans); }
+/* Footers and contact bands in Seal Navy. */
+.footer-main { background: var(--seal-navy); }
+.home-figures { background: var(--seal-navy); }
+.footer-motto-en { color: rgba(255,255,255,.85); font-style: italic; margin-top: 6px; }
+.footer-contact h2 { color: #fff; font-size: 1rem; font-weight: 600; margin-bottom: 12px; line-height: 1.4; }
+.footer-contact li a { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; }
+@media (min-width: 80rem) { .footer-grid { grid-template-columns: 1.4fr .8fr .9fr 1.2fr; } }
+/* Homepage hero: the name with the motto beneath it. */
+.home-hero-photo .home-hero-name { font-size: clamp(2.5rem, 1.6rem + 3vw, 4rem); line-height: 1; }
+.home-hero-motto { font-family: var(--arabic-font); font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem); line-height: 1.5; margin-top: 10px; color: #fff; text-align: left; }
+.home-hero-motto-en { font-style: italic; color: rgba(255,255,255,.9); margin-top: 2px; }
+.home-hero-classes { margin-top: 12px; font-weight: 600; color: #fff; }
+.home-hero-photo .btn-row { flex-wrap: wrap; }
+/* About: vision and mission cards. */
+.vm-card-centred { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.vm-motto { font-family: var(--arabic-font); font-size: 1.75rem; line-height: 1.5; color: var(--arqam-blue); }
+.vm-motto-en { font-style: italic; color: var(--muted); }
+.vm-card .vm-motto { font-family: var(--arabic-font); font-size: 1.875rem; line-height: 1.5; color: var(--arqam-blue); }
+.vm-card .vm-motto-en { font-style: italic; }

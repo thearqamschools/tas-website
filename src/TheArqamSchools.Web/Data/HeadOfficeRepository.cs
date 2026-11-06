@@ -15,7 +15,7 @@ namespace TheArqamSchools.Web.Data
                 using (var db = Db.Open())
                 {
                     return (IList<HeadOffice>)db.Query<HeadOffice>(
-                        @"SELECT id, office_number, name, city, address, phone, phone_alt, whatsapp, email, google_maps_url, hours, is_published
+                        @"SELECT id, office_number, name, city, address, phone, phone_alt, mobile, whatsapp, email, google_maps_url, facebook_url, hours, is_published
                           FROM dbo.head_offices WHERE is_published = 1 ORDER BY office_number").ToList();
                 }
             }, () => new List<HeadOffice>());

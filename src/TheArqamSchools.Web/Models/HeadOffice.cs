@@ -12,7 +12,10 @@ namespace TheArqamSchools.Web.Models
         public string Address { get; set; }
         public string Phone { get; set; }
         public string PhoneAlt { get; set; }
+        public string Mobile { get; set; }
         public string Whatsapp { get; set; }
+        /// <summary>The office's own Facebook page (https://www.facebook.com/...), from Database/12.</summary>
+        public string FacebookUrl { get; set; }
         public string Email { get; set; }
         public string GoogleMapsUrl { get; set; }
         public string Hours { get; set; }

@@ -48,6 +48,9 @@ namespace TheArqamSchools.Web.Helpers
             { "smile", "<circle cx='12' cy='12' r='10'/><path d='M8 14s1.5 2 4 2 4-2 4-2'/><path d='M9 9h.01M15 9h.01'/>" },
             { "pencil", "<path d='M21.2 6.8a2.8 2.8 0 0 0-4-4L3.8 16.2 2 22l5.8-1.8z'/><path d='m15 5 4 4'/>" },
             { "flask", "<path d='M10 2v7.5L4.6 18.6A2 2 0 0 0 6.3 21.6h11.4a2 2 0 0 0 1.7-3L14 9.5V2'/><path d='M8.5 2h7'/><path d='M7 16h10'/>" },
+            { "monitor", "<rect x='2' y='3' width='20' height='14' rx='2'/><path d='M8 21h8M12 17v4'/>" },
+            { "video", "<path d='m16 13 5.2 3.1a.5.5 0 0 0 .8-.4V8.3a.5.5 0 0 0-.8-.4L16 11'/><rect x='2' y='6' width='14' height='12' rx='2'/>" },
+            { "languages", "<path d='m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6'/>" },
             { "external", "<path d='M15 3h6v6'/><path d='M10 14 21 3'/><path d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/>" },
         };
 

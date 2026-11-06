@@ -1,39 +1,5 @@
 @using System.Collections.Generic
 @using TheArqamSchools.Web.Helpers
-@helper Placeholder(string label, string ratioClass)
-{
-    @* Stand-in for a real TAS photograph. Never an authentic photo: the label is visible and is also the accessible name. *@
-    <figure class="home-ph @ratioClass" role="img" aria-label="@label">
-        <svg class="home-ph-art" viewBox="0 0 400 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
-            <path class="ph-window" d="M52 238V104a64 64 0 0 1 128 0v134z" />
-            <path class="ph-pane" d="M116 40v198M52 120h128" />
-            <g class="ph-shelf">
-                <rect x="224" y="86" width="132" height="8" rx="3" />
-                <rect x="224" y="150" width="132" height="8" rx="3" />
-                <rect x="224" y="214" width="132" height="8" rx="3" />
-            </g>
-            <g class="ph-book-a">
-                <rect x="232" y="54" width="14" height="32" rx="2" />
-                <rect x="262" y="62" width="14" height="24" rx="2" />
-                <rect x="320" y="118" width="14" height="32" rx="2" />
-                <rect x="240" y="182" width="14" height="32" rx="2" />
-            </g>
-            <g class="ph-book-b">
-                <rect x="248" y="48" width="12" height="38" rx="2" />
-                <rect x="296" y="124" width="14" height="26" rx="2" />
-                <rect x="276" y="190" width="14" height="24" rx="2" />
-                <rect x="326" y="180" width="14" height="34" rx="2" />
-            </g>
-            <g class="ph-book-c">
-                <rect x="280" y="56" width="14" height="30" rx="2" />
-                <rect x="234" y="126" width="14" height="24" rx="2" />
-                <rect x="258" y="186" width="12" height="28" rx="2" />
-            </g>
-            <rect class="ph-desk" x="0" y="238" width="400" height="62" />
-        </svg>
-        <span class="home-ph-label">@label</span>
-    </figure>
-}
 @{
     ViewBag.Meta = ViewBag.Meta as PageMeta;
     // The admissions banner at the end of the page replaces the footer call to action here.
@@ -45,6 +11,7 @@
     var hasCampuses = campuses != null && campuses.Count > 0;
     var news = ViewBag.News as IList<NewsItem>;
     var hasNews = news != null && news.Count > 0;
+    var whatsapp = TheArqamSchools.Web.Data.SiteSettingsRepository.Text(TheArqamSchools.Web.Data.SiteSettingsRepository.Public(), "contact.whatsapp", "0339-2406479");
 }
 <div class="home">
 
@@ -56,26 +23,29 @@
         </picture>
         <div class="container home-hero-inner">
             <div class="home-hero-text">
-                <p class="home-hero-badge">Admissions Open 2026-27</p>
-                <h1 class="h1"><span class="home-h1-line">Knowledge with values.</span> <span class="home-h1-line">Education with purpose.</span></h1>
-                <p class="lead">Modern education rooted in Islamic values, from Play Group to Matric, with Hifz classes, at 350+ campuses across Pakistan.</p>
+                @* Approved hero (content v1.4, section 2): the name with the motto beneath it. *@
+                <h1 class="h1 home-hero-name">The Arqam Schools</h1>
+                <p class="home-hero-motto" lang="ar" dir="rtl">فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً</p>
+                <p class="home-hero-motto-en">Excellence in this world and excellence in the Hereafter</p>
+                <p class="lead">A trusted educational institution combining modern education with Islamic values, ethics, discipline and character development.</p>
+                <p class="home-hero-classes">Play Group to Matric · Hifz-e-Quran</p>
                 <div class="btn-row">
-                    <a class="btn btn-primary btn-arrow" href="/admissions">Apply for Admission @Icons.Svg("arrow-right", 18)</a>
-                    <a class="btn btn-outline-light" href="/campuses">Find a Campus</a>
+                    <a class="btn btn-primary btn-arrow" href="/admissions">Admissions @Icons.Svg("arrow-right", 18)</a>
+                    <a class="btn btn-outline-light" href="/contact">Contact Us</a>
+                    @if (!string.IsNullOrEmpty(whatsapp)) { <a class="btn btn-outline-light" href="@Contact.WhatsAppUrl(whatsapp)" target="_blank" rel="noopener">@Icons.Svg("whatsapp", 18) WhatsApp @whatsapp</a> }
                 </div>
             </div>
         </div>
     </section>
 
-    @* 2. Figures band: the approved figures, plus 34 years of excellence (given by the school, 3 November 2026). *@
+    @* 2. Figures band: the approved key figures (content v1.4, section 1). *@
     <section class="home-figures" aria-labelledby="home-figures-h">
         <div class="container">
             <h2 class="sr-only" id="home-figures-h">The Arqam Schools at a glance</h2>
             <ul class="home-figures-list">
-                <li><span class="home-fig">34</span> <span class="home-fig-label">Years of Excellence</span></li>
-                <li><span class="home-fig">350+</span> <span class="home-fig-label">Campuses</span></li>
+                <li><span class="home-fig">350+</span> <span class="home-fig-label">Branches</span></li>
                 <li><span class="home-fig">250,000+</span> <span class="home-fig-label">Students</span></li>
-                <li><span class="home-fig">20,000+</span> <span class="home-fig-label">Hafiz-e-Quran</span></li>
+                <li><span class="home-fig">20,000+</span> <span class="home-fig-label">Hifz-e-Quran Students</span></li>
             </ul>
         </div>
     </section>
@@ -90,7 +60,7 @@
                         <span class="home-tile-icon">@Icons.Svg("users", 26)</span>
                         <div class="home-tile-text">
                             <h3 class="h4"><a href="/about">About Us</a></h3>
-                            <p>Who we are, our vision and mission, and our values.</p>
+                            <p>Our journey, vision, mission and core values.</p>
                         </div>
                         <span class="home-tile-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
                     </article>
@@ -100,7 +70,7 @@
                         <span class="home-tile-icon">@Icons.Svg("book-open", 26)</span>
                         <div class="home-tile-text">
                             <h3 class="h4"><a href="/academics">Academics</a></h3>
-                            <p>Teaching, academic levels and student development.</p>
+                            <p>Curriculum, classes, Quranic education and facilities.</p>
                         </div>
                         <span class="home-tile-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
                     </article>
@@ -110,7 +80,7 @@
                         <span class="home-tile-icon">@Icons.Svg("graduation-cap", 26)</span>
                         <div class="home-tile-text">
                             <h3 class="h4"><a href="/admissions">Admissions</a></h3>
-                            <p>The admission process and an online inquiry form.</p>
+                            <p>Admission information and enquiries.</p>
                         </div>
                         <span class="home-tile-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
                     </article>
@@ -146,50 +116,6 @@
                     </article>
                 </li>
             </ul>
-        </div>
-    </section>
-
-    @* 4. Educating the whole child. PROPOSED copy: needs the school's approval (see DESIGN-NOTES.md, "Proposed copy for approval"). *@
-    <section class="section tone-warm" aria-labelledby="values-h">
-        <div class="container home-split">
-            <div class="home-split-text home-reveal">
-                <h2 class="h2" id="values-h">Educating the whole child</h2>
-                <p class="home-split-lead">At The Arqam Schools, modern education and Islamic values go together, to help children grow in knowledge, character, discipline and confidence, from Play Group to Matric.</p>
-                <ul class="home-points">
-                    <li>
-                        <span class="home-point-icon">@Icons.Svg("book-open", 22)</span>
-                        <div>
-                            <h3 class="h4">Academic learning</h3>
-                            <p>Modern teaching that builds strong foundations, from Play Group to Matric.</p>
-                        </div>
-                    </li>
-                    <li>
-                        <span class="home-point-icon">@Icons.Svg("moon-star", 22)</span>
-                        <div>
-                            <h3 class="h4">Islamic education</h3>
-                            <p>Islamic values at the heart of school life, with Hifz classes.</p>
-                        </div>
-                    </li>
-                    <li>
-                        <span class="home-point-icon">@Icons.Svg("shield-check", 22)</span>
-                        <div>
-                            <h3 class="h4">Ethics and discipline</h3>
-                            <p>Good manners and discipline as part of everyday learning.</p>
-                        </div>
-                    </li>
-                    <li>
-                        <span class="home-point-icon">@Icons.Svg("heart-handshake", 22)</span>
-                        <div>
-                            <h3 class="h4">Confidence and character</h3>
-                            <p>Supporting each child to grow in confidence and strong character.</p>
-                        </div>
-                    </li>
-                </ul>
-                <a class="text-link" href="/about">About The Arqam Schools @Icons.Svg("arrow-right", 18)</a>
-            </div>
-            <div class="home-split-art home-reveal">
-                @Placeholder("Placeholder: real TAS school life photo to come", "home-ph-split")
-            </div>
         </div>
     </section>
 
@@ -292,15 +218,15 @@
         </div>
     </section>
 
-    @* 7. Admissions banner (session 2026-27, given by the school). *@
+    @* 7. Admissions (content v1.4, section 7). *@
     <section class="section tone-white home-admit-wrap" aria-labelledby="admit-h">
         <div class="container">
             <div class="home-admit home-reveal">
                 <div class="home-admit-text">
-                    <h2 class="h2" id="admit-h">Admissions Open for 2026-27</h2>
-                    <p>Give your child a strong start with modern education rooted in Islamic values. Send an admission inquiry and the campus team will guide you through the next steps.</p>
+                    <h2 class="h2" id="admit-h">Admissions</h2>
+                    <p>Admissions open at the start of the academic session; the new session begins in the first week of March. For admission enquiries, call or WhatsApp @whatsapp.</p>
                 </div>
-                <a class="btn btn-navy btn-arrow" href="/admissions#inquiry">Start Your Application @Icons.Svg("arrow-right", 18)</a>
+                <a class="btn btn-navy btn-arrow" href="/admissions">Admissions @Icons.Svg("arrow-right", 18)</a>
             </div>
         </div>
     </section>
