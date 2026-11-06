@@ -127,3 +127,9 @@ admin inbox, campus and page editing, on a phone and a computer.
 - Open items for the owner: founding year (1992 or 1993), Google Maps share links for both head offices,
   the real address of Pir Mahal Campus (hidden for now), two phone numbers (Multan 061-457888,
   Fatyana 0405-312248), the other regions' campus lists, Helvetica Inserat web-font licence.
+
+## 6 November 2026: approved website content v1.4
+
+- `12_approved_content_v1_4` ran on the testing database through `deploy/smarterasp-db` (earlier scripts:
+  "already applied"). The site (commit 7338cf2, header lock-up in Scheherazade New, content v1.4, brand colours
+  and fonts) was uploaded through `deploy/smarterasp` (160 files); every page in the quick check answered 200.
