@@ -44,7 +44,7 @@ public class RuntimeChecks : MarshalByRefObject
         HttpRuntime.ProcessRequest(worker);
         string body = output.ToString();
         if (worker.Status != 200) throw new Exception("Homepage during outage expected 200 got " + worker.Status + " " + body);
-        if (!body.Contains("Knowledge with values")) throw new Exception("Homepage content missing during outage");
+        if (!body.Contains("Excellence in this world and excellence in the Hereafter")) throw new Exception("Homepage content missing during outage");
         if (body.Contains("SqlException") || body.Contains("Stack Trace")) throw new Exception("Error detail leaked");
         Console.WriteLine("PASS GET / during database outage => 200, homepage rendered without the database");
     }
