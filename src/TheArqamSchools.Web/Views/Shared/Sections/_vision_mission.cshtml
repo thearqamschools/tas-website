@@ -1,12 +1,8 @@
 @model PageSection
-@using TheArqamSchools.Web.Helpers
 @{
     var v = Model.Data["vision"];
     var m = Model.Data["mission"];
     var points = m != null ? m["points"] as Newtonsoft.Json.Linq.JArray : null;
-    // Vision may carry the motto (Arabic) and its English meaning, shown above the vision text (content v1.4, section 4).
-    var motto = v != null ? v.Value<string>("motto") : null;
-    var mottoEn = v != null ? v.Value<string>("motto_en") : null;
 }
 <section class="section tone-@Model.Tone("warm")" @(Model.Anchor != null ? "id=" + Model.Anchor : "") aria-labelledby="h-@Model.Id">
     <div class="container">
@@ -14,22 +10,17 @@
         <div class="vm-grid">
             @if (v != null)
             {
-                <article class="vm-card vm-card-centred">
-                    <span class="icon-badge">@Icons.Svg("eye", 22)</span>
+                <article class="vm-card">
                     <h3 class="h3">@(v.Value<string>("title"))</h3>
-                    @if (!string.IsNullOrEmpty(motto)) { <p class="vm-motto" lang="ar" dir="rtl">@motto</p> }
-                    @if (!string.IsNullOrEmpty(mottoEn)) { <p class="vm-motto-en">@mottoEn</p> }
-                    @if (!string.IsNullOrEmpty(v.Value<string>("body"))) { <p>@(v.Value<string>("body"))</p> }
+                    <p>@(v.Value<string>("body"))</p>
                 </article>
             }
             @if (m != null)
             {
-                <article class="vm-card vm-card-centred">
-                    <span class="icon-badge">@Icons.Svg("target", 22)</span>
+                <article class="vm-card">
                     <h3 class="h3">@(m.Value<string>("title"))</h3>
                     @if (!string.IsNullOrEmpty(m.Value<string>("intro"))) { <p>@(m.Value<string>("intro"))</p> }
-                    @if (!string.IsNullOrEmpty(m.Value<string>("body"))) { <p>@(m.Value<string>("body"))</p> }
-                    @if (points != null && points.Count > 0)
+                    @if (points != null)
                     {
                         <ul class="check-list">
                             @foreach (var p in points) { <li>@((string)p)</li> }

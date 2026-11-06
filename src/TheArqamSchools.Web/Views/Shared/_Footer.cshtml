@@ -8,8 +8,6 @@
     var quick = NavigationRepository.Menu("footer");
     var offices = HeadOfficeRepository.Published();
     var holder = SiteSettingsRepository.Text(settings, "legal.copyright_holder", "The Arqam Schools");
-    var whatsapp = SiteSettingsRepository.Text(settings, "contact.whatsapp");
-    var email = SiteSettingsRepository.Text(settings, "contact.email");
     // Social links from the website settings (admin panel > Settings), WhatsApp first.
     var social = Social.Links(settings);
 }
@@ -33,9 +31,8 @@
                     <img src="~/Content/brand/the-arqam-schools-logo-128.png" srcset="@Url.Content("~/Content/brand/the-arqam-schools-logo-64.png") 64w, @Url.Content("~/Content/brand/the-arqam-schools-logo-128.png") 128w, @Url.Content("~/Content/brand/the-arqam-schools-logo-192.png") 192w" sizes="64px" alt="" width="64" height="64" />
                     <span class="brand-text"><span class="brand-name">The Arqam Schools</span></span>
                 </a>
-                @* Approved footer (content v1.4, section 9): the motto in Arabic and in English. *@
+                @if (!string.IsNullOrEmpty(mission)) { <p>@mission</p> }
                 @if (!string.IsNullOrEmpty(tagline)) { <p class="footer-tagline" lang="@(Site.IsArabic(tagline) ? "ar" : null)" dir="@(Site.IsArabic(tagline) ? "rtl" : null)">@tagline</p> }
-                @if (!string.IsNullOrEmpty(mission)) { <p class="footer-motto-en">@mission</p> }
                 <ul class="footer-social" aria-label="The Arqam Schools on social media">
                     @foreach (var s in social)
                     {
@@ -55,26 +52,58 @@
                     </ul>
                 </nav>
             }
-            @* Contact line from the approved content (section 9): each head office's phone, WhatsApp and e-mail. *@
-            <div class="footer-contact">
-                <h2>Contact</h2>
-                <ul>
-                    @foreach (var o in offices)
+            @foreach (var o in offices)
+            {
+                var dash = o.Name.IndexOf(" — ", StringComparison.Ordinal);
+                var mapUrl = !string.IsNullOrEmpty(o.GoogleMapsUrl) ? o.GoogleMapsUrl
+                    : (string.IsNullOrEmpty(o.Address) ? null : "https://www.google.com/maps/search/?api=1&query=" + Uri.EscapeDataString(o.Address));
+                <address class="footer-office">
+                    <h2>
+                        @if (dash > 0)
+                        {
+                            @o.Name.Substring(0, dash + 2)<br />@o.Name.Substring(dash + 3)
+                        }
+                        else
+                        {
+                            @o.Name
+                        }
+                    </h2>
+                    @if (!string.IsNullOrEmpty(o.Address))
                     {
-                        if (string.IsNullOrEmpty(o.Phone)) { continue; }
-                        var city = string.IsNullOrEmpty(o.City) ? o.Name : o.City.Split(',')[0];
-                        <li><a href="@Contact.TelUrl(o.Phone)">@Icons.Svg("phone", 16) <span>@city: @o.Phone</span></a></li>
+                        <p>
+                            @if (mapUrl != null)
+                            {
+                                <a href="@mapUrl" target="_blank" rel="noopener">@o.Address</a>
+                            }
+                            else
+                            {
+                                @o.Address
+                            }
+                        </p>
                     }
-                    @if (!string.IsNullOrEmpty(whatsapp))
-                    {
-                        <li><a href="@Contact.WhatsAppUrl(whatsapp)" target="_blank" rel="noopener">@Icons.Svg("whatsapp", 16) <span>WhatsApp: @whatsapp</span></a></li>
-                    }
-                    @if (!string.IsNullOrEmpty(email))
-                    {
-                        <li><a href="mailto:@email">@Icons.Svg("mail", 16) <span>@email</span></a></li>
-                    }
-                </ul>
-            </div>
+                    <ul>
+                        @foreach (var p in new[] { o.Phone, o.PhoneAlt })
+                        {
+                            if (!string.IsNullOrEmpty(p))
+                            {
+                                <li><a href="@Contact.TelUrl(p)">@Icons.Svg("phone", 16) @p</a></li>
+                            }
+                        }
+                        @if (!string.IsNullOrEmpty(o.Whatsapp))
+                        {
+                            <li><a href="@Contact.WhatsAppUrl(o.Whatsapp)" target="_blank" rel="noopener">@Icons.Svg("whatsapp", 16) WhatsApp @o.Whatsapp</a></li>
+                        }
+                        @if (!string.IsNullOrEmpty(o.Email))
+                        {
+                            <li><a href="mailto:@o.Email">@Icons.Svg("mail", 16) @o.Email</a></li>
+                        }
+                        @if (mapUrl != null)
+                        {
+                            <li><a href="@mapUrl" target="_blank" rel="noopener">@Icons.Svg("map-pin", 16) View on Google Maps</a></li>
+                        }
+                    </ul>
+                </address>
+            }
         </div>
         <div class="container footer-bottom">
             <p>&copy; @DateTime.Now.Year @holder. All rights reserved.</p>

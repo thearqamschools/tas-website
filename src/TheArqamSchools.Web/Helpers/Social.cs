@@ -46,8 +46,6 @@ namespace TheArqamSchools.Web.Helpers
             foreach (var l in list)
             {
                 l.Name = NameOf(l.Platform);
-                if (l.Platform == "facebook" && l.Url.IndexOf("TASHeadOffice", StringComparison.OrdinalIgnoreCase) >= 0) l.Name = "Facebook: Head Office, Lahore";
-                else if (l.Platform == "facebook" && l.Url.IndexOf("thearqamschoolsfsd", StringComparison.OrdinalIgnoreCase) >= 0) l.Name = "Facebook: Head Office, Faisalabad";
                 l.Icon = IconOf(l.Platform);
             }
             return list

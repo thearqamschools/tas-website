@@ -39,6 +39,7 @@ database and run, in this order:
     or check in SSMS that the Arabic looks right before pressing Execute. The GitHub workflow (Linux sqlcmd) reads it correctly.
 12. `Database/12_approved_content_v1_4.sql` (approved content v1.4: head offices, About, Academics, Admissions, FAQ,
     footer; adds head_offices.mobile and facebook_url; UTF-8, same note as 11)
+13. `Database/13_undo_content_except_about.sql` (undoes 12 everywhere except About Us, from the 12 backups)
 
 Skip `03_fulltext.sql` (optional, and Full-Text Search may not be offered).
 

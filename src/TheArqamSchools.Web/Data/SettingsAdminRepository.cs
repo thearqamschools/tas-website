@@ -32,7 +32,7 @@ namespace TheArqamSchools.Web.Data
             new Field { Group = "Website", Key = "site.name", Label = "Website name", Kind = Kind.Text, Max = 80 },
             new Field { Group = "Website", Key = "site.tagline", Label = "Tagline", Kind = Kind.Text, Max = 120 },
             new Field { Group = "Website", Key = "site.description", Label = "Website description", Kind = Kind.Multiline, Max = 300,
-                Hint = "Shown by search engines and when a link is shared. Use only approved figures: 350+ branches, 250,000+ students, 20,000+ Hifz-e-Quran students." },
+                Hint = "Shown by search engines and when a link is shared. Use only approved figures: 350+ campuses, 250,000+ students, 20,000+ Hafiz-e-Quran." },
             new Field { Group = "Contact (header and footer)", Key = "contact.phone", Label = "Phone", Kind = Kind.Phone, Max = 20 },
             new Field { Group = "Contact (header and footer)", Key = "contact.phone_alt", Label = "Second phone", Kind = Kind.Phone, Max = 20 },
             new Field { Group = "Contact (header and footer)", Key = "contact.whatsapp", Label = "WhatsApp", Kind = Kind.Phone, Max = 20 },

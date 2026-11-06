@@ -47,10 +47,6 @@
                         {
                             <li><span class="office-icon">@Icons.Svg("phone", 20)</span><span><span class="office-label">Phone</span>@for (var i = 0; i < phones.Count; i++) { if (i > 0) { <text>, </text> } <a href="@Contact.TelUrl(phones[i])">@phones[i]</a> }</span></li>
                         }
-                        @if (!string.IsNullOrEmpty(o.Mobile))
-                        {
-                            <li><span class="office-icon">@Icons.Svg("phone", 20)</span><span><span class="office-label">Mobile</span><a href="@Contact.TelUrl(o.Mobile)">@o.Mobile</a></span></li>
-                        }
                         @if (!string.IsNullOrEmpty(o.Whatsapp))
                         {
                             <li><span class="office-icon">@Icons.Svg("whatsapp", 20)</span><span><span class="office-label">Mobile / WhatsApp</span><a href="@Contact.WhatsAppUrl(o.Whatsapp)" target="_blank" rel="noopener">@o.Whatsapp</a></span></li>
@@ -58,10 +54,6 @@
                         @if (!string.IsNullOrEmpty(o.Email))
                         {
                             <li><span class="office-icon">@Icons.Svg("mail", 20)</span><span><span class="office-label">Email</span><a href="mailto:@o.Email">@o.Email</a></span></li>
-                        }
-                        @if (!string.IsNullOrEmpty(o.FacebookUrl) && o.FacebookUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase) && Site.IsSafeHref(o.FacebookUrl))
-                        {
-                            <li><span class="office-icon">@Icons.Svg("facebook", 20)</span><span><span class="office-label">Facebook</span><a href="@o.FacebookUrl" target="_blank" rel="noopener">@o.FacebookUrl.Replace("https://www.", "").Replace("https://", "")</a></span></li>
                         }
                         @if (!string.IsNullOrEmpty(o.Hours))
                         {

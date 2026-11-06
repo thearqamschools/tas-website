@@ -41,7 +41,6 @@
             <img src="~/Content/brand/the-arqam-schools-logo-128.png" srcset="@Url.Content("~/Content/brand/the-arqam-schools-logo-64.png") 64w, @Url.Content("~/Content/brand/the-arqam-schools-logo-128.png") 128w, @Url.Content("~/Content/brand/the-arqam-schools-logo-192.png") 192w" sizes="56px" alt="" width="56" height="56" />
             <span class="brand-text">
                 <span class="brand-name">The Arqam Schools</span>
-                @if (!string.IsNullOrEmpty(tagline)) { <span class="brand-tagline" lang="@(Site.IsArabic(tagline) ? "ar" : null)" dir="@(Site.IsArabic(tagline) ? "rtl" : null)">@tagline</span> }
             </span>
         </a>
         <nav class="main-nav" aria-label="Main">

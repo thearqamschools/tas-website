@@ -35,6 +35,7 @@ Database/
   10_faisalabad_region_campuses.sql  93 Faisalabad region campuses from the 2026 list (no directors' names or cell numbers)
   11_owner_second_review.sql        motto in Arabic, Facebook = TASHeadOffice, Class 9/10 names, level ages and points, journey 1993
   12_approved_content_v1_4.sql      approved website content v1.4 (docs/content/TAS-Website-Content.md)
+  13_undo_content_except_about.sql  undoes the content v1.4 update everywhere except About Us (owner, 6 Nov 2026)
   hosting/smarterasp_setup.sql    shared-hosting replacement for 00 (see docs/release/SMARTERASP-DEPLOY.md)
   tools/convert.py         generates 01_schema.sql from the PostgreSQL schema
   tools/export_data.py     generates 02_seed_data.sql from the current content

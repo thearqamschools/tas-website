@@ -33,10 +33,10 @@
     <meta property="og:url" content="@canonical" />
     <meta property="og:image" content="@ogImage" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="theme-color" content="#3E4095" />
+    <meta name="theme-color" content="#1e3a8a" />
     <link rel="icon" type="image/png" href="~/Content/brand/the-arqam-schools-logo-official.png" />
-    <link rel="preload" href="~/Content/fonts/poppins-latin-400.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="~/Content/site.css?v=20261106d" />
+    <link rel="preload" href="~/Content/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="~/Content/site.css?v=20261106r" />
     @if (!string.IsNullOrEmpty(meta.StructuredDataJson))
     {
         <script type="application/ld+json">@Html.Raw(meta.StructuredDataJson)</script>
@@ -59,6 +59,6 @@
             @TheArqamSchools.Web.Helpers.Icons.Svg("whatsapp", 28)<span class="sr-only">Chat with us on WhatsApp @waNumber (opens in a new tab)</span>
         </a>
     }
-    <script src="~/Scripts/site.js?v=20261106b" defer></script>
+    <script src="~/Scripts/site.js?v=20261106r" defer></script>
 </body>
 </html>

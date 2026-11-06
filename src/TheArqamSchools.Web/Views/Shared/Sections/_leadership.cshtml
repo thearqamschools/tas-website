@@ -1,6 +1,7 @@
 @model PageSection
 @{
-    // Leadership: items { name, role, message }. Items without a name are skipped.
+    // Leadership: items { name, role, message, image }. Items without a name are skipped. Each card has a photo
+    // space; until the school sends a photo (image.path) it shows the initials and "Photo to be added".
     var items = (Model.Data["items"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray())
         .OfType<Newtonsoft.Json.Linq.JObject>()
         .Where(i => !string.IsNullOrWhiteSpace(i.Value<string>("name")))
@@ -19,10 +20,21 @@
                 {
                     var name = i.Value<string>("name");
                     var initials = string.Concat(name.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(w => char.IsLetter(w[0])).Take(2).Select(w => char.ToUpperInvariant(w[0])));
+                    var img = i["image"];
+                    var imgUrl = TheArqamSchools.Web.Helpers.Media.Url(img);
                     <li>
                         <article class="card leader-card">
+                            <div class="leader-photo">
+                                @if (imgUrl != null)
+                                {
+                                    <img src="@imgUrl" alt="@name" width="400" height="480" loading="lazy" decoding="async" />
+                                }
+                                else
+                                {
+                                    <span class="leader-photo-empty"><span class="leader-initials" aria-hidden="true">@initials</span><span class="leader-photo-note">Photo to be added</span></span>
+                                }
+                            </div>
                             <div class="card-body">
-                                <span class="leader-initials" aria-hidden="true">@initials</span>
                                 <h3 class="h4">@name</h3>
                                 @if (!string.IsNullOrWhiteSpace(i.Value<string>("role"))) { <p class="card-meta">@(i.Value<string>("role"))</p> }
                                 @if (!string.IsNullOrWhiteSpace(i.Value<string>("message"))) { <p>@(i.Value<string>("message"))</p> }
