@@ -43,6 +43,9 @@ database and run, in this order:
 14. `Database/14_about_notes_and_sample_news.sql` (About: journey heading and text, Vision seal, Core Values badge; five "Sample:" news posts; UTF-8)
 15. `Database/15_about_photos_and_core_values.sql` (founder and CEO photos on About; Core Values without "We believe in:" and the statement)
 16. `Database/16_photo_asad_sakhawat_ali.sql` (photo of Mr. Asad Sakhawat Ali on About > Leadership)
+17. `Database/17_news_event_photos.sql` (table `post_images`: photos of news posts and events). The site's
+    application pool needs write permission on `media\public-media\` (uploads go to `news\` and `events\`) and on
+    `App_Data\removed-media\` (removed photos are moved there, not deleted). Check with one test upload after deploying.
 
 Skip `03_fulltext.sql` (optional, and Full-Text Search may not be offered).
 

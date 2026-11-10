@@ -127,11 +127,11 @@
                 <div class="admin-field">
                     <label for="photos-input">Add photos</label>
                     <input type="file" id="photos-input" name="photos" accept="image/jpeg,image/png" multiple aria-describedby="photos-hint" />
-                    <p class="admin-hint" id="photos-hint">JPG or PNG, up to 15 MB each. You can choose 20, 30 or more photos at once. Photos are made smaller and the location data inside them is removed. Use only photos the school may publish.</p>
+                    <p class="admin-hint" id="photos-hint">JPG or PNG, up to 15 MB each. You can choose 20, 30 or more photos at once. Photos are made smaller and the location data inside them is removed. Use only photos the school may publish. (Without JavaScript, add up to about 15 MB of photos at a time.)</p>
                 </div>
                 <div><button type="submit" class="admin-button">Upload photos</button></div>
                 <div class="admin-upload-progress" data-upload-progress hidden>
-                    <progress max="100" value="0" data-upload-bar></progress>
+                    <progress max="100" value="0" aria-label="Upload progress" data-upload-bar></progress>
                     <p role="status" aria-live="polite" data-upload-status></p>
                     <ul class="admin-upload-errors" data-upload-errors></ul>
                 </div>

@@ -41,7 +41,9 @@ namespace TheArqamSchools.Web.Infrastructure
         public const int LargeSide = 1920;
         public const int SmallSide = 640;
         /// <summary>Pictures larger than this (in pixels) are refused before they are decoded, so a tiny file cannot fill the memory.</summary>
-        private const long MaxPixels = 60L * 1000 * 1000;
+        private const long MaxPixels = 40L * 1000 * 1000;
+        /// <summary>Only one photo is decoded at a time, so two uploads together cannot run the shared host out of memory.</summary>
+        private static readonly System.Threading.SemaphoreSlim Gate = new System.Threading.SemaphoreSlim(1, 1);
         private const int OrientationTag = 0x0112;
 
         public static string SmallPath(string storagePath)
@@ -64,7 +66,7 @@ namespace TheArqamSchools.Web.Infrastructure
             if (!HeaderSize(bytes, out w, out h))
                 throw new ImageRejectedException("Only JPG and PNG photos can be uploaded. Please save the photo as JPG and try again.");
             if (w <= 0 || h <= 0 || (long)w * h > MaxPixels)
-                throw new ImageRejectedException("The photo is too large in pixels. Please choose a photo under 60 megapixels.");
+                throw new ImageRejectedException("The photo is too large in pixels. Please choose a photo under 40 megapixels.");
 
             var now = DateTime.UtcNow.AddHours(5);
             var relative = folder + "/" + now.ToString("yyyy") + "/" + now.ToString("MM") + "/" + Guid.NewGuid().ToString("N") + ".jpg";
@@ -73,6 +75,7 @@ namespace TheArqamSchools.Web.Infrastructure
             Directory.CreateDirectory(Path.GetDirectoryName(largeFile));
 
             var result = new StoredImage { StoragePath = relative, OriginalFileName = CleanName(originalName) };
+            if (!Gate.Wait(TimeSpan.FromSeconds(60))) throw new ImageRejectedException("The server is busy with other photos. Please try again in a minute.");
             try
             {
                 using (var ms = new MemoryStream(bytes))
@@ -94,11 +97,49 @@ namespace TheArqamSchools.Web.Infrastructure
                     result.Sha256 = string.Concat(sha.ComputeHash(f).Select(b => b.ToString("x2")));
                 return result;
             }
+            catch (OutOfMemoryException)
+            {
+                Delete(relative);
+                throw new ImageRejectedException("This photo is too large for the server to process. Please choose a smaller photo.");
+            }
+            catch (System.Runtime.InteropServices.ExternalException)
+            {
+                Delete(relative);
+                throw new ImageRejectedException("This photo could not be processed. Please save it as JPG and try again.");
+            }
             catch
             {
                 Delete(relative);
                 throw;
             }
+            finally
+            {
+                Gate.Release();
+            }
+        }
+
+        /// <summary>
+        /// Moves the files of a removed photo out of the public folder into App_Data (never served),
+        /// so old links stop working. The files are kept, not deleted. Returns false when they could not be moved.
+        /// </summary>
+        public static bool Archive(string storagePath)
+        {
+            var ok = true;
+            foreach (var p in new[] { storagePath, SmallPath(storagePath) })
+            {
+                try
+                {
+                    var from = PhysicalPath(p);
+                    if (!File.Exists(from)) continue;
+                    var to = Path.Combine(HostingEnvironment.MapPath("~/App_Data") ?? "App_Data", "removed-media", "public-media", p.Replace('/', Path.DirectorySeparatorChar));
+                    Directory.CreateDirectory(Path.GetDirectoryName(to));
+                    if (File.Exists(to)) File.Delete(to);
+                    File.Move(from, to);
+                }
+                catch (IOException) { ok = false; }
+                catch (UnauthorizedAccessException) { ok = false; }
+            }
+            return ok;
         }
 
         /// <summary>Removes the files of a photo that was saved but could not be recorded in the database.</summary>

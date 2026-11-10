@@ -61,7 +61,7 @@
       return fetch(form.action, { method: "POST", body: data, credentials: "same-origin", headers: { Accept: "application/json" } });
     }).then(function (r) {
       return r.json().catch(function () { return { ok: false, message: "The server did not answer (status " + r.status + ")." }; })
-        .then(function (j) { if (!r.ok || !j.ok) throw new Error(j.message || "The photo could not be added."); return j; });
+        .then(function (j) { if (!r.ok || !j.ok) { var e = new Error(j.message || "The photo could not be added."); e.stop = !!j.stop; throw e; } return j; });
     });
   }
 
@@ -95,8 +95,14 @@
         return;
       }
       status.textContent = "Uploading photo " + (i + 1) + " of " + files.length + "…";
-      upload(files[i]).then(function () { ok++; }, function (err) { addError(files[i].name + ": " + err.message); })
-        .then(function () { done++; bar.value = done; next(i + 1); });
+      var stop = false;
+      upload(files[i]).then(function () { ok++; }, function (err) { addError(files[i].name + ": " + err.message); stop = err.stop; })
+        .then(function () {
+          done++; bar.value = done;
+          // At the photo limit, or when the post can no longer be changed, the rest would fail too.
+          if (stop) { for (var k = i + 1; k < files.length; k++) addError(files[k].name + ": not sent."); next(files.length); }
+          else next(i + 1);
+        });
     }
     next(0);
   });

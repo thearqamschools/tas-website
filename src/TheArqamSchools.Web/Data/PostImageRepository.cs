@@ -56,17 +56,19 @@ namespace TheArqamSchools.Web.Data
         }
 
         /// <summary>Records a saved photo. Returns false when the post has reached the photo limit (the caller removes the files).</summary>
-        public static bool Add(string kind, Guid postId, StoredImage img, string altText, Guid actorId)
+        public static bool Add(string kind, Guid postId, StoredImage img, string altText, bool canPublish, Guid actorId)
         {
             using (var db = Db.Open())
             using (var tx = db.BeginTransaction())
             {
                 // The lock on the post keeps sort_order in step when several photos arrive at once.
-                var cover = db.QuerySingleOrDefault<Guid?>(
-                    "SELECT cover_media_id FROM " + Table(kind) + " WITH (UPDLOCK, HOLDLOCK) WHERE id = @postId AND deleted_at IS NULL",
+                var post = db.QuerySingleOrDefault<PostLock>(
+                    "SELECT status, cover_media_id FROM " + Table(kind) + " WITH (UPDLOCK, HOLDLOCK) WHERE id = @postId AND deleted_at IS NULL",
                     new { postId }, tx);
-                var exists = db.ExecuteScalar<int>("SELECT COUNT(*) FROM " + Table(kind) + " WHERE id = @postId AND deleted_at IS NULL", new { postId }, tx);
-                if (exists == 0) throw new InvalidOperationException("The post was not found.");
+                if (post == null) throw new InvalidOperationException("The post was not found.");
+                // Checked again under the lock, like NewsRepository.Save: the post may have been published a moment ago.
+                if (!canPublish && post.Status != "draft") throw new InvalidOperationException("Only drafts can be changed without the publish permission.");
+                var cover = post.CoverMediaId;
                 var stats = db.QuerySingle<CountAndMax>(
                     "SELECT COUNT(*) AS n, COALESCE(MAX(sort_order), -1) AS max_order FROM dbo.post_images WHERE " + Column(kind) + " = @postId AND deleted_at IS NULL",
                     new { postId }, tx);
@@ -93,28 +95,35 @@ namespace TheArqamSchools.Web.Data
         }
 
         /// <summary>Makes one photo the main photo of the post. Returns false when the photo is not part of the post.</summary>
-        public static bool SetCover(string kind, Guid postId, Guid imageId, Guid actorId)
+        public static bool SetCover(string kind, Guid postId, Guid imageId, bool canPublish, Guid actorId)
         {
             using (var db = Db.Open())
             using (var tx = db.BeginTransaction())
             {
-                var mediaId = MediaOf(db, tx, kind, postId, imageId);
+                var mediaId = LockPost(db, tx, kind, postId, canPublish) ? MediaOf(db, tx, kind, postId, imageId) : null;
                 if (mediaId == null) { tx.Rollback(); return false; }
                 db.Execute("UPDATE " + Table(kind) + " SET cover_media_id = @mediaId, updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId WHERE id = @postId",
                     new { mediaId, postId, actorId }, tx);
-                AuditLog.Write(db, tx, actorId, "update", Table(kind).Substring(4), postId.ToString(), new { cover_media_id = mediaId });
+                // The main photo also becomes the first photo of the gallery, so the admin grid and the website show the same order.
+                var ids = db.Query<Guid>(
+                    "SELECT id FROM dbo.post_images WHERE " + Column(kind) + " = @postId AND deleted_at IS NULL ORDER BY CASE WHEN id = @imageId THEN 0 ELSE 1 END, sort_order, created_at",
+                    new { postId, imageId }, tx).ToList();
+                for (var k = 0; k < ids.Count; k++)
+                    db.Execute("UPDATE dbo.post_images SET sort_order = @k, updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId WHERE id = @id AND sort_order <> @k",
+                        new { k, id = ids[k], actorId }, tx);
+                AuditLog.Write(db, tx, actorId, "update", Table(kind).Substring(4), postId.ToString(), new { cover_media_id = mediaId, moved_first = imageId });
                 tx.Commit();
                 return true;
             }
         }
 
         /// <summary>Moves a photo one place earlier (-1) or later (+1) in the gallery.</summary>
-        public static bool Move(string kind, Guid postId, Guid imageId, int direction, Guid actorId)
+        public static bool Move(string kind, Guid postId, Guid imageId, int direction, bool canPublish, Guid actorId)
         {
             using (var db = Db.Open())
             using (var tx = db.BeginTransaction())
             {
-                db.Execute("SELECT id FROM " + Table(kind) + " WITH (UPDLOCK, HOLDLOCK) WHERE id = @postId", new { postId }, tx);
+                if (!LockPost(db, tx, kind, postId, canPublish)) { tx.Rollback(); return false; }
                 var ids = db.Query<Guid>(
                     "SELECT id FROM dbo.post_images WHERE " + Column(kind) + " = @postId AND deleted_at IS NULL ORDER BY sort_order, created_at",
                     new { postId }, tx).ToList();
@@ -137,13 +146,14 @@ namespace TheArqamSchools.Web.Data
         /// Takes a photo off the post (soft delete of the post_images and media rows; the files stay).
         /// When it was the main photo, the next photo becomes the main photo.
         /// </summary>
-        public static bool Remove(string kind, Guid postId, Guid imageId, Guid actorId)
+        public static string Remove(string kind, Guid postId, Guid imageId, bool canPublish, Guid actorId)
         {
             using (var db = Db.Open())
             using (var tx = db.BeginTransaction())
             {
-                var mediaId = MediaOf(db, tx, kind, postId, imageId);
-                if (mediaId == null) { tx.Rollback(); return false; }
+                var mediaId = LockPost(db, tx, kind, postId, canPublish) ? MediaOf(db, tx, kind, postId, imageId) : null;
+                if (mediaId == null) { tx.Rollback(); return null; }
+                var path = db.ExecuteScalar<string>("SELECT storage_path FROM dbo.media WHERE id = @mediaId", new { mediaId }, tx);
                 db.Execute("UPDATE dbo.post_images SET deleted_at = SYSDATETIMEOFFSET(), updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId WHERE id = @imageId",
                     new { imageId, actorId }, tx);
                 db.Execute("UPDATE dbo.media SET deleted_at = SYSDATETIMEOFFSET(), updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId WHERE id = @mediaId",
@@ -153,18 +163,31 @@ namespace TheArqamSchools.Web.Data
                     new { postId }, tx);
                 db.Execute("UPDATE " + Table(kind) + " SET cover_media_id = @next, updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId WHERE id = @postId AND cover_media_id = @mediaId",
                     new { next, postId, mediaId, actorId }, tx);
-                AuditLog.Write(db, tx, actorId, "update", "post_images", imageId.ToString(), new { kind, post_id = postId, media_id = mediaId, removed = true });
+                AuditLog.Write(db, tx, actorId, "update", "post_images", imageId.ToString(), new { kind, post_id = postId, media_id = mediaId, removed = true, files_moved_to = "App_Data/removed-media/public-media/" + path });
                 tx.Commit();
-                return true;
+                return path;
             }
+        }
+
+        /// <summary>Locks the post row; without the publish permission only a draft may be changed. False when not allowed or not found.</summary>
+        private static bool LockPost(System.Data.IDbConnection db, System.Data.IDbTransaction tx, string kind, Guid postId, bool canPublish)
+        {
+            var status = db.QuerySingleOrDefault<string>(
+                "SELECT status FROM " + Table(kind) + " WITH (UPDLOCK, HOLDLOCK) WHERE id = @postId AND deleted_at IS NULL", new { postId }, tx);
+            return status != null && (canPublish || status == "draft");
         }
 
         private static Guid? MediaOf(System.Data.IDbConnection db, System.Data.IDbTransaction tx, string kind, Guid postId, Guid imageId)
         {
-            db.Execute("SELECT id FROM " + Table(kind) + " WITH (UPDLOCK, HOLDLOCK) WHERE id = @postId", new { postId }, tx);
             return db.QuerySingleOrDefault<Guid?>(
                 "SELECT media_id FROM dbo.post_images WHERE id = @imageId AND " + Column(kind) + " = @postId AND deleted_at IS NULL",
                 new { imageId, postId }, tx);
+        }
+
+        private class PostLock
+        {
+            public string Status { get; set; }
+            public Guid? CoverMediaId { get; set; }
         }
 
         private class CountAndMax

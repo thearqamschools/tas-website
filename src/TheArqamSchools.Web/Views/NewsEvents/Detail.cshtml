@@ -6,8 +6,6 @@
     var timeFormat = Model.IsAllDay ? "d MMMM yyyy" : "d MMMM yyyy, h:mm tt";
     var text = NewsRepository.TextOf(Model.Body);
     var photos = ViewBag.Photos as IList<PostImage> ?? new List<PostImage>();
-    // The main photo comes first in the gallery; the others keep the order set in the admin panel.
-    photos = photos.OrderBy(p => p.IsCover ? 0 : 1).ThenBy(p => p.SortOrder).ToList();
     var paragraphs = text.Replace("\r\n", "\n").Split(new[] { "\n\n" }, StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).Where(p => p.Length > 0).ToList();
 }
 <section class="page-header tone-warm">
@@ -44,7 +42,7 @@
         var first = photos[0];
         <div class="container news-gallery-wrap">
             <h2 class="h3 news-gallery-title" id="photos-h">Photos <span class="news-gallery-total">(@photos.Count)</span></h2>
-            <div class="gallery" data-gallery aria-labelledby="photos-h">
+            <div class="gallery" data-gallery role="region" aria-labelledby="photos-h">
                 <figure class="gallery-stage">
                     <a class="gallery-main" href="@first.Url" data-gallery-open aria-label="Open photo 1 of @photos.Count full screen">
                         <img src="@first.Url" alt="@first.AltText" width="@first.Width" height="@first.Height" data-gallery-main decoding="async" />

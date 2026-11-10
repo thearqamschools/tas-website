@@ -173,7 +173,12 @@ namespace TheArqamSchools.Web.Controllers
                 try { img = ImageStore.Save(file.InputStream, file.ContentLength, file.FileName, kind == "event" ? "events" : "news"); }
                 catch (ImageRejectedException ex) { error = ex.Message; code = "rejected"; continue; }
                 bool ok;
-                try { ok = PostImageRepository.Add(kind, id, img, alt, actor.Id); }
+                try { ok = PostImageRepository.Add(kind, id, img, alt, actor.Can(Perm(kind, "publish")), actor.Id); }
+                catch (InvalidOperationException)
+                {
+                    ImageStore.Delete(img.StoragePath);
+                    return PhotoResult(wantsJson, kind, id, 403, "This " + What(kind) + " was published a moment ago. Please ask a Content Manager to change its photos.", added, null);
+                }
                 catch { ImageStore.Delete(img.StoragePath); throw; }
                 if (!ok)
                 {
@@ -202,12 +207,19 @@ namespace TheArqamSchools.Web.Controllers
             if (refusal != null) return PhotoResult(false, kind, id, 403, refusal, 0, null);
             bool ok;
             string done;
+            var canPublish = actor.Can(Perm(kind, "publish"));
             switch (op)
             {
-                case "cover": ok = PostImageRepository.SetCover(kind, id, photoId, actor.Id); done = "cover"; break;
-                case "up": ok = PostImageRepository.Move(kind, id, photoId, -1, actor.Id); done = "moved"; break;
-                case "down": ok = PostImageRepository.Move(kind, id, photoId, 1, actor.Id); done = "moved"; break;
-                case "remove": ok = PostImageRepository.Remove(kind, id, photoId, actor.Id); done = "removed"; break;
+                case "cover": ok = PostImageRepository.SetCover(kind, id, photoId, canPublish, actor.Id); done = "cover"; break;
+                case "up": ok = PostImageRepository.Move(kind, id, photoId, -1, canPublish, actor.Id); done = "moved"; break;
+                case "down": ok = PostImageRepository.Move(kind, id, photoId, 1, canPublish, actor.Id); done = "moved"; break;
+                case "remove":
+                    var path = PostImageRepository.Remove(kind, id, photoId, canPublish, actor.Id);
+                    ok = path != null;
+                    // After the database change: take the files out of the public folder (kept in App_Data, not deleted).
+                    if (ok) ImageStore.Archive(path);
+                    done = "removed";
+                    break;
                 default: return HttpNotFound();
             }
             if (!ok) return HttpNotFound();
@@ -220,7 +232,7 @@ namespace TheArqamSchools.Web.Controllers
         {
             if (!actor.Can(Perm(post.Kind, "update"))) return "You do not have permission to change this " + What(post.Kind) + ".";
             if (post.Status != "draft" && !actor.Can(Perm(post.Kind, "publish")))
-                return "This " + What(post.Kind) + " is " + (post.Status == "published" ? "on the website" : "archived") + ". Please ask a Content Manager to change its photos.";
+                return "This " + What(post.Kind) + " is " + (post.Status == "published" ? "on the website" : post.Status == "archived" ? "archived" : "waiting for review") + ". Please ask a Content Manager to change its photos.";
             return null;
         }
 
@@ -230,7 +242,7 @@ namespace TheArqamSchools.Web.Controllers
             {
                 Response.StatusCode = status;
                 Response.TrySkipIisCustomErrors = true;
-                return Json(new { ok = status == 200, added, message });
+                return Json(new { ok = status == 200, added, message, stop = code == "limit" || status == 403 });
             }
             if (status == 403)
             {
