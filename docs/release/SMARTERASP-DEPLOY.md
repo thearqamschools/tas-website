@@ -154,3 +154,6 @@ admin inbox, campus and page editing, on a phone and a computer.
   all 161 files and every page answered 200).
 - 7 November 2026: `16_photo_asad_sakhawat_ali` ran through `deploy/smarterasp-db`; the site went up as commit
   fc9e09b and then cacbb67 (leadership cards show only the role), 162 files each, every page 200.
+- 10 November 2026: `17_news_event_photos` ran through `deploy/smarterasp-db`; the site (commit 781b8ef, news and
+  event photos) went up on the first attempt and every page answered 200. Still to confirm: one photo upload in the
+  admin panel (write permission on `media\public-media` and `App_Data\removed-media`).
