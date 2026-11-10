@@ -157,3 +157,5 @@ admin inbox, campus and page editing, on a phone and a computer.
 - 10 November 2026: `17_news_event_photos` ran through `deploy/smarterasp-db`; the site (commit 781b8ef, news and
   event photos) went up on the first attempt and every page answered 200. Still to confirm: one photo upload in the
   admin panel (write permission on `media\public-media` and `App_Data\removed-media`).
+- 10 November 2026 (later): site only (commit 9ba2349): event/news detail page with one date, time and place panel,
+  optional event times with a Clear button in the admin panel. No database change. Every page answered 200.
