@@ -1,0 +1,28 @@
+@model NewsItem
+@using TheArqamSchools.Web.Data
+@using TheArqamSchools.Web.Helpers
+@{
+    // One news or event card. With a main photo the card shows the photo instead of the summary
+    // (owner, 10 November 2026); without one it keeps the summary.
+    var pk = TimeSpan.FromHours(5);
+    var hasPhoto = Model.CoverSmallUrl != null;
+}
+<article class="card card-link news-card@(hasPhoto ? " news-card-photo" : "")">
+    @if (hasPhoto)
+    {
+        <div class="news-card-media">
+            <img src="@Model.CoverSmallUrl" alt="" width="640" height="400" loading="lazy" decoding="async" />
+            <span class="news-badge news-badge-@Model.Category news-card-badge">@NewsRepository.FilterLabel(Model.Category)</span>
+        </div>
+    }
+    <div class="card-body">
+        <p class="news-meta">
+            @if (!hasPhoto) { <span class="news-badge news-badge-@Model.Category">@NewsRepository.FilterLabel(Model.Category)</span> }
+            <time datetime="@Model.Date.ToOffset(pk).ToString("yyyy-MM-dd")">@Model.Date.ToOffset(pk).ToString("d MMMM yyyy")</time>
+        </p>
+        <h3 class="h4"><a href="@Model.Url">@Model.Title</a></h3>
+        @if (!hasPhoto && !string.IsNullOrEmpty(Model.Summary)) { <p>@Model.Summary</p> }
+        @if (Model.IsEvent && !string.IsNullOrEmpty(Model.Venue)) { <p class="news-venue">@Icons.Svg("map-pin", 16) @Model.Venue</p> }
+        <span class="card-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
+    </div>
+</article>

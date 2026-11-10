@@ -83,6 +83,10 @@ namespace TheArqamSchools.Web
             routes.MapRoute("AdminNewsNew", "admin/news/new/{kind}", new { controller = "AdminNews", action = "New" }, new { kind = "news|event" });
             routes.MapRoute("AdminNewsEdit", "admin/news/{kind}/{id}", new { controller = "AdminNews", action = "Edit" },
                 new { kind = "news|event", id = new GuidRouteConstraint() });
+            routes.MapRoute("AdminNewsPhotos", "admin/news/{kind}/{id}/photos", new { controller = "AdminNews", action = "Photos" },
+                new { kind = "news|event", id = new GuidRouteConstraint(), httpMethod = new HttpMethodConstraint("POST") });
+            routes.MapRoute("AdminNewsPhoto", "admin/news/{kind}/{id}/photos/{photoId}/{op}", new { controller = "AdminNews", action = "Photo" },
+                new { kind = "news|event", id = new GuidRouteConstraint(), photoId = new GuidRouteConstraint(), op = "cover|remove|up|down", httpMethod = new HttpMethodConstraint("POST") });
             routes.MapRoute("AdminFranchise", "admin/franchise", new { controller = "AdminFranchise", action = "Index" });
             routes.MapRoute("AdminFranchiseExport", "admin/franchise/export.csv", new { controller = "AdminFranchise", action = "Export" });
             routes.MapRoute("AdminFranchiseStatus", "admin/franchise/{id}/status", new { controller = "AdminFranchise", action = "Status" },

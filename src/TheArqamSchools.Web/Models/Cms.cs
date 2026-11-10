@@ -99,7 +99,12 @@ namespace TheArqamSchools.Web.Models
         public bool IsFeatured { get; set; }
         public bool IsAllDay { get; set; }
         public string Status { get; set; }
+        /// <summary>Main photo (news.cover_media_id / events.cover_media_id), path inside public-media; null when none.</summary>
+        public string CoverPath { get; set; }
+        public string CoverAlt { get; set; }
         public bool IsEvent { get { return Kind == "event"; } }
+        public string CoverUrl { get { return string.IsNullOrEmpty(CoverPath) ? null : "/media/public-media/" + CoverPath; } }
+        public string CoverSmallUrl { get { return string.IsNullOrEmpty(CoverPath) ? null : "/media/public-media/" + TheArqamSchools.Web.Infrastructure.ImageStore.SmallPath(CoverPath); } }
         public string Url { get { return "/news-events/" + Slug; } }
     }
 

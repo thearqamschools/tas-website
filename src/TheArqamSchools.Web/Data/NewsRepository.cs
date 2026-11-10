@@ -36,15 +36,19 @@ namespace TheArqamSchools.Web.Data
         private const string PublicFeed = @"
             SELECT N'news' AS kind, n.id, n.slug, n.title, n.excerpt AS summary, n.body,
                    COALESCE(c.slug, N'announcement') AS category, n.published_at AS date, CAST(NULL AS DATETIMEOFFSET(3)) AS ends_at,
-                   CAST(NULL AS NVARCHAR(200)) AS venue, b.name AS campus_name, n.is_featured, CAST(1 AS BIT) AS is_all_day
+                   CAST(NULL AS NVARCHAR(200)) AS venue, b.name AS campus_name, n.is_featured, CAST(1 AS BIT) AS is_all_day,
+                   cm.storage_path AS cover_path, cm.alt_text AS cover_alt
             FROM dbo.news n
+            LEFT JOIN dbo.media cm ON cm.id = n.cover_media_id AND cm.deleted_at IS NULL AND cm.bucket = N'public-media'
             LEFT JOIN dbo.categories c ON c.id = n.category_id
             LEFT JOIN dbo.branches b ON b.id = n.branch_id
             WHERE n.status = N'published' AND n.deleted_at IS NULL AND n.published_at IS NOT NULL
             UNION ALL
             SELECT N'event', e.id, e.slug, e.title, e.summary, e.body,
-                   N'event', e.starts_at, e.ends_at, e.venue, b.name, CAST(0 AS BIT), e.is_all_day
+                   N'event', e.starts_at, e.ends_at, e.venue, b.name, CAST(0 AS BIT), e.is_all_day,
+                   cm.storage_path, cm.alt_text
             FROM dbo.events e
+            LEFT JOIN dbo.media cm ON cm.id = e.cover_media_id AND cm.deleted_at IS NULL AND cm.bucket = N'public-media'
             LEFT JOIN dbo.branches b ON b.id = e.branch_id
             WHERE e.status = N'published' AND e.deleted_at IS NULL";
 

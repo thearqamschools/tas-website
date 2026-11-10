@@ -111,3 +111,75 @@
     </section>
     @if (Model.CanEdit) { <div><button type="submit" class="admin-button">@(Model.IsNew ? "Save" : "Save changes")</button></div> }
 </form>
+@if (!Model.IsNew)
+{
+    var photos = Model.Photos ?? new List<TheArqamSchools.Web.Data.PostImage>();
+    var photoBase = "/admin/news/" + f.Kind + "/" + f.Id.ToString("D") + "/photos";
+    <section class="admin-card admin-photos-card" id="photos" aria-labelledby="photos-h">
+        <h2 id="photos-h">Photos <span class="admin-hint-inline">(@photos.Count)</span></h2>
+        <p class="admin-hint">The main photo is shown on the News &amp; Events cards. All photos are shown as a gallery on the @(isEvent ? "event" : "news") page. The first photo you add becomes the main photo; you can choose another one below.</p>
+        @if (ViewBag.PhotoNotice != null) { <div class="admin-alert admin-alert--success" role="status"><p>@ViewBag.PhotoNotice</p></div> }
+        @if (ViewBag.PhotoError != null) { <div class="admin-alert admin-alert--error" role="alert"><p>@ViewBag.PhotoError</p></div> }
+        @if (Model.CanEditPhotos)
+        {
+            <form method="post" action="@photoBase" enctype="multipart/form-data" class="admin-photo-upload" data-photo-upload>
+                @Html.AntiForgeryToken()
+                <div class="admin-field">
+                    <label for="photos-input">Add photos</label>
+                    <input type="file" id="photos-input" name="photos" accept="image/jpeg,image/png" multiple aria-describedby="photos-hint" />
+                    <p class="admin-hint" id="photos-hint">JPG or PNG, up to 15 MB each. You can choose 20, 30 or more photos at once. Photos are made smaller and the location data inside them is removed. Use only photos the school may publish.</p>
+                </div>
+                <div><button type="submit" class="admin-button">Upload photos</button></div>
+                <div class="admin-upload-progress" data-upload-progress hidden>
+                    <progress max="100" value="0" data-upload-bar></progress>
+                    <p role="status" aria-live="polite" data-upload-status></p>
+                    <ul class="admin-upload-errors" data-upload-errors></ul>
+                </div>
+            </form>
+        }
+        else
+        {
+            <p class="admin-hint">@(Model.CanEdit ? "A Content Manager changes the photos of a published " + (isEvent ? "event" : "post") + "." : "You can view the photos but not change them.")</p>
+        }
+        @if (photos.Count == 0)
+        {
+            <p>No photos yet.</p>
+        }
+        else
+        {
+            <ul class="admin-photo-grid">
+                @for (var i = 0; i < photos.Count; i++)
+                {
+                    var p = photos[i];
+                    <li class="admin-photo@(p.IsCover ? " is-cover" : "")">
+                        <a href="@p.Url" target="_blank" rel="noopener"><img src="@p.SmallUrl" alt="Photo @(i + 1)" width="200" height="140" loading="lazy" /></a>
+                        @if (p.IsCover) { <span class="admin-photo-badge">Main photo</span> }
+                        @if (Model.CanEditPhotos)
+                        {
+                            <div class="admin-photo-actions">
+                                @if (!p.IsCover)
+                                {
+                                    <form method="post" action="@photoBase/@p.Id.ToString("D")/cover">@Html.AntiForgeryToken()<button type="submit" class="admin-link-button">Make main photo</button></form>
+                                }
+                                @if (i > 0)
+                                {
+                                    <form method="post" action="@photoBase/@p.Id.ToString("D")/up">@Html.AntiForgeryToken()<button type="submit" class="admin-link-button" aria-label="Move photo @(i + 1) earlier">&larr;</button></form>
+                                }
+                                @if (i < photos.Count - 1)
+                                {
+                                    <form method="post" action="@photoBase/@p.Id.ToString("D")/down">@Html.AntiForgeryToken()<button type="submit" class="admin-link-button" aria-label="Move photo @(i + 1) later">&rarr;</button></form>
+                                }
+                                <form method="post" action="@photoBase/@p.Id.ToString("D")/remove" data-confirm="Remove this photo from the @(isEvent ? "event" : "post")?">@Html.AntiForgeryToken()<button type="submit" class="admin-link-button admin-danger">Remove</button></form>
+                            </div>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+    <script src="/Scripts/admin-photos.js?v=20261110a" defer></script>
+}
+else
+{
+    <section class="admin-card"><h2>Photos</h2><p class="admin-hint">Save the @(isEvent ? "event" : "post") first, then add photos here.</p></section>
+}

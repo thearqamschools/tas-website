@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Web.Mvc;
 using TheArqamSchools.Web.Data;
+using TheArqamSchools.Web.Infrastructure;
 using TheArqamSchools.Web.Infrastructure.Auth;
 using TheArqamSchools.Web.Models;
 
@@ -51,12 +53,23 @@ namespace TheArqamSchools.Web.Controllers
         }
 
         [HttpGet]
-        public ActionResult Edit(string kind, Guid id, bool saved = false)
+        public ActionResult Edit(string kind, Guid id, bool saved = false, int added = 0, string photo = null)
         {
             kind = kind == "event" ? "event" : "news";
             if (!AdminAuth.Current(HttpContext).Can(Perm(kind, "view"))) return Forbidden();
             var f = NewsRepository.Get(kind, id);
             if (f == null) return HttpNotFound();
+            // Photo messages come back as fixed codes in the address (there is no session state), never as free text.
+            if (added > 0) ViewBag.PhotoNotice = Math.Min(added, PostImageRepository.MaxPhotosPerPost) + (added == 1 ? " photo added." : " photos added.");
+            switch (photo)
+            {
+                case "cover": ViewBag.PhotoNotice = "Main photo changed."; break;
+                case "moved": ViewBag.PhotoNotice = "Photo moved."; break;
+                case "removed": ViewBag.PhotoNotice = "Photo removed."; break;
+                case "rejected": ViewBag.PhotoError = (added > 0 ? "Some photos were not added. " : "") + "Only JPG and PNG photos up to 15 MB can be uploaded."; break;
+                case "limit": ViewBag.PhotoError = "The most photos allowed is " + PostImageRepository.MaxPhotosPerPost + "."; break;
+                case "none": ViewBag.PhotoError = "Please choose one or more photos."; break;
+            }
             return EditView(f, false, saved ? "Saved." : null);
         }
 
@@ -125,6 +138,112 @@ namespace TheArqamSchools.Web.Controllers
             return Redirect("/admin/news/" + f.Kind + "/" + id.ToString("D") + "?saved=true");
         }
 
+        /// <summary>
+        /// POST /admin/news/{kind}/{id}/photos: adds one or more photos. The edit page sends one
+        /// photo per request with JavaScript (so 30 or more photos can be added with a progress
+        /// count) and asks for JSON; without JavaScript the form posts them all and is redirected.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Photos(string kind, Guid id)
+        {
+            kind = kind == "event" ? "event" : "news";
+            var actor = AdminAuth.Current(HttpContext);
+            var wantsJson = (Request.Headers["Accept"] ?? "").Contains("application/json");
+            var post = NewsRepository.Get(kind, id);
+            if (post == null) return HttpNotFound();
+            var refusal = PhotoRefusal(actor, post);
+            if (refusal != null) return PhotoResult(wantsJson, kind, id, 403, refusal, 0, null);
+
+            var files = new List<System.Web.HttpPostedFileBase>();
+            for (var i = 0; i < Request.Files.Count; i++)
+            {
+                var file = Request.Files[i];
+                if (file != null && file.ContentLength > 0 && Request.Files.AllKeys[i] == "photos") files.Add(file);
+            }
+            if (files.Count == 0) return PhotoResult(wantsJson, kind, id, 400, "Please choose one or more photos.", 0, "none");
+
+            var added = 0;
+            string error = null, code = null;
+            var alt = "Photo from " + post.Title;
+            if (alt.Length > 250) alt = alt.Substring(0, 250);
+            foreach (var file in files)
+            {
+                StoredImage img;
+                try { img = ImageStore.Save(file.InputStream, file.ContentLength, file.FileName, kind == "event" ? "events" : "news"); }
+                catch (ImageRejectedException ex) { error = ex.Message; code = "rejected"; continue; }
+                bool ok;
+                try { ok = PostImageRepository.Add(kind, id, img, alt, actor.Id); }
+                catch { ImageStore.Delete(img.StoragePath); throw; }
+                if (!ok)
+                {
+                    ImageStore.Delete(img.StoragePath);
+                    error = "This " + What(kind) + " already has " + PostImageRepository.MaxPhotosPerPost + " photos, the most allowed.";
+                    code = "limit";
+                    break;
+                }
+                added++;
+            }
+            if (added > 0) Cache.Remove("home:news");
+            if (added == 0) return PhotoResult(wantsJson, kind, id, 400, error ?? "The photos could not be added.", 0, code);
+            return PhotoResult(wantsJson, kind, id, 200, error, added, code);
+        }
+
+        /// <summary>POST /admin/news/{kind}/{id}/photos/{photoId}/{op}: main photo, move earlier or later, or remove.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Photo(string kind, Guid id, Guid photoId, string op)
+        {
+            kind = kind == "event" ? "event" : "news";
+            var actor = AdminAuth.Current(HttpContext);
+            var post = NewsRepository.Get(kind, id);
+            if (post == null) return HttpNotFound();
+            var refusal = PhotoRefusal(actor, post);
+            if (refusal != null) return PhotoResult(false, kind, id, 403, refusal, 0, null);
+            bool ok;
+            string done;
+            switch (op)
+            {
+                case "cover": ok = PostImageRepository.SetCover(kind, id, photoId, actor.Id); done = "cover"; break;
+                case "up": ok = PostImageRepository.Move(kind, id, photoId, -1, actor.Id); done = "moved"; break;
+                case "down": ok = PostImageRepository.Move(kind, id, photoId, 1, actor.Id); done = "moved"; break;
+                case "remove": ok = PostImageRepository.Remove(kind, id, photoId, actor.Id); done = "removed"; break;
+                default: return HttpNotFound();
+            }
+            if (!ok) return HttpNotFound();
+            Cache.Remove("home:news");
+            return Redirect("/admin/news/" + kind + "/" + id.ToString("D") + "?photo=" + done + "#photos");
+        }
+
+        /// <summary>Same rule as the text: without the publish permission, only drafts can be changed.</summary>
+        private string PhotoRefusal(Models.AdminPrincipal actor, NewsEditForm post)
+        {
+            if (!actor.Can(Perm(post.Kind, "update"))) return "You do not have permission to change this " + What(post.Kind) + ".";
+            if (post.Status != "draft" && !actor.Can(Perm(post.Kind, "publish")))
+                return "This " + What(post.Kind) + " is " + (post.Status == "published" ? "on the website" : "archived") + ". Please ask a Content Manager to change its photos.";
+            return null;
+        }
+
+        private ActionResult PhotoResult(bool json, string kind, Guid id, int status, string message, int added, string code)
+        {
+            if (json)
+            {
+                Response.StatusCode = status;
+                Response.TrySkipIisCustomErrors = true;
+                return Json(new { ok = status == 200, added, message });
+            }
+            if (status == 403)
+            {
+                Response.StatusCode = 403;
+                Response.TrySkipIisCustomErrors = true;
+                return View("~/Views/Admin/Forbidden.cshtml");
+            }
+            var query = "?added=" + added + (code != null ? "&photo=" + code : "");
+            return Redirect("/admin/news/" + kind + "/" + id.ToString("D") + query + "#photos");
+        }
+
+        private static string What(string kind) { return kind == "event" ? "event" : "post"; }
+
         private static bool TimeOk(string time)
         {
             TimeSpan t;
@@ -152,6 +271,8 @@ namespace TheArqamSchools.Web.Controllers
                 StartDate = f.StartsAt.HasValue ? f.StartsAt.Value.ToOffset(Pakistan).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : "",
                 StartTime = f.StartsAt.HasValue && !f.IsAllDay ? f.StartsAt.Value.ToOffset(Pakistan).ToString("HH:mm", CultureInfo.InvariantCulture) : "",
                 EndDate = f.EndsAt.HasValue ? f.EndsAt.Value.ToOffset(Pakistan).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : "",
+                Photos = isNew || f.Id == Guid.Empty ? new List<PostImage>() : PostImageRepository.List(f.Kind, f.Id),
+                CanEditPhotos = !isNew && PhotoRefusal(actor, NewsRepository.Get(f.Kind, f.Id) ?? f) == null,
                 EndTime = f.EndsAt.HasValue && (!f.IsAllDay || f.EndsAt.Value.ToOffset(Pakistan).TimeOfDay != TimeSpan.Zero) ? f.EndsAt.Value.ToOffset(Pakistan).ToString("HH:mm", CultureInfo.InvariantCulture) : "",
             });
         }

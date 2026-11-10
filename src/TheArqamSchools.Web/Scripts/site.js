@@ -156,6 +156,106 @@
     fitMotto();
   });
 
+  // News and event photo gallery: main photo, thumbnail strip and a full-screen viewer.
+  // Without JavaScript every thumbnail is a link to the large photo.
+  document.querySelectorAll("[data-gallery]").forEach(function (g) {
+    var thumbs = Array.prototype.slice.call(g.querySelectorAll("[data-gallery-thumb]"));
+    var main = g.querySelector("[data-gallery-main]");
+    var open = g.querySelector("[data-gallery-open]");
+    var count = g.querySelector("[data-gallery-count]");
+    var prev = g.querySelector("[data-gallery-prev]");
+    var next = g.querySelector("[data-gallery-next]");
+    var strip = g.querySelector("[data-gallery-thumbs]");
+    var photos = thumbs.length ? thumbs.map(function (t) {
+      return { src: t.getAttribute("data-large"), alt: t.getAttribute("data-alt") || "", w: t.getAttribute("data-w"), h: t.getAttribute("data-h") };
+    }) : [{ src: main.getAttribute("src"), alt: main.getAttribute("alt") || "", w: main.getAttribute("width"), h: main.getAttribute("height") }];
+    var n = photos.length, current = 0, dialog = null, big = null, bigCount = null;
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function preload(i) { if (n > 1) { var im = new Image(); im.src = photos[(i + n) % n].src; } }
+
+    function show(i, fromStrip) {
+      current = (i + n) % n;
+      var p = photos[current];
+      main.classList.remove("is-in");
+      main.src = p.src; main.alt = p.alt;
+      if (p.w && p.h) { main.width = p.w; main.height = p.h; }
+      void main.offsetWidth; main.classList.add("is-in");
+      open.href = p.src;
+      open.setAttribute("aria-label", "Open photo " + (current + 1) + " of " + n + " full screen");
+      if (count) count.textContent = (current + 1) + " / " + n;
+      thumbs.forEach(function (t, k) { if (k === current) t.setAttribute("aria-current", "true"); else t.removeAttribute("aria-current"); });
+      if (strip && thumbs[current] && !fromStrip) {
+        var t = thumbs[current].parentNode;
+        strip.scrollTo({ left: t.offsetLeft - (strip.clientWidth - t.offsetWidth) / 2, behavior: reduce ? "auto" : "smooth" });
+      }
+      if (big) { big.src = p.src; big.alt = p.alt; bigCount.textContent = (current + 1) + " / " + n; }
+      preload(current + 1); preload(current - 1);
+    }
+
+    thumbs.forEach(function (t, k) {
+      t.addEventListener("click", function (e) { e.preventDefault(); show(k, true); });
+    });
+    if (prev) { prev.hidden = false; prev.addEventListener("click", function () { show(current - 1); }); }
+    if (next) { next.hidden = false; next.addEventListener("click", function () { show(current + 1); }); }
+    g.addEventListener("keydown", function (e) {
+      if (dialog && dialog.open) return;
+      if (e.key === "ArrowLeft") { show(current - 1); } else if (e.key === "ArrowRight") { show(current + 1); }
+    });
+    swipe(g.querySelector(".gallery-stage"), function (d) { show(current + d); });
+
+    function swipe(el, go) {
+      if (!el || n < 2) return;
+      var x0 = null, y0 = 0;
+      el.addEventListener("touchstart", function (e) { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+      el.addEventListener("touchend", function (e) {
+        if (x0 === null) return;
+        var dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+        x0 = null;
+        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) go(dx < 0 ? 1 : -1);
+      }, { passive: true });
+    }
+
+    function build() {
+      dialog = document.createElement("dialog");
+      dialog.className = "lightbox";
+      dialog.setAttribute("aria-label", "Photos");
+      dialog.innerHTML =
+        '<div class="lightbox-bar"><p class="lightbox-count" aria-live="polite"></p>' +
+        '<button type="button" class="lightbox-btn lightbox-close" aria-label="Close">&times;</button></div>' +
+        '<div class="lightbox-stage"><img class="lightbox-img" alt="" /></div>' +
+        (n > 1 ? '<button type="button" class="lightbox-btn lightbox-prev" aria-label="Previous photo"></button>' +
+                 '<button type="button" class="lightbox-btn lightbox-next" aria-label="Next photo"></button>' : "");
+      var arrow = next ? next.innerHTML : "";
+      if (n > 1) {
+        dialog.querySelector(".lightbox-prev").innerHTML = arrow;
+        dialog.querySelector(".lightbox-next").innerHTML = arrow;
+        dialog.querySelector(".lightbox-prev").addEventListener("click", function () { show(current - 1); });
+        dialog.querySelector(".lightbox-next").addEventListener("click", function () { show(current + 1); });
+      }
+      big = dialog.querySelector(".lightbox-img");
+      bigCount = dialog.querySelector(".lightbox-count");
+      dialog.querySelector(".lightbox-close").addEventListener("click", function () { dialog.close(); });
+      dialog.addEventListener("click", function (e) { if (e.target === dialog || e.target.classList.contains("lightbox-stage")) dialog.close(); });
+      dialog.addEventListener("keydown", function (e) {
+        if (e.key === "ArrowLeft") { e.preventDefault(); show(current - 1); }
+        else if (e.key === "ArrowRight") { e.preventDefault(); show(current + 1); }
+      });
+      dialog.addEventListener("close", function () { document.documentElement.classList.remove("lightbox-open"); open.focus(); });
+      swipe(dialog.querySelector(".lightbox-stage"), function (d) { show(current + d); });
+      document.body.appendChild(dialog);
+    }
+
+    open.addEventListener("click", function (e) {
+      if (typeof HTMLDialogElement !== "function") return; // old browsers: open the photo itself
+      e.preventDefault();
+      if (!dialog) build();
+      show(current, true);
+      document.documentElement.classList.add("lightbox-open");
+      dialog.showModal();
+    });
+  });
+
   // Required consent checkboxes: browsers check them before sending; the server checks everything again.
   document.querySelectorAll("form[novalidate]").forEach(function (f) {
     f.addEventListener("submit", function (e) {

@@ -593,5 +593,9 @@ namespace TheArqamSchools.Web.Models
         public string StartTime { get; set; }
         public string EndDate { get; set; }
         public string EndTime { get; set; }
+        /// <summary>Photos of the post (empty for a new post, which must be saved first).</summary>
+        public IList<TheArqamSchools.Web.Data.PostImage> Photos { get; set; }
+        /// <summary>True when this user may add, order and remove photos (the update permission, and the publish permission for posts that are not drafts).</summary>
+        public bool CanEditPhotos { get; set; }
     }
 }

@@ -33,18 +33,7 @@
                 {
                     var hidden = Model.Filter != null && n.Category != Model.Filter;
                     <li data-news-category="@n.Category" @(hidden ? "hidden" : null)>
-                        <article class="card card-link news-card">
-                            <div class="card-body">
-                                <p class="news-meta">
-                                    <span class="news-badge news-badge-@n.Category">@NewsRepository.FilterLabel(n.Category)</span>
-                                    <time datetime="@n.Date.ToOffset(pk).ToString("yyyy-MM-dd")">@n.Date.ToOffset(pk).ToString("d MMMM yyyy")</time>
-                                </p>
-                                <h3 class="h4"><a href="@n.Url">@n.Title</a></h3>
-                                @if (!string.IsNullOrEmpty(n.Summary)) { <p>@n.Summary</p> }
-                                @if (n.IsEvent && !string.IsNullOrEmpty(n.Venue)) { <p class="news-venue">@Icons.Svg("map-pin", 16) @n.Venue</p> }
-                                <span class="card-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
-                            </div>
-                        </article>
+                        @Html.Partial("~/Views/NewsEvents/_Card.cshtml", n)
                     </li>
                 }
             </ul>

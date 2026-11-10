@@ -125,6 +125,7 @@
     <Compile Include="Data\MenuAdminRepository.cs" />
     <Compile Include="Data\NavigationRepository.cs" />
     <Compile Include="Data\NewsRepository.cs" />
+    <Compile Include="Data\PostImageRepository.cs" />
     <Compile Include="Data\PageAdminRepository.cs" />
     <Compile Include="Data\PageRepository.cs" />
     <Compile Include="Data\RedirectRepository.cs" />
@@ -139,6 +140,7 @@
     <Compile Include="Helpers\Site.cs" />
     <Compile Include="Infrastructure\ClientAddress.cs" />
     <Compile Include="Infrastructure\JsonContentFields.cs" />
+    <Compile Include="Infrastructure\ImageStore.cs" />
     <Compile Include="Infrastructure\LegacyUrls.cs" />
     <Compile Include="Infrastructure\Notifications.cs" />
     <Compile Include="Infrastructure\Auth\AdminAuth.cs" />
@@ -171,6 +173,7 @@
     <Content Include="Content\site.css" />
     <Content Include="Content\admin.css" />
     <Content Include="Global.asax" />
+    <Content Include="Scripts\admin-photos.js" />
     <Content Include="Scripts\site.js" />
     <Content Include="Views\Admin\_AdminLayout.cshtml" />
     <Content Include="Views\Admin\_Errors.cshtml" />
@@ -199,6 +202,7 @@
     <Content Include="Views\Admin\Users\Index.cshtml" />
     <Content Include="Views\Campuses\Detail.cshtml" />
     <Content Include="Views\Home\Index.cshtml" />
+    <Content Include="Views\NewsEvents\_Card.cshtml" />
     <Content Include="Views\NewsEvents\Detail.cshtml" />
     <Content Include="Views\NewsEvents\Index.cshtml" />
     <Content Include="Views\Pages\Show.cshtml" />

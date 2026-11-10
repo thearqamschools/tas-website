@@ -44,6 +44,8 @@ namespace TheArqamSchools.Web.Controllers
                 Description = item.Summary,
                 CanonicalPath = item.Url,
             };
+            ViewBag.Photos = PostImageRepository.List(item.Kind, item.Id);
+            if (item.CoverUrl != null) ((PageMeta)ViewBag.Meta).ImageUrl = item.CoverUrl;
             return View("~/Views/NewsEvents/Detail.cshtml", item);
         }
     }
