@@ -150,3 +150,5 @@ a.admin-stat:hover { border-color: var(--blue); }
 .admin-photo-actions form { margin: 0; }
 .admin-link-button { min-height: 32px; padding: 0 .25rem; font: inherit; color: var(--blue); background: none; border: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .admin-link-button.admin-danger { color: var(--error); }
+.admin-time { display: flex; align-items: center; gap: .5rem; }
+.admin-time input { flex: 1; min-width: 0; }

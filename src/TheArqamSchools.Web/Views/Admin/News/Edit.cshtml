@@ -52,8 +52,12 @@
                     @Html.ValidationMessage("StartDate", null, new { id = "StartDate-error", @class = "admin-field-error" })
                 </div>
                 <div class="admin-field">
-                    <label for="StartTime">Start time (leave empty for an all-day event)</label>
-                    <input type="time" id="StartTime" name="StartTime" value="@Model.StartTime" aria-describedby="StartTime-error" @ro />
+                    <label for="StartTime">Time (optional)</label>
+                    <div class="admin-time">
+                        <input type="time" id="StartTime" name="StartTime" value="@Model.StartTime" aria-describedby="StartTime-hint StartTime-error" @ro />
+                        @if (Model.CanEdit) { <button type="button" class="admin-link-button" data-clear="StartTime" hidden>Clear</button> }
+                    </div>
+                    <p class="admin-hint" id="StartTime-hint">Leave empty if the event has no set time.</p>
                     @Html.ValidationMessage("StartTime", null, new { id = "StartTime-error", @class = "admin-field-error" })
                 </div>
                 <div class="admin-field">
@@ -62,8 +66,11 @@
                     @Html.ValidationMessage("EndDate", null, new { id = "EndDate-error", @class = "admin-field-error" })
                 </div>
                 <div class="admin-field">
-                    <label for="EndTime">End time (optional)</label>
-                    <input type="time" id="EndTime" name="EndTime" value="@Model.EndTime" aria-describedby="EndTime-error" @ro />
+                    <label for="EndTime">Time (optional)</label>
+                    <div class="admin-time">
+                        <input type="time" id="EndTime" name="EndTime" value="@Model.EndTime" aria-describedby="EndTime-error" @ro />
+                        @if (Model.CanEdit) { <button type="button" class="admin-link-button" data-clear="EndTime" hidden>Clear</button> }
+                    </div>
                     @Html.ValidationMessage("EndTime", null, new { id = "EndTime-error", @class = "admin-field-error" })
                 </div>
             </div>
@@ -177,9 +184,10 @@
             </ul>
         }
     </section>
-    <script src="/Scripts/admin-photos.js?v=20261110a" defer></script>
+    <script src="/Scripts/admin-photos.js?v=20261110b" defer></script>
 }
 else
 {
     <section class="admin-card"><h2>Photos</h2><p class="admin-hint">Save the @(isEvent ? "event" : "post") first, then add photos here.</p></section>
 }
+<script src="/Scripts/admin-form.js?v=20261110a" defer></script>

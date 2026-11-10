@@ -24,6 +24,7 @@ namespace TheArqamSchools.Web.Helpers
             { "whatsapp", "<path d='M3 21l1.7-5A9 9 0 1 1 8 19.3z'/><path d='M9 9.5c0 3 2.5 5.5 5.5 5.5l1.5-1.5-2-1-1 1a4 4 0 0 1-2.5-2.5l1-1-1-2z'/>" },
             { "mail", "<rect x='2' y='4' width='20' height='16' rx='2'/><path d='m22 7-10 6L2 7'/>" },
             { "clock", "<circle cx='12' cy='12' r='10'/><path d='M12 6v6l4 2'/>" },
+            { "calendar", "<rect x='3' y='4' width='18' height='18' rx='2'/><path d='M16 2v4M8 2v4M3 10h18'/>" },
             { "search", "<circle cx='11' cy='11' r='7'/><path d='m21 21-4.3-4.3'/>" },
             { "chevron-down", "<path d='m6 9 6 6 6-6'/>" },
             { "chevron-right", "<path d='m9 18 6-6-6-6'/>" },

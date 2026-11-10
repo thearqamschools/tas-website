@@ -173,6 +173,7 @@
     <Content Include="Content\site.css" />
     <Content Include="Content\admin.css" />
     <Content Include="Global.asax" />
+    <Content Include="Scripts\admin-form.js" />
     <Content Include="Scripts\admin-photos.js" />
     <Content Include="Scripts\site.js" />
     <Content Include="Views\Admin\_AdminLayout.cshtml" />

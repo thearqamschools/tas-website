@@ -38,7 +38,8 @@ namespace TheArqamSchools.Web.Controllers
             kind = kind == "event" ? "event" : "news";
             if (!AdminAuth.Current(HttpContext).Can(Perm(kind, "create"))) return Forbidden();
             var f = new NewsEditForm { Kind = kind, Status = "draft", Category = "announcement" };
-            if (kind == "event") f.StartsAt = new DateTimeOffset(DateTimeOffset.UtcNow.ToOffset(Pakistan).Date.AddDays(7).AddHours(9), Pakistan);
+            // A new event starts without a time (the time is optional); the date defaults to a week from today.
+            if (kind == "event") { f.StartsAt = new DateTimeOffset(DateTimeOffset.UtcNow.ToOffset(Pakistan).Date.AddDays(7), Pakistan); f.IsAllDay = true; }
             return EditView(f, true, null);
         }
 
