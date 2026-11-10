@@ -948,11 +948,6 @@ ul.home-campus-grid { display: grid; grid-template-columns: repeat(auto-fill, mi
 .news-badge-campus { background: #ecfdf5; color: var(--success); }
 .news-card .card-body { background: #fff; border-radius: var(--r-md); }
 .news-venue { display: flex; align-items: center; gap: 6px; font-size: .9375rem; }
-.news-article { max-width: 46rem; }
-.news-article p { margin-bottom: 1rem; }
-.news-facts { list-style: none; padding: 0; margin: 0 0 24px; display: grid; gap: 8px; }
-.news-facts li { display: flex; align-items: center; gap: 8px; color: var(--muted); }
-.news-facts .icon { color: var(--blue); flex: none; }
 .card-grid > li[hidden] { display: none; }
 @media (min-width: 64rem) { .home-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .home-news-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px; }
@@ -1286,3 +1281,26 @@ html.lightbox-open { overflow: hidden; }
 .lightbox-next { right: 10px; }
 @media (max-width: 39.99rem) { .lightbox-stage { padding: 0 8px; inset: 64px 0 84px; } .lightbox-img { max-height: calc(100vh - 148px); max-height: calc(100dvh - 148px); } .lightbox-prev, .lightbox-next { top: auto; bottom: 18px; margin-top: 0; } .lightbox-prev { left: calc(50% - 60px); } .lightbox-next { right: calc(50% - 60px); } }
 @media (prefers-reduced-motion: reduce) { .gallery-main img.is-in, .lightbox[open] { animation: none; } }
+
+/* News and event detail page (owner, 10 November 2026): one shared 60rem column, centred, so the title, the facts
+   panel, the text, the photos and the back link all start at the same left edge and end at the same right edge.
+   Even rhythm between blocks (--nd-gap). Date, time and place appear only in the facts panel, not in the header.
+   Colours: --ink on --blue-50 15.9:1, --blue icons on --blue-50 9.6:1. */
+.news-detail-col { max-width: 60rem; margin-inline: auto; min-width: 0; }
+.page-header .news-detail-col .lead { max-width: 46rem; }
+.news-detail { --nd-gap: 32px; padding-block: 32px 48px; }
+.news-detail .news-detail-col > * { margin-top: 0; margin-bottom: 0; }
+.news-detail .news-detail-col > * + * { margin-top: var(--nd-gap); }
+ul.news-detail-facts { list-style: none; padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; background: var(--blue-50); border: 1px solid rgba(30, 58, 138, .14); border-radius: var(--r-md); color: var(--ink); font-weight: 500; line-height: 1.5; }
+.news-detail-facts li { display: flex; align-items: flex-start; gap: 10px; min-width: 0; overflow-wrap: anywhere; }
+.news-detail-facts .icon { flex: none; margin-top: 3px; color: var(--blue); }
+.news-detail-text { font-size: 1.0625rem; line-height: 1.75; color: var(--ink); overflow-wrap: break-word; }
+.news-detail-text p { margin: 0; }
+.news-detail-text p + p { margin-top: 1em; }
+.news-detail .news-gallery-title, .news-detail .gallery { max-width: none; margin-left: 0; margin-right: 0; }
+.news-detail-back { padding-top: 12px; border-top: 1px solid var(--line); }
+@media (min-width: 48rem) {
+  .news-detail { --nd-gap: 40px; padding-block: 40px 64px; }
+  ul.news-detail-facts { flex-direction: row; flex-wrap: wrap; column-gap: 32px; row-gap: 10px; padding: 16px 22px; }
+}
+@media (min-width: 64rem) { .news-detail { padding-block: 48px 72px; } }

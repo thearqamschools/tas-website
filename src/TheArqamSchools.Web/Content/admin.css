@@ -152,3 +152,7 @@ a.admin-stat:hover { border-color: var(--blue); }
 .admin-link-button.admin-danger { color: var(--error); }
 .admin-time { display: flex; align-items: center; gap: .5rem; }
 .admin-time input { flex: 1; min-width: 0; }
+/* Event dates: "Starts on | Time" on one row and "Ends on | Time" below it. */
+.admin-dates { grid-template-columns: 1fr; }
+@media (min-width: 40rem) { .admin-dates { grid-template-columns: 1fr 1fr; align-items: start; } }
+.admin-card .admin-dates > .admin-field { margin-top: 0; }

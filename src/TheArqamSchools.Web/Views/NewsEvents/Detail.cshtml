@@ -1,77 +1,102 @@
 @model NewsItem
+@using System.Globalization
 @using TheArqamSchools.Web.Data
 @using TheArqamSchools.Web.Helpers
 @{
+    // All dates and times are shown in Pakistan time (UTC+5) with English month and day names.
     var pk = TimeSpan.FromHours(5);
-    var timeFormat = Model.IsAllDay ? "d MMMM yyyy" : "d MMMM yyyy, h:mm tt";
+    var inv = CultureInfo.InvariantCulture;
+    var start = Model.Date.ToOffset(pk);
+    DateTimeOffset? end = (Model.IsEvent && Model.EndsAt.HasValue) ? Model.EndsAt.Value.ToOffset(pk) : (DateTimeOffset?)null;
+    var endsOtherDay = end.HasValue && end.Value.Date != start.Date;
+    var showTime = Model.IsEvent && !Model.IsAllDay;
+    var showEndTime = showTime && end.HasValue && end.Value.TimeOfDay != TimeSpan.Zero && end.Value != start;
     var text = NewsRepository.TextOf(Model.Body);
     var photos = ViewBag.Photos as IList<PostImage> ?? new List<PostImage>();
     var paragraphs = text.Replace("\r\n", "\n").Split(new[] { "\n\n" }, StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).Where(p => p.Length > 0).ToList();
 }
 <section class="page-header tone-warm">
     <div class="container">
-        <p class="news-meta">
-            <span class="news-badge news-badge-@Model.Category">@NewsRepository.FilterLabel(Model.Category)</span>
-            <time datetime="@Model.Date.ToOffset(pk).ToString("yyyy-MM-dd")">@Model.Date.ToOffset(pk).ToString("dddd, d MMMM yyyy")</time>
-        </p>
-        <h1 class="h1">@Model.Title</h1>
-        @if (!string.IsNullOrEmpty(Model.Summary)) { <p class="lead">@Model.Summary</p> }
+        <div class="news-detail-col">
+            <h1 class="h1">@Model.Title</h1>
+            @if (!string.IsNullOrEmpty(Model.Summary)) { <p class="lead">@Model.Summary</p> }
+        </div>
     </div>
 </section>
-<section class="section tone-white">
-    <div class="container news-article">
-        @if (Model.IsEvent)
-        {
-            <ul class="news-facts">
-                <li>@Icons.Svg("clock", 18) @Model.Date.ToOffset(pk).ToString(timeFormat)@(Model.EndsAt.HasValue ? " – " + Model.EndsAt.Value.ToOffset(pk).ToString(timeFormat) : "")</li>
-                @if (!string.IsNullOrEmpty(Model.Venue)) { <li>@Icons.Svg("map-pin", 18) @Model.Venue</li> }
-                @if (!string.IsNullOrEmpty(Model.CampusName)) { <li>@Icons.Svg("graduation-cap", 18) @Model.CampusName</li> }
-            </ul>
-        }
-        else if (!string.IsNullOrEmpty(Model.CampusName))
-        {
-            <ul class="news-facts"><li>@Icons.Svg("graduation-cap", 18) @Model.CampusName</li></ul>
-        }
-        @foreach (var p in paragraphs)
-        {
-            <p class="pre-line">@p</p>
-        }
-    </div>
-    @if (photos.Count > 0)
-    {
-        var first = photos[0];
-        <div class="container news-gallery-wrap">
-            <h2 class="h3 news-gallery-title" id="photos-h">Photos <span class="news-gallery-total">(@photos.Count)</span></h2>
-            <div class="gallery" data-gallery role="region" aria-labelledby="photos-h">
-                <figure class="gallery-stage">
-                    <a class="gallery-main" href="@first.Url" data-gallery-open aria-label="Open photo 1 of @photos.Count full screen">
-                        <img src="@first.Url" alt="@first.AltText" width="@first.Width" height="@first.Height" data-gallery-main decoding="async" />
-                    </a>
-                    @if (photos.Count > 1)
-                    {
-                        <button type="button" class="gallery-nav gallery-prev" data-gallery-prev aria-label="Previous photo" hidden>@Icons.Svg("arrow-right", 22)</button>
-                        <button type="button" class="gallery-nav gallery-next" data-gallery-next aria-label="Next photo" hidden>@Icons.Svg("arrow-right", 22)</button>
-                        <figcaption class="gallery-count" data-gallery-count aria-live="polite">1 / @photos.Count</figcaption>
-                    }
-                </figure>
-                @if (photos.Count > 1)
+<section class="section tone-white news-detail">
+    <div class="container">
+        <div class="news-detail-col">
+            <ul class="news-detail-facts">
+                <li>
+                    @Icons.Svg("calendar", 18)
+                    <span>
+                        <time datetime="@start.ToString("yyyy-MM-dd", inv)">@start.ToString("dddd, d MMMM yyyy", inv)</time>@if (endsOtherDay)
+                        {<text> – </text><time datetime="@end.Value.ToString("yyyy-MM-dd", inv)">@end.Value.ToString("dddd, d MMMM yyyy", inv)</time>}
+                    </span>
+                </li>
+                @if (showTime)
                 {
-                    <ul class="gallery-thumbs" data-gallery-thumbs>
-                        @for (var i = 0; i < photos.Count; i++)
-                        {
-                            var p = photos[i];
-                            <li>
-                                <a href="@p.Url" class="gallery-thumb" data-gallery-thumb data-index="@i" data-large="@p.Url" data-alt="@p.AltText" data-w="@p.Width" data-h="@p.Height" aria-label="Photo @(i + 1) of @photos.Count" @(i == 0 ? "aria-current=true" : null)>
-                                    <img src="@p.SmallUrl" alt="" width="160" height="110" loading="lazy" decoding="async" />
-                                </a>
-                            </li>
-                        }
-                    </ul>
+                    <li>
+                        @Icons.Svg("clock", 18)
+                        <span>
+                            <time datetime="@start.ToString("yyyy-MM-ddTHH:mm", inv)+05:00">@start.ToString("h:mm tt", inv)</time>@if (showEndTime)
+                            {<text> – </text><time datetime="@end.Value.ToString("yyyy-MM-ddTHH:mm", inv)+05:00">@end.Value.ToString("h:mm tt", inv)</time>}
+                        </span>
+                    </li>
                 }
-            </div>
+                @if (Model.IsEvent && !string.IsNullOrEmpty(Model.Venue))
+                {
+                    <li>@Icons.Svg("map-pin", 18) <span>@Model.Venue</span></li>
+                }
+                @if (!string.IsNullOrEmpty(Model.CampusName))
+                {
+                    <li>@Icons.Svg("graduation-cap", 18) <span>@Model.CampusName</span></li>
+                }
+            </ul>
+            @if (paragraphs.Count > 0)
+            {
+                <div class="news-detail-text">
+                    @foreach (var p in paragraphs)
+                    {
+                        <p class="pre-line">@p</p>
+                    }
+                </div>
+            }
+            @if (photos.Count > 0)
+            {
+                var first = photos[0];
+                <div class="news-gallery-wrap">
+                    <h2 class="h3 news-gallery-title" id="photos-h">Photos <span class="news-gallery-total">(@photos.Count)</span></h2>
+                    <div class="gallery" data-gallery role="region" aria-labelledby="photos-h">
+                        <figure class="gallery-stage">
+                            <a class="gallery-main" href="@first.Url" data-gallery-open aria-label="Open photo 1 of @photos.Count full screen">
+                                <img src="@first.Url" alt="@first.AltText" width="@first.Width" height="@first.Height" data-gallery-main decoding="async" />
+                            </a>
+                            @if (photos.Count > 1)
+                            {
+                                <button type="button" class="gallery-nav gallery-prev" data-gallery-prev aria-label="Previous photo" hidden>@Icons.Svg("arrow-right", 22)</button>
+                                <button type="button" class="gallery-nav gallery-next" data-gallery-next aria-label="Next photo" hidden>@Icons.Svg("arrow-right", 22)</button>
+                                <figcaption class="gallery-count" data-gallery-count aria-live="polite">1 / @photos.Count</figcaption>
+                            }
+                        </figure>
+                        @if (photos.Count > 1)
+                        {
+                            <ul class="gallery-thumbs" data-gallery-thumbs>
+                                @for (var i = 0; i < photos.Count; i++)
+                                {
+                                    var p = photos[i];
+                                    <li>
+                                        <a href="@p.Url" class="gallery-thumb" data-gallery-thumb data-index="@i" data-large="@p.Url" data-alt="@p.AltText" data-w="@p.Width" data-h="@p.Height" aria-label="Photo @(i + 1) of @photos.Count" @(i == 0 ? "aria-current=true" : null)>
+                                            <img src="@p.SmallUrl" alt="" width="160" height="110" loading="lazy" decoding="async" />
+                                        </a>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                </div>
+            }
+            <p class="news-detail-back"><a class="text-link" href="/news-events">@Icons.Svg("arrow-right", 18) All news and events</a></p>
         </div>
-    }
-    <div class="container news-article">
-        <p><a class="text-link" href="/news-events">@Icons.Svg("arrow-right", 18) All news and events</a></p>
     </div>
 </section>
