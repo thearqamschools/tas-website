@@ -160,3 +160,5 @@ admin inbox, campus and page editing, on a phone and a computer.
   admin panel (write permission on `media\public-media` and `App_Data\removed-media`).
 - 10 November 2026 (later): site only (commit 9ba2349): event/news detail page with one date, time and place panel,
   optional event times with a Clear button in the admin panel. No database change. Every page answered 200.
+- 11 November 2026: `18_news_venue` ran through `deploy/smarterasp-db`; the site (commit 8e2bf44: news date and
+  venue, bold/italic text, full-width detail title, "News & Events" admin menu) went up first time, every page 200.
