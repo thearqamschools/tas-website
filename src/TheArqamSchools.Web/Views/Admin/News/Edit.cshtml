@@ -43,6 +43,21 @@
                 </select>
             </div>
         </div>
+        @if (!isEvent)
+        {
+            <div class="admin-grid-2 admin-dates">
+                <div class="admin-field">
+                    <label for="StartDate">Date</label>
+                    <input type="date" id="StartDate" name="StartDate" value="@Model.StartDate" required aria-describedby="StartDate-hint StartDate-error" @ro />
+                    <p class="admin-hint" id="StartDate-hint">Shown on the website; newest date first. A draft published without changing its date gets the publishing day. A future date appears on that day.</p>
+                    @Html.ValidationMessage("StartDate", null, new { id = "StartDate-error", @class = "admin-field-error" })
+                </div>
+                <div class="admin-field">
+                    <label for="Venue">Venue (optional)</label>
+                    <input type="text" id="Venue" name="Venue" value="@f.Venue" maxlength="200" @ro />
+                </div>
+            </div>
+        }
         @if (isEvent)
         {
             <div class="admin-grid-2 admin-dates">
@@ -81,13 +96,15 @@
         }
         <div class="admin-field">
             <label for="Summary">Short summary (optional)</label>
+            @if (Model.CanEdit) { @FormatBar("Summary") }
             <textarea id="Summary" name="Summary" rows="2" maxlength="300" @ro>@f.Summary</textarea>
-            <p class="admin-hint">Shown on the cards. Up to 300 characters.</p>
+            <p class="admin-hint">Shown under the title, and on cards without a photo. Up to 300 characters.</p>
         </div>
         <div class="admin-field">
             <label for="Text">Full text</label>
+            @if (Model.CanEdit) { @FormatBar("Text") }
             <textarea id="Text" name="Text" rows="10" maxlength="20000" @ro>@f.Text</textarea>
-            <p class="admin-hint">Leave an empty line between paragraphs. Use only confirmed details and figures.</p>
+            <p class="admin-hint">Leave an empty line between paragraphs. Select words and press <strong>B</strong> for bold or <em>I</em> for italic (shown as **bold** and *italic* here). Use only confirmed details and figures.</p>
         </div>
         <div class="admin-field">
             <label for="Slug">Web address</label>
@@ -190,4 +207,11 @@ else
 {
     <section class="admin-card"><h2>Photos</h2><p class="admin-hint">Save the @(isEvent ? "event" : "post") first, then add photos here.</p></section>
 }
-<script src="/Scripts/admin-form.js?v=20261110a" defer></script>
+<script src="/Scripts/admin-form.js?v=20261111a" defer></script>
+@helper FormatBar(string target)
+{
+    <div class="admin-format" role="toolbar" aria-label="Text style" aria-controls="@target" data-format-bar="@target" hidden>
+        <button type="button" class="admin-format-btn" data-format="**" aria-label="Bold"><strong>B</strong></button>
+        <button type="button" class="admin-format-btn" data-format="*" aria-label="Italic"><em>I</em></button>
+    </div>
+}

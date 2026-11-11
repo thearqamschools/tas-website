@@ -46,6 +46,7 @@ database and run, in this order:
 17. `Database/17_news_event_photos.sql` (table `post_images`: photos of news posts and events). The site's
     application pool needs write permission on `media\public-media\` (uploads go to `news\` and `events\`) and on
     `App_Data\removed-media\` (removed photos are moved there, not deleted). Check with one test upload after deploying.
+18. `Database/18_news_venue.sql` (optional venue for news posts; the news date is now editable in the admin panel)
 
 Skip `03_fulltext.sql` (optional, and Full-Text Search may not be offered).
 

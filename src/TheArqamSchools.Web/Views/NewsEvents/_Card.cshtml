@@ -21,8 +21,8 @@
             <time datetime="@Model.Date.ToOffset(pk).ToString("yyyy-MM-dd")">@Model.Date.ToOffset(pk).ToString("d MMMM yyyy")</time>
         </p>
         <h3 class="h4"><a href="@Model.Url">@Model.Title</a></h3>
-        @if (!hasPhoto && !string.IsNullOrEmpty(Model.Summary)) { <p>@Model.Summary</p> }
-        @if (Model.IsEvent && !string.IsNullOrEmpty(Model.Venue)) { <p class="news-venue">@Icons.Svg("map-pin", 16) @Model.Venue</p> }
+        @if (!hasPhoto && !string.IsNullOrEmpty(Model.Summary)) { <p>@SimpleFormat.Plain(Model.Summary)</p> }
+        @if (!string.IsNullOrEmpty(Model.Venue)) { <p class="news-venue">@Icons.Svg("map-pin", 16) @Model.Venue</p> }
         <span class="card-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
     </div>
 </article>

@@ -36,13 +36,14 @@ namespace TheArqamSchools.Web.Data
         private const string PublicFeed = @"
             SELECT N'news' AS kind, n.id, n.slug, n.title, n.excerpt AS summary, n.body,
                    COALESCE(c.slug, N'announcement') AS category, n.published_at AS date, CAST(NULL AS DATETIMEOFFSET(3)) AS ends_at,
-                   CAST(NULL AS NVARCHAR(200)) AS venue, b.name AS campus_name, n.is_featured, CAST(1 AS BIT) AS is_all_day,
+                   n.venue, b.name AS campus_name, n.is_featured, CAST(1 AS BIT) AS is_all_day,
                    cm.storage_path AS cover_path, cm.alt_text AS cover_alt
             FROM dbo.news n
             LEFT JOIN dbo.media cm ON cm.id = n.cover_media_id AND cm.deleted_at IS NULL AND cm.bucket = N'public-media'
             LEFT JOIN dbo.categories c ON c.id = n.category_id
             LEFT JOIN dbo.branches b ON b.id = n.branch_id
             WHERE n.status = N'published' AND n.deleted_at IS NULL AND n.published_at IS NOT NULL
+              AND n.published_at <= SYSDATETIMEOFFSET() -- a news post dated in the future appears on that day
             UNION ALL
             SELECT N'event', e.id, e.slug, e.title, e.summary, e.body,
                    N'event', e.starts_at, e.ends_at, e.venue, b.name, CAST(0 AS BIT), e.is_all_day,
@@ -95,6 +96,7 @@ namespace TheArqamSchools.Web.Data
                 else
                     f = db.QuerySingleOrDefault<NewsEditForm>(@"
                         SELECT n.id, n.title, n.slug, n.excerpt AS summary, n.body, n.branch_id, n.is_featured, n.status,
+                               n.venue, n.published_at AS starts_at, CAST(1 AS BIT) AS is_all_day,
                                COALESCE(c.slug, N'announcement') AS category
                         FROM dbo.news n LEFT JOIN dbo.categories c ON c.id = n.category_id
                         WHERE n.id = @id AND n.deleted_at IS NULL", new { id });
@@ -155,22 +157,23 @@ namespace TheArqamSchools.Web.Data
                         "SELECT id FROM dbo.categories WHERE [type] = N'news' AND slug = @Category", new { f.Category }, tx);
                     if (isNew)
                         f.Id = db.ExecuteScalar<Guid>(@"
-                            INSERT INTO dbo.news (title, slug, excerpt, body, branch_id, category_id, is_featured, status, published_at, author_id, created_by, updated_by)
+                            INSERT INTO dbo.news (title, slug, excerpt, body, branch_id, category_id, is_featured, status, venue, published_at, author_id, created_by, updated_by)
                             OUTPUT inserted.id
-                            VALUES (@Title, @Slug, @Summary, @body, @BranchId, @categoryId, @IsFeatured, @Status,
-                                    CASE WHEN @Status = N'published' THEN SYSDATETIMEOFFSET() END, @actorId, @actorId, @actorId)",
-                            new { f.Title, f.Slug, f.Summary, body, f.BranchId, categoryId, f.IsFeatured, f.Status, actorId }, tx);
+                            VALUES (@Title, @Slug, @Summary, @body, @BranchId, @categoryId, @IsFeatured, @Status, @Venue,
+                                    COALESCE(@StartsAt, CASE WHEN @Status = N'published' THEN SYSDATETIMEOFFSET() END), @actorId, @actorId, @actorId)",
+                            new { f.Title, f.Slug, f.Summary, body, f.BranchId, categoryId, f.IsFeatured, f.Status, f.Venue, f.StartsAt, actorId }, tx);
                     else
                         db.Execute(@"
                             UPDATE dbo.news SET title = @Title, slug = @Slug, excerpt = @Summary, body = @body, branch_id = @BranchId,
-                                   category_id = @categoryId, is_featured = @IsFeatured, status = @Status,
-                                   published_at = CASE WHEN @Status = N'published' AND published_at IS NULL THEN SYSDATETIMEOFFSET() ELSE published_at END,
+                                   category_id = @categoryId, is_featured = @IsFeatured, status = @Status, venue = @Venue,
+                                   published_at = CASE WHEN @StartsAt IS NOT NULL THEN @StartsAt
+                                                       WHEN @Status = N'published' AND published_at IS NULL THEN SYSDATETIMEOFFSET() ELSE published_at END,
                                    updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId
                             WHERE id = @Id",
-                            new { f.Id, f.Title, f.Slug, f.Summary, body, f.BranchId, categoryId, f.IsFeatured, f.Status, actorId }, tx);
+                            new { f.Id, f.Title, f.Slug, f.Summary, body, f.BranchId, categoryId, f.IsFeatured, f.Status, f.Venue, f.StartsAt, actorId }, tx);
                 }
                 AuditLog.Write(db, tx, actorId, isNew ? "insert" : "update", f.Kind == "event" ? "events" : "news", f.Id.ToString(),
-                    new { f.Title, f.Slug, f.Status, from_status = oldStatus, f.Category, f.StartsAt });
+                    new { f.Title, f.Slug, f.Status, from_status = oldStatus, f.Category, f.StartsAt, f.Venue });
                 tx.Commit();
                 return f.Id;
             }

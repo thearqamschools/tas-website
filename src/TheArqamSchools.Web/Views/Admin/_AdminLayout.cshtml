@@ -11,7 +11,7 @@
     <meta name="robots" content="noindex, nofollow" />
     <meta name="referrer" content="same-origin" />
     <title>@(string.IsNullOrEmpty(title) ? "Admin" : title) | The Arqam Schools Admin</title>
-    <link rel="stylesheet" href="/Content/admin.css?v=20261110e" />
+    <link rel="stylesheet" href="/Content/admin.css?v=20261111a" />
 </head>
 <body class="admin">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -35,7 +35,7 @@
                 }
                 @if (adminUser.Can("news.view") || adminUser.Can("events.view"))
                 {
-                    <a href="/admin/news">News</a>
+                    <a href="/admin/news">News &amp; Events</a>
                 }
                 @if (adminUser.Can("pages.view"))
                 {

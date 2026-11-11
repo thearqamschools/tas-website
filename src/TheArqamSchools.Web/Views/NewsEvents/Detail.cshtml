@@ -19,7 +19,7 @@
     <div class="container">
         <div class="news-detail-col">
             <h1 class="h1">@Model.Title</h1>
-            @if (!string.IsNullOrEmpty(Model.Summary)) { <p class="lead">@Model.Summary</p> }
+            @if (!string.IsNullOrEmpty(Model.Summary)) { <p class="lead">@SimpleFormat.Render(Model.Summary)</p> }
         </div>
     </div>
 </section>
@@ -44,7 +44,7 @@
                         </span>
                     </li>
                 }
-                @if (Model.IsEvent && !string.IsNullOrEmpty(Model.Venue))
+                @if (!string.IsNullOrEmpty(Model.Venue))
                 {
                     <li>@Icons.Svg("map-pin", 18) <span>@Model.Venue</span></li>
                 }
@@ -58,7 +58,7 @@
                 <div class="news-detail-text">
                     @foreach (var p in paragraphs)
                     {
-                        <p class="pre-line">@p</p>
+                        <p class="pre-line">@SimpleFormat.Render(p)</p>
                     }
                 </div>
             }

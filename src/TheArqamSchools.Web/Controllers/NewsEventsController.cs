@@ -41,7 +41,7 @@ namespace TheArqamSchools.Web.Controllers
             ViewBag.Meta = new PageMeta
             {
                 Title = item.Title + " | The Arqam Schools",
-                Description = item.Summary,
+                Description = Helpers.SimpleFormat.Plain(item.Summary),
                 CanonicalPath = item.Url,
             };
             ViewBag.Photos = PostImageRepository.List(item.Kind, item.Id);

@@ -1304,3 +1304,6 @@ ul.news-detail-facts { list-style: none; padding: 14px 18px; display: flex; flex
   ul.news-detail-facts { flex-direction: row; flex-wrap: wrap; column-gap: 32px; row-gap: 10px; padding: 16px 22px; }
 }
 @media (min-width: 64rem) { .news-detail { padding-block: 48px 72px; } }
+/* News and event detail header (owner, 11 November 2026): title and summary use the full column width
+   and fill each line before wrapping (no balanced short lines with empty space after them). */
+.page-header .news-detail-col .h1, .page-header .news-detail-col .lead { max-width: none; text-wrap: wrap; }

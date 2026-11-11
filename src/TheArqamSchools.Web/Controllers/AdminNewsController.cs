@@ -38,6 +38,7 @@ namespace TheArqamSchools.Web.Controllers
             kind = kind == "event" ? "event" : "news";
             if (!AdminAuth.Current(HttpContext).Can(Perm(kind, "create"))) return Forbidden();
             var f = new NewsEditForm { Kind = kind, Status = "draft", Category = "announcement" };
+            if (kind == "news") f.StartsAt = DateTimeOffset.UtcNow.ToOffset(Pakistan);
             // A new event starts without a time (the time is optional); the date defaults to a week from today.
             if (kind == "event") { f.StartsAt = new DateTimeOffset(DateTimeOffset.UtcNow.ToOffset(Pakistan).Date.AddDays(7), Pakistan); f.IsAllDay = true; }
             return EditView(f, true, null);
@@ -115,6 +116,26 @@ namespace TheArqamSchools.Web.Controllers
                 if (f.StartsAt == null) ModelState.AddModelError("StartDate", "Please enter the date the event starts.");
                 if (!string.IsNullOrWhiteSpace(posted["EndDate"]) && f.EndsAt == null) ModelState.AddModelError("EndDate", "Please enter a valid end date.");
                 if (f.StartsAt != null && f.EndsAt != null && f.EndsAt < f.StartsAt) ModelState.AddModelError("EndDate", "The event cannot end before it starts.");
+            }
+            if (f.Kind == "news")
+            {
+                // The news date (shown on the website) can be changed; time is not asked for.
+                var date = ParseLocal(posted["StartDate"], null);
+                if (date == null) ModelState.AddModelError("StartDate", "Please enter the date of the news.");
+                else
+                {
+                    var stored = isNew ? null : NewsRepository.Get(f.Kind, f.Id);
+                    var today = DateTimeOffset.UtcNow.ToOffset(Pakistan);
+                    var unchanged = stored != null && stored.StartsAt.HasValue && stored.StartsAt.Value.ToOffset(Pakistan).Date == date.Value.Date;
+                    if (unchanged && stored.Status != "published" && f.Status == "published")
+                        f.StartsAt = today; // a draft published without changing its date gets the publishing day
+                    else if (unchanged)
+                        f.StartsAt = stored.StartsAt; // same day: keep the exact time it was published
+                    else if (date.Value.Date == today.Date)
+                        f.StartsAt = today; // today: now, so it comes first among today's posts
+                    else
+                        f.StartsAt = date;
+                }
             }
             if (!isNew && !actor.Can(Perm(f.Kind, "publish")))
             {
@@ -281,7 +302,9 @@ namespace TheArqamSchools.Web.Controllers
                 Campuses = CampusAdminRepository.List(null).Where(c => c.ArchivedAt == null).ToList(),
                 CanEdit = actor.Can(Perm(f.Kind, isNew ? "create" : "update")),
                 CanPublish = actor.Can(Perm(f.Kind, "publish")),
-                StartDate = f.StartsAt.HasValue ? f.StartsAt.Value.ToOffset(Pakistan).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : "",
+                // A news draft without a date shows today, ready to be changed.
+                StartDate = f.StartsAt.HasValue ? f.StartsAt.Value.ToOffset(Pakistan).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+                    : f.Kind == "news" ? DateTimeOffset.UtcNow.ToOffset(Pakistan).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : "",
                 StartTime = f.StartsAt.HasValue && !f.IsAllDay ? f.StartsAt.Value.ToOffset(Pakistan).ToString("HH:mm", CultureInfo.InvariantCulture) : "",
                 EndDate = f.EndsAt.HasValue ? f.EndsAt.Value.ToOffset(Pakistan).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : "",
                 Photos = isNew || f.Id == Guid.Empty ? new List<PostImage>() : PostImageRepository.List(f.Kind, f.Id),
