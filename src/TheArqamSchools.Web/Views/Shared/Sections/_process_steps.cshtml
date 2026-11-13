@@ -1,4 +1,5 @@
 @model PageSection
+@using TheArqamSchools.Web.Helpers
 @{
     var steps = Model.Data["steps"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
 }
@@ -6,14 +7,14 @@
     <div class="container">
         <div class="section-head">
             <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
-            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
+            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@SimpleFormat.Render(Model.Text("intro"))</p> }
         </div>
         <ol class="steps steps-@steps.Count">
             @foreach (var s in steps)
             {
                 <li>
                     <h3 class="h4">@(s.Value<string>("title"))</h3>
-                    <p>@(s.Value<string>("description"))</p>
+                    <p>@SimpleFormat.Render(s.Value<string>("description"))</p>
                 </li>
             }
         </ol>

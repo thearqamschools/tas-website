@@ -23,7 +23,7 @@
     <div class="container form-layout">
         <div class="form-intro">
             <h2 class="h2" id="h-@Model.Id">@(string.IsNullOrEmpty(Model.Text("heading")) ? "Franchise application" : Model.Text("heading"))</h2>
-            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
+            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@SimpleFormat.Render(Model.Text("intro"))</p> }
             @if (!string.IsNullOrEmpty(vm.ResponseTime)) { <p class="muted">Our franchise team usually replies within @vm.ResponseTime.</p> }
             <p class="muted">Read more about partnering with us on the <a href="/franchise">Franchise page</a>.</p>
         </div>

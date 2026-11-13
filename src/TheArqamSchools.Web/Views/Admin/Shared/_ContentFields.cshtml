@@ -1,0 +1,122 @@
+@model TheArqamSchools.Web.Models.ContentFieldsViewModel
+@using TheArqamSchools.Web.Infrastructure
+@{
+    // The fields of a content form (page section or homepage). Fields that belong to one list item
+    // (one stage, one person, one slide) are grouped in a box with buttons to move or remove the item;
+    // each list ends with an "Add" button. All buttons save the form's changes first.
+    var ro = Model.CanEdit ? null : "disabled";
+    string openItem = null;
+}
+@helper FormatBar(string target)
+{
+    <div class="admin-format" role="toolbar" aria-label="Text style" aria-controls="@target" data-format-bar="@target" hidden>
+        <button type="button" class="admin-format-btn" data-format="**" aria-label="Bold"><strong>B</strong></button>
+        <button type="button" class="admin-format-btn" data-format="*" aria-label="Italic"><em>I</em></button>
+    </div>
+}
+@for (var i = 0; i < Model.Fields.Count; i++)
+{
+    var fld = Model.Fields[i];
+    var id = "v" + i;
+    if (fld.ItemPath != openItem)
+    {
+        if (openItem != null)
+        {
+            var prev = Model.Fields[i - 1];
+            @Html.Raw("</fieldset>")
+            if (fld.ListPath != prev.ListPath && prev.ListPath != null && Model.CanEdit)
+            {
+                <div class="admin-list-add"><button type="submit" name="op" value="add:@prev.ListPath" class="admin-button admin-button--secondary">+ Add @prev.ItemNoun.ToLowerInvariant()</button></div>
+            }
+        }
+        if (fld.ItemPath != null)
+        {
+            if (fld.ItemIndex == 0) { <span id="list-@fld.ListPath"></span> }
+            @Html.Raw("<fieldset class=\"admin-group\" id=\"item-" + HttpUtility.HtmlAttributeEncode(fld.ListPath + "-" + fld.ItemIndex) + "\">")
+            <legend>@fld.ItemLabel</legend>
+            if (Model.CanEdit)
+            {
+                <div class="admin-group-actions">
+                    @if (fld.ItemIndex > 0) { <button type="submit" name="op" value="up:@fld.ListPath:@fld.ItemIndex" class="admin-link-button" aria-label="Move @fld.ItemLabel up">&uarr; Up</button> }
+                    @if (fld.ItemIndex < fld.ListCount - 1) { <button type="submit" name="op" value="down:@fld.ListPath:@fld.ItemIndex" class="admin-link-button" aria-label="Move @fld.ItemLabel down">&darr; Down</button> }
+                    @if (fld.ListCount > 1) { <button type="submit" name="op" value="remove:@fld.ListPath:@fld.ItemIndex" class="admin-link-button admin-danger" data-confirm="Remove @fld.ItemLabel? Your other changes are saved too.">Remove</button> }
+                </div>
+            }
+        }
+        openItem = fld.ItemPath;
+    }
+    var label = fld.Label;
+    if (fld.Kind == JsonContentFields.FieldKind.Switch)
+    {
+        <div class="admin-check">
+            <input type="checkbox" id="@id" name="@id" value="true" @(fld.Value == "true" ? "checked" : null) @ro />
+            <input type="hidden" name="@id" value="false" />
+            <label for="@id"><strong>@label</strong></label>
+        </div>
+    }
+    else if (fld.Kind == JsonContentFields.FieldKind.Image)
+    {
+        <div class="admin-field admin-image-field">
+            <span class="admin-label">@label</span>
+            <div class="admin-image-row">
+                @if (fld.ImageUrl != null)
+                {
+                    <a href="@fld.ImageUrl" target="_blank" rel="noopener" class="admin-image-preview"><img src="@fld.ImageUrl" alt="Current picture: @fld.Alt" loading="lazy" /></a>
+                }
+                else
+                {
+                    <span class="admin-image-preview admin-image-none">No picture yet</span>
+                }
+                <div class="admin-image-inputs">
+                    @if (Model.CanEdit)
+                    {
+                        <label for="f@(i)" class="admin-hint-label">@(fld.ImageUrl != null ? "Replace with a new picture" : "Add a picture")</label>
+                        <input type="file" id="f@(i)" name="f@(i)" accept="image/jpeg,image/png" aria-describedby="fh@(i)" />
+                        <p class="admin-hint" id="fh@(i)">JPG or PNG, up to 15 MB. A PNG keeps its transparent background.</p>
+                    }
+                    <label for="a@(i)" class="admin-hint-label">Picture description (for blind visitors and Google)</label>
+                    <input type="text" id="a@(i)" name="a@(i)" value="@fld.Alt" maxlength="250" @ro />
+                    @if (Model.CanEdit && fld.ImageUrl != null)
+                    {
+                        <div class="admin-check admin-check-small">
+                            <input type="checkbox" id="r@(i)" name="r@(i)" value="true" />
+                            <label for="r@(i)">Remove this picture</label>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="admin-field">
+            <label for="@id">@label</label>
+            @if (fld.Formatted && Model.CanEdit) { @FormatBar(id) }
+            @if (fld.Kind == JsonContentFields.FieldKind.LongText)
+            {
+                <textarea id="@id" name="@id" rows="@(Math.Min(12, Math.Max(3, (fld.Value ?? "").Length / 70 + 1)))" @ro>@fld.Value</textarea>
+            }
+            else if (fld.Kind == JsonContentFields.FieldKind.Number)
+            {
+                <input type="text" inputmode="decimal" id="@id" name="@id" value="@fld.Value" @ro />
+            }
+            else
+            {
+                <input type="text" id="@id" name="@id" value="@fld.Value" @(fld.Kind == JsonContentFields.FieldKind.Link ? "spellcheck=false autocapitalize=none" : null) @ro />
+                if (fld.Kind == JsonContentFields.FieldKind.Link)
+                {
+                    <p class="admin-hint">A page on this website such as /admissions, or a full address starting with https://</p>
+                }
+            }
+        </div>
+    }
+}
+@if (openItem != null)
+{
+    var last = Model.Fields[Model.Fields.Count - 1];
+    @Html.Raw("</fieldset>")
+    if (Model.CanEdit)
+    {
+        <div class="admin-list-add"><button type="submit" name="op" value="add:@last.ListPath" class="admin-button admin-button--secondary">+ Add @last.ItemNoun.ToLowerInvariant()</button></div>
+    }
+}

@@ -449,6 +449,8 @@ namespace TheArqamSchools.Web.Models
         public int SortOrder { get; set; }
         public bool IsVisible { get; set; }
         public bool HasDraft { get; set; }
+        /// <summary>The section's own heading (for example "Our Founder"), shown so two sections of one type can be told apart.</summary>
+        public string Heading { get; set; }
 
         /// <summary>"split_feature" becomes "Split feature".</summary>
         public string TypeLabel
@@ -597,5 +599,15 @@ namespace TheArqamSchools.Web.Models
         public IList<TheArqamSchools.Web.Data.PostImage> Photos { get; set; }
         /// <summary>True when this user may add, order and remove photos (the update permission, and the publish permission for posts that are not drafts).</summary>
         public bool CanEditPhotos { get; set; }
+    }
+}
+
+namespace TheArqamSchools.Web.Models
+{
+    /// <summary>The fields of a content form (Views/Admin/Shared/_ContentFields.cshtml).</summary>
+    public class ContentFieldsViewModel
+    {
+        public System.Collections.Generic.IList<TheArqamSchools.Web.Infrastructure.JsonContentFields.Field> Fields { get; set; }
+        public bool CanEdit { get; set; }
     }
 }

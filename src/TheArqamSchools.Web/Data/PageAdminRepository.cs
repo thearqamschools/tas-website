@@ -40,7 +40,8 @@ namespace TheArqamSchools.Web.Data
                       WHERE p.id = @id AND p.deleted_at IS NULL", new { id });
                 if (page == null) return null;
                 page.Sections = db.Query<SectionRow>(
-                    @"SELECT id, [type], sort_order, is_visible, CASE WHEN draft_data IS NULL THEN CAST(0 AS BIT) ELSE CAST(1 AS BIT) END AS has_draft
+                    @"SELECT id, [type], sort_order, is_visible, CASE WHEN draft_data IS NULL THEN CAST(0 AS BIT) ELSE CAST(1 AS BIT) END AS has_draft,
+                             COALESCE(JSON_VALUE(data, '$.heading'), JSON_VALUE(data, '$.title')) AS heading
                       FROM dbo.page_sections WHERE page_id = @id ORDER BY sort_order", new { id }).ToList();
                 return page;
             }

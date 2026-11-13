@@ -9,7 +9,7 @@
     <div class="container">
         <div class="section-head">
             <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
-            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
+            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@SimpleFormat.Render(Model.Text("intro"))</p> }
         </div>
         <ul class="card-grid cols-@cols">
             @foreach (var it in items)
@@ -41,7 +41,7 @@
                                     @(it.Value<string>("title"))
                                 }
                             </h3>
-                            @if (!string.IsNullOrEmpty(it.Value<string>("summary"))) { <p>@(it.Value<string>("summary"))</p> }
+                            @if (!string.IsNullOrEmpty(it.Value<string>("summary"))) { <p>@SimpleFormat.Render(it.Value<string>("summary"))</p> }
                             @if (Site.IsSafeHref(href)) { <span class="card-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span> }
                         </div>
                     </article>

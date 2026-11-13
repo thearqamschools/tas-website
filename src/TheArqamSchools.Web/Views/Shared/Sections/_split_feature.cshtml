@@ -25,11 +25,11 @@
             <div class="prose-lg">
                 @if (body is Newtonsoft.Json.Linq.JArray)
                 {
-                    foreach (var p in body) { <p>@((string)p)</p> }
+                    foreach (var p in body) { <p>@SimpleFormat.Render((string)p)</p> }
                 }
                 else if (body != null)
                 {
-                    <p>@((string)body)</p>
+                    <p>@SimpleFormat.Render((string)body)</p>
                 }
             </div>
             @Html.Partial("_Button", link, new ViewDataDictionary { { "variant", "link" } })

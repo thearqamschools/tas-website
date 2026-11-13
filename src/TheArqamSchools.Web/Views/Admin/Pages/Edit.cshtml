@@ -27,7 +27,8 @@
             <li class="admin-list-item">
                 <a class="admin-list-link" href="/admin/pages/@f.Id.ToString("D")/sections/@s.Id.ToString("D")">
                     <span class="admin-list-main">
-                        <strong>@s.TypeLabel</strong>
+                        <strong>@(string.IsNullOrWhiteSpace(s.Heading) ? s.TypeLabel : s.Heading)</strong>
+                        @if (!string.IsNullOrWhiteSpace(s.Heading)) { <span class="admin-muted">@s.TypeLabel</span> }
                         @if (!s.IsVisible) { <span class="admin-status admin-status--spam">Hidden</span> }
                         @if (s.HasDraft) { <span class="admin-status admin-status--in_progress">Draft waiting</span> }
                     </span>

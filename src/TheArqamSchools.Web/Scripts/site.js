@@ -256,6 +256,48 @@
     });
   });
 
+  // Homepage photo slider (owner, 13 November 2026): when the admin panel has more than one photo,
+  // the top photo changes every 6 seconds with a soft fade. Pause button and dots; no movement when the
+  // visitor prefers reduced motion, and it waits while the tab is hidden. Later photos load when first shown.
+  document.querySelectorAll("[data-hero-slider]").forEach(function (hero) {
+    var pics = Array.prototype.slice.call(hero.querySelectorAll(".home-hero-bg"));
+    var dots = Array.prototype.slice.call(hero.querySelectorAll("[data-hero-dot]"));
+    var pause = hero.querySelector("[data-hero-pause]");
+    if (pics.length < 2) return;
+    var current = 0, timer = null;
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var paused = reduce;
+    function load(p) {
+      if (!p.hasAttribute("data-lazy")) return;
+      p.removeAttribute("data-lazy");
+      var src = p.querySelector("source"), img = p.querySelector("img");
+      if (src) src.srcset = src.getAttribute("data-srcset");
+      img.src = img.getAttribute("data-src");
+    }
+    function show(i) {
+      current = (i + pics.length) % pics.length;
+      load(pics[current]); load(pics[(current + 1) % pics.length]);
+      pics.forEach(function (p, k) { p.classList.toggle("is-active", k === current); });
+      dots.forEach(function (d, k) { d.classList.toggle("is-active", k === current); if (k === current) d.setAttribute("aria-current", "true"); else d.removeAttribute("aria-current"); });
+    }
+    function schedule() {
+      clearInterval(timer);
+      if (!paused) timer = setInterval(function () { if (!document.hidden) show(current + 1); }, 6000);
+    }
+    function setPaused(v) {
+      paused = v;
+      if (pause) {
+        pause.classList.toggle("is-paused", v);
+        pause.setAttribute("aria-label", v ? "Play the photos" : "Pause the photos");
+      }
+      schedule();
+    }
+    dots.forEach(function (d, k) { d.addEventListener("click", function () { show(k); schedule(); }); });
+    if (pause) pause.addEventListener("click", function () { setPaused(!paused); });
+    load(pics[1]);
+    setPaused(paused);
+  });
+
   // Required consent checkboxes: browsers check them before sending; the server checks everything again.
   document.querySelectorAll("form[novalidate]").forEach(function (f) {
     f.addEventListener("submit", function (e) {

@@ -208,3 +208,15 @@ tools/compile-check/      Mono C# compile check with stub MVC/Dapper types (does
 - The branding rules above still apply to any new text. Do not re-apply the rest of v1.4 (pages, colours,
   Poppins) without the owner asking. The footer keeps the Arabic motto and "Knowledge with values. Education with
   purpose." (owner's decision); the FAQ has no transport question.
+
+## Content editing in the admin panel (13 November 2026)
+
+- Page sections and the homepage are edited through `Infrastructure/JsonContentFields.cs` + `ContentEditor.cs` and the
+  shared partial `Views/Admin/Shared/_ContentFields.cshtml`: friendly labels ("Stage 1 – Title"), picture fields
+  (keys image, seal, badge, photo, mobile_image, whole_child_image), list items that can be added, moved and removed,
+  and **B**/*I* buttons. Bold and italic are stored as `**text**` / `*text*` and shown only through
+  `Helpers/SimpleFormat.Render` (HTML-encoded first). New text keys that should allow formatting must be listed in
+  `JsonContentFields.FormattedKeys` and rendered with `SimpleFormat.Render` in the template.
+- The homepage's words and photos live in the site setting `home.content` (Database/19), edited at `/admin/home`;
+  `Helpers/HomeContent.cs` holds the built-in copy used when the setting or a key is missing.
+

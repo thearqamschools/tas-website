@@ -94,6 +94,13 @@ namespace TheArqamSchools.Web.Data
             }
         }
 
+        /// <summary>One setting's stored JSON, read fresh from the database (no cache); null when missing.</summary>
+        public static string RawValue(string key)
+        {
+            using (var db = Db.Open())
+                return db.ExecuteScalar<string>("SELECT [value] FROM dbo.site_settings WHERE [key] = @key", new { key });
+        }
+
         /// <summary>Saves the settings that changed, each with an audit row, in one transaction.</summary>
         public static int Save(IDictionary<string, string> jsonByKey, Guid actorId)
         {

@@ -1307,3 +1307,23 @@ ul.news-detail-facts { list-style: none; padding: 14px 18px; display: flex; flex
 /* News and event detail header (owner, 11 November 2026): title and summary use the full column width
    and fill each line before wrapping (no balanced short lines with empty space after them). */
 .page-header .news-detail-col .h1, .page-header .news-detail-col .lead { max-width: none; text-wrap: wrap; }
+/* Footer (owner, 13 November 2026): the Arabic motto sits closer to the logo, and the short line has
+   room before the social buttons. */
+.footer-identity .footer-tagline[lang="ar"] { margin-top: 2px; line-height: 1.3; }
+.footer-identity .footer-statement-2 + .footer-social, .footer-identity .footer-statement + .footer-social { margin-top: 22px; }
+/* Homepage photo slider (owner, 13 November 2026): photos set in the admin panel fade one into the next. */
+.home-hero-slides .home-hero-bg { transition: opacity 900ms ease-in-out; }
+.home-hero-slides .home-hero-bg:not(.is-active) { opacity: 0; }
+.home-hero-slides .home-hero-bg + .home-hero-bg { position: absolute; top: 0; left: 0; right: 0; }
+.home-hero-controls { position: absolute; z-index: 3; right: 12px; top: 236px; display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 999px; background: rgba(15, 23, 42, .55); }
+.home-hero-dot { width: 24px; height: 24px; padding: 0; border: 0; background: none; cursor: pointer; display: grid; place-items: center; }
+.home-hero-dot::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.55); transition: background-color 150ms ease-out, transform 150ms var(--ease-out); }
+.home-hero-dot.is-active::before { background: #fff; transform: scale(1.25); }
+.home-hero-pause { width: 28px; height: 28px; padding: 0; border: 0; background: none; color: #fff; cursor: pointer; display: grid; place-items: center; }
+.home-hero-pause-icon { width: 10px; height: 12px; border-left: 3px solid currentColor; border-right: 3px solid currentColor; }
+.home-hero-pause.is-paused .home-hero-pause-icon { width: 0; height: 0; border-style: solid; border-width: 6px 0 6px 10px; border-color: transparent transparent transparent currentColor; }
+@media (min-width: 48rem) {
+  .home-hero-slides .home-hero-bg + .home-hero-bg { bottom: 0; }
+  .home-hero-controls { top: auto; bottom: 18px; right: 24px; }
+}
+@media (prefers-reduced-motion: reduce) { .home-hero-slides .home-hero-bg { transition: none; } }

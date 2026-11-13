@@ -74,7 +74,7 @@
         </div>
         <div class="form-card">
             <h2 class="h3" id="h-@Model.Id">@(string.IsNullOrEmpty(Model.Text("heading")) ? "Send Us a Message" : Model.Text("heading"))</h2>
-            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="form-card-intro">@Model.Text("intro")</p> }
+            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="form-card-intro">@SimpleFormat.Render(Model.Text("intro"))</p> }
             @if (vm.Sent)
             {
                 <div class="alert alert-success" role="status" tabindex="-1" data-focus>

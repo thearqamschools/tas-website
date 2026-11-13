@@ -1,0 +1,26 @@
+@model SectionEditViewModel
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = "Home Page";
+}
+<div class="admin-page-head">
+    <h1>Home Page</h1>
+    <a href="/" target="_blank" rel="noopener">View homepage</a>
+</div>
+@if (Model.Notice != null) { <div class="admin-alert admin-alert--success" role="status"><p>@Model.Notice</p></div> }
+@if (Model.Errors != null && Model.Errors.Count > 0)
+{
+    <div class="admin-alert admin-alert--error" role="alert">@foreach (var e in Model.Errors) { <p>@e</p> }</div>
+}
+<form method="post" action="/admin/home" class="admin-form" enctype="multipart/form-data" novalidate>
+    @Html.AntiForgeryToken()
+    <button type="submit" name="op" value="save" class="sr-only" tabindex="-1" aria-hidden="true">Save</button>
+    <input type="hidden" name="signature" value="@Model.Signature" />
+    <section class="admin-card">
+        <p class="admin-muted">The words and pictures of the homepage, from top to bottom. <strong>Slides</strong> are the photos at the top: with two or more, they change every 6 seconds. Use wide photos (about 2000 × 800 pixels) for computers and upright ones (about 660 × 800) for phones. Please use approved figures and confirmed details.</p>
+        @if (!Model.CanEdit) { <p class="admin-muted">A Content Manager or Super Admin can change the homepage.</p> }
+        @Html.Partial("~/Views/Admin/Shared/_ContentFields.cshtml", new ContentFieldsViewModel { Fields = Model.Fields, CanEdit = Model.CanEdit })
+    </section>
+    @if (Model.CanEdit) { <div><button type="submit" name="op" value="save" class="admin-button">Save and publish</button></div> }
+</form>
+<script src="/Scripts/admin-form.js?v=20261113a" defer></script>

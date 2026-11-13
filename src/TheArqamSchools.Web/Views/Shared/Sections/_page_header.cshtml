@@ -16,7 +16,7 @@
         <div>
             @if (!string.IsNullOrEmpty(Model.Text("eyebrow"))) { <p class="eyebrow">@Model.Text("eyebrow")</p> }
             <h1 class="h1">@(string.IsNullOrEmpty(Model.Text("title")) ? page.Page.Title : Model.Text("title"))</h1>
-            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
+            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@SimpleFormat.Render(Model.Text("intro"))</p> }
             @if (showCtas)
             {
                 <div class="btn-row">

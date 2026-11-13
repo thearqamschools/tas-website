@@ -65,7 +65,9 @@ namespace TheArqamSchools.Web.Controllers
                 : notice == "draft" ? "Saved as a draft. A Content Manager or Super Admin can publish it."
                 : notice == "draft-published" ? "The draft is published."
                 : notice == "draft-discarded" ? "The draft was discarded."
-                : notice == "visibility" ? "Saved." : null;
+                : notice == "visibility" ? "Saved."
+                : notice == "list" ? "Saved and published. The list was changed."
+                : notice == "list-draft" ? "Saved as a draft. The list was changed." : null;
             return SectionView(section, null, message);
         }
 
@@ -80,22 +82,16 @@ namespace TheArqamSchools.Web.Controllers
             var actor = AdminAuth.Current(HttpContext);
             var live = actor.Can("pages.publish");
             var root = Parse(live ? section.Data : (section.DraftData ?? section.Data));
-            var fields = JsonContentFields.Flatten(root);
 
             // Every value is read unvalidated (content may contain "<"), stored as JSON text
             // and HTML-encoded by the section templates when shown.
-            var form = Request.Unvalidated.Form;
-            if (form["signature"] != JsonContentFields.Signature(fields))
-                return SectionView(section, new[] { "This section was changed by someone else while you were editing. Your changes were not saved; please make them again." }, null);
+            var result = ContentEditor.Process(root, section.Type, Request);
+            if (result.Errors.Count > 0) return SectionView(section, result.Errors, null, result.PostedFields);
 
-            var errors = JsonContentFields.Apply(root, fields, i => form["v" + i]);
-            if (errors.Count > 0)
-            {
-                for (var i = 0; i < fields.Count; i++) fields[i].Value = form["v" + i];
-                return SectionView(section, errors, null, fields);
-            }
-
-            PageAdminRepository.SaveSection(sectionId, root.ToString(Formatting.None), live, actor.Id);
+            try { PageAdminRepository.SaveSection(sectionId, root.ToString(Formatting.None), live, actor.Id); }
+            catch { foreach (var f in result.NewFiles) ImageStore.Delete(f); throw; }
+            if (result.Anchor != null)
+                return Redirect(SectionUrl(pageId, sectionId) + "?notice=" + (live ? "list" : "list-draft") + result.Anchor);
             return Redirect(SectionUrl(pageId, sectionId) + "?notice=" + (live ? "published" : "draft"));
         }
 
@@ -147,7 +143,7 @@ namespace TheArqamSchools.Web.Controllers
             var canPublish = actor.Can("pages.publish");
             // Publishers edit the live content (a pending draft is shown separately); others continue the draft.
             var showingDraft = !canPublish && section.DraftData != null;
-            var fields = JsonContentFields.Flatten(Parse(showingDraft ? section.DraftData : section.Data));
+            var fields = JsonContentFields.Flatten(Parse(showingDraft ? section.DraftData : section.Data), section.Type);
             var signature = JsonContentFields.Signature(fields);
             return View("~/Views/Admin/Pages/Section.cshtml", new SectionEditViewModel
             {

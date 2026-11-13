@@ -54,8 +54,12 @@ namespace TheArqamSchools.Web.Infrastructure
                 : storagePath;
         }
 
-        /// <summary>Checks, resizes and saves one photo under public-media/{folder}/yyyy/MM/.</summary>
-        public static StoredImage Save(Stream input, long length, string originalName, string folder)
+        /// <summary>
+        /// Checks, resizes and saves one photo under public-media/{folder}/yyyy/MM/. With
+        /// <paramref name="keepTransparency"/>, a PNG stays a PNG (for seals, badges and logos with a
+        /// transparent background) and no small copy is made.
+        /// </summary>
+        public static StoredImage Save(Stream input, long length, string originalName, string folder, bool keepTransparency = false)
         {
             if (input == null || length <= 0) throw new ImageRejectedException("The file is empty.");
             if (length > MaxUploadBytes) throw new ImageRejectedException("The photo is larger than 15 MB. Please choose a smaller photo.");
@@ -68,8 +72,9 @@ namespace TheArqamSchools.Web.Infrastructure
             if (w <= 0 || h <= 0 || (long)w * h > MaxPixels)
                 throw new ImageRejectedException("The photo is too large in pixels. Please choose a photo under 40 megapixels.");
 
+            var png = keepTransparency && bytes[0] == 0x89;
             var now = DateTime.UtcNow.AddHours(5);
-            var relative = folder + "/" + now.ToString("yyyy") + "/" + now.ToString("MM") + "/" + Guid.NewGuid().ToString("N") + ".jpg";
+            var relative = folder + "/" + now.ToString("yyyy") + "/" + now.ToString("MM") + "/" + Guid.NewGuid().ToString("N") + (png ? ".png" : ".jpg");
             var largeFile = PhysicalPath(relative);
             var smallFile = PhysicalPath(SmallPath(relative));
             Directory.CreateDirectory(Path.GetDirectoryName(largeFile));
@@ -82,13 +87,14 @@ namespace TheArqamSchools.Web.Infrastructure
                 using (var source = LoadImage(ms))
                 {
                     ApplyOrientation(source, JpegOrientation(bytes));
-                    using (var large = Resize(source, LargeSide))
+                    using (var large = Resize(source, LargeSide, png))
                     {
-                        WriteJpeg(large, largeFile, 82L);
+                        if (png) large.Save(largeFile, ImageFormat.Png);
+                        else WriteJpeg(large, largeFile, 82L);
                         result.Width = large.Width;
                         result.Height = large.Height;
                     }
-                    using (var small = Resize(source, SmallSide)) WriteJpeg(small, smallFile, 78L);
+                    if (!png) using (var small = Resize(source, SmallSide, false)) WriteJpeg(small, smallFile, 78L);
                 }
                 var info = new FileInfo(largeFile);
                 result.SizeBytes = info.Length;
@@ -281,19 +287,19 @@ namespace TheArqamSchools.Web.Infrastructure
             }
         }
 
-        private static Bitmap Resize(Image source, int maxSide)
+        private static Bitmap Resize(Image source, int maxSide, bool alpha)
         {
             var scale = Math.Min(1.0, (double)maxSide / Math.Max(source.Width, source.Height));
             var w = Math.Max(1, (int)Math.Round(source.Width * scale));
             var h = Math.Max(1, (int)Math.Round(source.Height * scale));
-            var bmp = new Bitmap(w, h, PixelFormat.Format24bppRgb);
+            var bmp = new Bitmap(w, h, alpha ? PixelFormat.Format32bppArgb : PixelFormat.Format24bppRgb);
             try
             {
                 using (var g = Graphics.FromImage(bmp))
                 using (var attrs = new ImageAttributes())
                 {
                     // White behind transparent PNGs, since JPEG has no transparency.
-                    g.Clear(Color.White);
+                    g.Clear(alpha ? Color.Transparent : Color.White);
                     g.CompositingQuality = CompositingQuality.HighQuality;
                     g.InterpolationMode = InterpolationMode.HighQualityBicubic;
                     g.SmoothingMode = SmoothingMode.HighQuality;

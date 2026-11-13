@@ -13,7 +13,7 @@
     <div class="container form-layout">
         <div class="form-intro">
             <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
-            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
+            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@SimpleFormat.Render(Model.Text("intro"))</p> }
             <p class="muted">Prefer to call? Contact your nearest campus on the <a href="/campuses">Campuses page</a>.</p>
         </div>
         <div class="form-card">

@@ -98,6 +98,7 @@
     <Compile Include="Controllers\AdminCampusesController.cs" />
     <Compile Include="Controllers\AdminDashboardController.cs" />
     <Compile Include="Controllers\AdminFranchiseController.cs" />
+    <Compile Include="Controllers\AdminHomeController.cs" />
     <Compile Include="Controllers\AdminInboxController.cs" />
     <Compile Include="Controllers\AdminMenusController.cs" />
     <Compile Include="Controllers\AdminNewsController.cs" />
@@ -133,6 +134,7 @@
     <Compile Include="Data\SiteSettingsRepository.cs" />
     <Compile Include="Data\UserAdminRepository.cs" />
     <Compile Include="Helpers\Contact.cs" />
+    <Compile Include="Helpers\HomeContent.cs" />
     <Compile Include="Helpers\Icons.cs" />
     <Compile Include="Helpers\SimpleFormat.cs" />
     <Compile Include="Helpers\Social.cs" />
@@ -141,6 +143,7 @@
     <Compile Include="Helpers\Site.cs" />
     <Compile Include="Infrastructure\ClientAddress.cs" />
     <Compile Include="Infrastructure\JsonContentFields.cs" />
+    <Compile Include="Infrastructure\ContentEditor.cs" />
     <Compile Include="Infrastructure\ImageStore.cs" />
     <Compile Include="Infrastructure\LegacyUrls.cs" />
     <Compile Include="Infrastructure\Notifications.cs" />
@@ -190,6 +193,7 @@
     <Content Include="Views\Admin\Dashboard\Index.cshtml" />
     <Content Include="Views\Admin\Franchise\Detail.cshtml" />
     <Content Include="Views\Admin\Franchise\Index.cshtml" />
+    <Content Include="Views\Admin\Home\Index.cshtml" />
     <Content Include="Views\Admin\Inbox\Detail.cshtml" />
     <Content Include="Views\Admin\Inbox\Index.cshtml" />
     <Content Include="Views\Admin\Menus\Edit.cshtml" />
@@ -199,6 +203,7 @@
     <Content Include="Views\Admin\Pages\Edit.cshtml" />
     <Content Include="Views\Admin\Pages\Index.cshtml" />
     <Content Include="Views\Admin\Pages\Section.cshtml" />
+    <Content Include="Views\Admin\Shared\_ContentFields.cshtml" />
     <Content Include="Views\Admin\Settings\Index.cshtml" />
     <Content Include="Views\Admin\Users\Edit.cshtml" />
     <Content Include="Views\Admin\Users\Index.cshtml" />

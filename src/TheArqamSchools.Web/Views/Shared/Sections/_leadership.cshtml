@@ -1,4 +1,5 @@
 @model PageSection
+@using TheArqamSchools.Web.Helpers
 @{
     // Leadership: items { name, role, message, image }. Items without a name are skipped. Each card has a photo
     // space; until the school sends a photo (image.path) it shows the initials and "Photo to be added".
@@ -13,7 +14,7 @@
         <div class="container">
             <div class="section-head">
                 <h2 class="h2" id="h-@Model.Id">@(string.IsNullOrEmpty(Model.Text("heading")) ? "Our leadership" : Model.Text("heading"))</h2>
-                @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
+                @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@SimpleFormat.Render(Model.Text("intro"))</p> }
             </div>
             <ul class="card-grid cols-3">
                 @foreach (var i in items)
@@ -56,7 +57,7 @@
                                         }
                                     </p>
                                 }
-                                @if (!string.IsNullOrWhiteSpace(i.Value<string>("message"))) { <p>@(i.Value<string>("message"))</p> }
+                                @if (!string.IsNullOrWhiteSpace(i.Value<string>("message"))) { <p>@SimpleFormat.Render(i.Value<string>("message"))</p> }
                             </div>
                         </article>
                     </li>

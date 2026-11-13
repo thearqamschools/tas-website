@@ -20,15 +20,15 @@
                     {
                         <img class="vm-seal" src="@sealUrl" alt="@Media.Alt(seal)" width="@(seal.Value<int?>("width") ?? 400)" height="@(seal.Value<int?>("height") ?? 400)" loading="lazy" decoding="async" />
                     }
-                    @if (!string.IsNullOrEmpty(v.Value<string>("body"))) { <p>@(v.Value<string>("body"))</p> }
+                    @if (!string.IsNullOrEmpty(v.Value<string>("body"))) { <p>@SimpleFormat.Render(v.Value<string>("body"))</p> }
                 </article>
             }
             @if (m != null)
             {
                 <article class="vm-card vm-card-centred">
                     <h3 class="h3">@(m.Value<string>("title"))</h3>
-                    @if (!string.IsNullOrEmpty(m.Value<string>("intro"))) { <p>@(m.Value<string>("intro"))</p> }
-                    @if (!string.IsNullOrEmpty(m.Value<string>("body"))) { <p>@(m.Value<string>("body"))</p> }
+                    @if (!string.IsNullOrEmpty(m.Value<string>("intro"))) { <p>@SimpleFormat.Render(m.Value<string>("intro"))</p> }
+                    @if (!string.IsNullOrEmpty(m.Value<string>("body"))) { <p>@SimpleFormat.Render(m.Value<string>("body"))</p> }
                     @if (points != null && points.Count > 0)
                     {
                         <ul class="check-list">

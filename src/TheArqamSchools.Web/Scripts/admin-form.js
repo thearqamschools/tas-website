@@ -41,3 +41,13 @@
     });
   });
 })();
+
+/* Buttons that ask first (for example "Remove" in a list). */
+(function () {
+  "use strict";
+  Array.prototype.forEach.call(document.querySelectorAll("button[data-confirm]"), function (btn) {
+    btn.addEventListener("click", function (e) {
+      if (!window.confirm(btn.getAttribute("data-confirm"))) e.preventDefault();
+    });
+  });
+})();

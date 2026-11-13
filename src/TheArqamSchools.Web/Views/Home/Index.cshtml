@@ -45,26 +45,46 @@
     var hasCampuses = campuses != null && campuses.Count > 0;
     var news = ViewBag.News as IList<NewsItem>;
     var hasNews = news != null && news.Count > 0;
+    // Words and pictures edited in the admin panel (Home Page); built-in copy when not set.
+    var home = HomeContent.Get(TheArqamSchools.Web.Data.SiteSettingsRepository.Public());
+    var slides = HomeContent.List(home, "slides").Where(sl => Media.Url(sl["image"]) != null).ToList();
+    var wholeImg = home["whole_child_image"];
 }
 <div class="home">
 
     @* 1. Hero: full-width classroom photo; the text sits on the photo's blue left side. *@
-    <section class="home-hero home-hero-photo">
-        <picture class="home-hero-bg">
-            <source media="(min-width: 48rem)" srcset="/media/public-media/network/content/hero-students-classroom--20261014075037.jpg" />
-            <img src="/media/public-media/network/content/hero-mobile--20261014075037.jpg" alt="" fetchpriority="high" decoding="async" />
-        </picture>
+    <section class="home-hero home-hero-photo@(slides.Count > 1 ? " home-hero-slides" : "")" @(slides.Count > 1 ? "data-hero-slider" : null)>
+        @for (var si = 0; si < slides.Count; si++)
+        {
+            var sl = slides[si];
+            var desk = Media.Url(sl["image"]);
+            var mob = Media.Url(sl["mobile_image"]) ?? desk;
+            <picture class="home-hero-bg@(si == 0 ? " is-active" : "")" @(si > 0 ? "data-lazy" : null)>
+                <source media="(min-width: 48rem)" srcset="@(si == 0 ? desk : null)" data-srcset="@desk" />
+                <img src="@(si == 0 ? mob : null)" data-src="@mob" alt="" @(si == 0 ? "fetchpriority=high" : "loading=lazy") decoding="async" />
+            </picture>
+        }
         <div class="container home-hero-inner">
             <div class="home-hero-text">
-                <p class="home-hero-badge">Admissions Open 2026-27</p>
-                <h1 class="h1"><span class="home-h1-line">Knowledge with values.</span> <span class="home-h1-line">Education with purpose.</span></h1>
-                <p class="lead">Modern education rooted in Islamic values, from Play Group to Matric, with Hifz classes, at 350+ campuses across Pakistan.</p>
+                @if (!string.IsNullOrWhiteSpace(HomeContent.Text(home, "hero_badge"))) { <p class="home-hero-badge">@HomeContent.Text(home, "hero_badge")</p> }
+                <h1 class="h1"><span class="home-h1-line">@HomeContent.Text(home, "hero_line_1")</span> <span class="home-h1-line">@HomeContent.Text(home, "hero_line_2")</span></h1>
+                <p class="lead">@SimpleFormat.Render(HomeContent.Text(home, "hero_intro"))</p>
                 <div class="btn-row">
-                    <a class="btn btn-primary btn-arrow" href="/admissions">Apply for Admission @Icons.Svg("arrow-right", 18)</a>
-                    <a class="btn btn-outline-light" href="/campuses">Find a Campus</a>
+                    @if (!string.IsNullOrWhiteSpace(HomeContent.Text(home["hero_primary_cta"], "label"))) { <a class="btn btn-primary btn-arrow" href="@HomeContent.Href(home["hero_primary_cta"])">@HomeContent.Text(home["hero_primary_cta"], "label") @Icons.Svg("arrow-right", 18)</a> }
+                    @if (!string.IsNullOrWhiteSpace(HomeContent.Text(home["hero_secondary_cta"], "label"))) { <a class="btn btn-outline-light" href="@HomeContent.Href(home["hero_secondary_cta"])">@HomeContent.Text(home["hero_secondary_cta"], "label")</a> }
                 </div>
             </div>
         </div>
+        @if (slides.Count > 1)
+        {
+            <div class="home-hero-controls">
+                <button type="button" class="home-hero-pause" data-hero-pause aria-label="Pause the photos"><span aria-hidden="true" class="home-hero-pause-icon"></span></button>
+                @for (var si = 0; si < slides.Count; si++)
+                {
+                    <button type="button" class="home-hero-dot@(si == 0 ? " is-active" : "")" data-hero-dot="@si" aria-label="Show photo @(si + 1) of @slides.Count" @(si == 0 ? "aria-current=true" : null)></button>
+                }
+            </div>
+        }
     </section>
 
     @* 2. Figures band: the approved figures, plus 34 years of excellence (given by the school, 3 November 2026). *@
@@ -72,10 +92,10 @@
         <div class="container">
             <h2 class="sr-only" id="home-figures-h">The Arqam Schools at a glance</h2>
             <ul class="home-figures-list">
-                <li><span class="home-fig">34</span> <span class="home-fig-label">Years of Excellence</span></li>
-                <li><span class="home-fig">350+</span> <span class="home-fig-label">Campuses</span></li>
-                <li><span class="home-fig">250,000+</span> <span class="home-fig-label">Students</span></li>
-                <li><span class="home-fig">20,000+</span> <span class="home-fig-label">Hafiz-e-Quran</span></li>
+                @foreach (var fg in HomeContent.List(home, "figures").Where(x => !string.IsNullOrWhiteSpace(HomeContent.Text(x, "value"))))
+                {
+                    <li><span class="home-fig">@HomeContent.Text(fg, "value")</span> <span class="home-fig-label">@HomeContent.Text(fg, "label")</span></li>
+                }
             </ul>
         </div>
     </section>
@@ -83,68 +103,22 @@
     @* 3. Explore: the four existing links as wide, tinted, whole-tile links. *@
     <section class="section tone-white" aria-labelledby="explore-h">
         <div class="container">
-            <div class="section-head"><h2 class="h2" id="explore-h">Explore The Arqam Schools</h2></div>
+            <div class="section-head"><h2 class="h2" id="explore-h">@HomeContent.Text(home, "explore_heading")</h2></div>
             <ul class="home-tiles">
-                <li class="home-reveal">
-                    <article class="home-tile">
-                        <span class="home-tile-icon">@Icons.Svg("users", 26)</span>
-                        <div class="home-tile-text">
-                            <h3 class="h4"><a href="/about">About Us</a></h3>
-                            <p>Who we are, our vision and mission, and our values.</p>
-                        </div>
-                        <span class="home-tile-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
-                    </article>
-                </li>
-                <li class="home-reveal">
-                    <article class="home-tile">
-                        <span class="home-tile-icon">@Icons.Svg("book-open", 26)</span>
-                        <div class="home-tile-text">
-                            <h3 class="h4"><a href="/academics">Academics</a></h3>
-                            <p>Teaching, academic levels and student development.</p>
-                        </div>
-                        <span class="home-tile-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
-                    </article>
-                </li>
-                <li class="home-reveal">
-                    <article class="home-tile home-tile-action">
-                        <span class="home-tile-icon">@Icons.Svg("graduation-cap", 26)</span>
-                        <div class="home-tile-text">
-                            <h3 class="h4"><a href="/admissions">Admissions</a></h3>
-                            <p>The admission process and an online inquiry form.</p>
-                        </div>
-                        <span class="home-tile-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
-                    </article>
-                </li>
-                <li class="home-reveal">
-                    <article class="home-tile">
-                        <span class="home-tile-icon">@Icons.Svg("map-pin", 26)</span>
-                        <div class="home-tile-text">
-                            <h3 class="h4"><a href="/campuses">Campuses</a></h3>
-                            <p>Find a campus by name, city, district or area.</p>
-                        </div>
-                        <span class="home-tile-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
-                    </article>
-                </li>
-                <li class="home-reveal">
-                    <article class="home-tile">
-                        <span class="home-tile-icon">@Icons.Svg("award", 26)</span>
-                        <div class="home-tile-text">
-                            <h3 class="h4"><a href="/news-events">News &amp; Events</a></h3>
-                            <p>Achievements, events and announcements.</p>
-                        </div>
-                        <span class="home-tile-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
-                    </article>
-                </li>
-                <li class="home-reveal">
-                    <article class="home-tile">
-                        <span class="home-tile-icon">@Icons.Svg("headset", 26)</span>
-                        <div class="home-tile-text">
-                            <h3 class="h4"><a href="/contact">Contact Us</a></h3>
-                            <p>Call, send a WhatsApp message or write to us.</p>
-                        </div>
-                        <span class="home-tile-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
-                    </article>
-                </li>
+                @foreach (var tl in HomeContent.List(home, "tiles").Where(x => !string.IsNullOrWhiteSpace(HomeContent.Text(x, "title"))))
+                {
+                    var thref = HomeContent.Href(tl);
+                    <li class="home-reveal">
+                        <article class="home-tile@(thref == "/admissions" ? " home-tile-action" : "")">
+                            <span class="home-tile-icon">@Icons.Svg(string.IsNullOrEmpty(HomeContent.Text(tl, "icon")) ? "arrow-right" : HomeContent.Text(tl, "icon"), 26)</span>
+                            <div class="home-tile-text">
+                                <h3 class="h4"><a href="@thref">@HomeContent.Text(tl, "title")</a></h3>
+                                @if (!string.IsNullOrWhiteSpace(HomeContent.Text(tl, "text"))) { <p>@SimpleFormat.Render(HomeContent.Text(tl, "text"))</p> }
+                            </div>
+                            <span class="home-tile-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span>
+                        </article>
+                    </li>
+                }
             </ul>
         </div>
     </section>
@@ -153,44 +127,29 @@
     <section class="section tone-warm" aria-labelledby="values-h">
         <div class="container home-split">
             <div class="home-split-text home-reveal">
-                <h2 class="h2" id="values-h">Educating the whole child</h2>
-                <p class="home-split-lead">At The Arqam Schools, modern education and Islamic values go together, to help children grow in knowledge, character, discipline and confidence, from Play Group to Matric.</p>
+                <h2 class="h2" id="values-h">@HomeContent.Text(home, "whole_child_heading")</h2>
+                <p class="home-split-lead">@SimpleFormat.Render(HomeContent.Text(home, "whole_child_lead"))</p>
                 <ul class="home-points">
-                    <li>
-                        <span class="home-point-icon">@Icons.Svg("book-open", 22)</span>
-                        <div>
-                            <h3 class="h4">Academic learning</h3>
-                            <p>Modern teaching that builds strong foundations, from Play Group to Matric.</p>
-                        </div>
-                    </li>
-                    <li>
-                        <span class="home-point-icon">@Icons.Svg("moon-star", 22)</span>
-                        <div>
-                            <h3 class="h4">Islamic education</h3>
-                            <p>Islamic values at the heart of school life, with Hifz classes.</p>
-                        </div>
-                    </li>
-                    <li>
-                        <span class="home-point-icon">@Icons.Svg("shield-check", 22)</span>
-                        <div>
-                            <h3 class="h4">Ethics and discipline</h3>
-                            <p>Good manners and discipline as part of everyday learning.</p>
-                        </div>
-                    </li>
-                    <li>
-                        <span class="home-point-icon">@Icons.Svg("heart-handshake", 22)</span>
-                        <div>
-                            <h3 class="h4">Confidence and character</h3>
-                            <p>Supporting each child to grow in confidence and strong character.</p>
-                        </div>
-                    </li>
+                    @foreach (var pt in HomeContent.List(home, "whole_child_points").Where(x => !string.IsNullOrWhiteSpace(HomeContent.Text(x, "title"))))
+                    {
+                        <li>
+                            <span class="home-point-icon">@Icons.Svg(string.IsNullOrEmpty(HomeContent.Text(pt, "icon")) ? "check-circle" : HomeContent.Text(pt, "icon"), 22)</span>
+                            <div>
+                                <h3 class="h4">@HomeContent.Text(pt, "title")</h3>
+                                @if (!string.IsNullOrWhiteSpace(HomeContent.Text(pt, "text"))) { <p>@SimpleFormat.Render(HomeContent.Text(pt, "text"))</p> }
+                            </div>
+                        </li>
+                    }
                 </ul>
-                <a class="text-link" href="/about">About The Arqam Schools @Icons.Svg("arrow-right", 18)</a>
+                @if (!string.IsNullOrWhiteSpace(HomeContent.Text(home["whole_child_link"], "label"))) { <a class="text-link" href="@HomeContent.Href(home["whole_child_link"])">@HomeContent.Text(home["whole_child_link"], "label") @Icons.Svg("arrow-right", 18)</a> }
             </div>
             <div class="home-split-art home-reveal">
+@if (Media.Url(wholeImg) != null)
+                {
                 <figure class="home-photo">
-                    <img src="/media/public-media/network/content/home-girl-painting.jpg" alt="A smiling girl painting with watercolours in an art class" width="1200" height="805" loading="lazy" decoding="async" />
+                    <img src="@Media.Url(wholeImg)" alt="@Media.Alt(wholeImg)" width="@(wholeImg.Value<int?>("width") ?? 1200)" height="@(wholeImg.Value<int?>("height") ?? 805)" loading="lazy" decoding="async" />
                 </figure>
+                }
             </div>
         </div>
     </section>
@@ -201,7 +160,7 @@
         <section class="section tone-white" aria-labelledby="news-h">
             <div class="container">
                 <div class="section-head home-news-head">
-                    <h2 class="h2" id="news-h">Latest news &amp; events</h2>
+                    <h2 class="h2" id="news-h">@HomeContent.Text(home, "news_heading")</h2>
                     <a class="text-link" href="/news-events">All news and events @Icons.Svg("arrow-right", 18)</a>
                 </div>
                 <ul class="card-grid cols-3 news-grid">
@@ -220,8 +179,8 @@
     <section class="section tone-grey" id="find" aria-labelledby="finder-h">
         <div class="container">
             <div class="section-head">
-                <h2 class="h2" id="finder-h">Find a campus</h2>
-                <p class="lead">Find a campus by name, city, district or area.</p>
+                <h2 class="h2" id="finder-h">@HomeContent.Text(home, "finder_heading")</h2>
+                <p class="lead">@SimpleFormat.Render(HomeContent.Text(home, "finder_lead"))</p>
             </div>
             <div class="home-finder home-reveal">
                 <form class="home-search" method="get" action="/campuses" role="search" aria-label="Search campuses">
@@ -289,10 +248,10 @@
         <div class="container">
             <div class="home-admit home-reveal">
                 <div class="home-admit-text">
-                    <h2 class="h2" id="admit-h">Admissions Open for 2026-27</h2>
-                    <p>Give your child a strong start with modern education rooted in Islamic values. Send an admission inquiry and the campus team will guide you through the next steps.</p>
+                    <h2 class="h2" id="admit-h">@HomeContent.Text(home, "admissions_heading")</h2>
+                    <p>@SimpleFormat.Render(HomeContent.Text(home, "admissions_body"))</p>
                 </div>
-                <a class="btn btn-navy btn-arrow" href="/admissions#inquiry">Start Your Application @Icons.Svg("arrow-right", 18)</a>
+                @if (!string.IsNullOrWhiteSpace(HomeContent.Text(home["admissions_cta"], "label"))) { <a class="btn btn-navy btn-arrow" href="@HomeContent.Href(home["admissions_cta"])">@HomeContent.Text(home["admissions_cta"], "label") @Icons.Svg("arrow-right", 18)</a> }
             </div>
         </div>
     </section>

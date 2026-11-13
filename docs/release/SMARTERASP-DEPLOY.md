@@ -47,6 +47,8 @@ database and run, in this order:
     application pool needs write permission on `media\public-media\` (uploads go to `news\` and `events\`) and on
     `App_Data\removed-media\` (removed photos are moved there, not deleted). Check with one test upload after deploying.
 18. `Database/18_news_venue.sql` (optional venue for news posts; the news date is now editable in the admin panel)
+19. `Database/19_home_content_and_stage_classes.sql` (homepage words and photos editable under Admin > Home Page;
+    a "classes" line for each stage of the academic levels). Uploaded page photos go to `media\public-media\pages\`.
 
 Skip `03_fulltext.sql` (optional, and Full-Text Search may not be offered).
 

@@ -1,4 +1,5 @@
 @model PageSection
+@using TheArqamSchools.Web.Helpers
 @{
     // "Our Journey": items { year, title, text }. Items without a year and title are skipped,
     // so the school can fill them in the admin panel one by one.
@@ -13,7 +14,7 @@
         <div class="container">
             <div class="section-head">
                 <h2 class="h2" id="h-@Model.Id">@(string.IsNullOrEmpty(Model.Text("heading")) ? "Our journey" : Model.Text("heading"))</h2>
-                @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
+                @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@SimpleFormat.Render(Model.Text("intro"))</p> }
             </div>
             <ol class="timeline">
                 @foreach (var i in items)
@@ -22,7 +23,7 @@
                         <p class="timeline-year">@(i.Value<string>("year"))</p>
                         <div class="timeline-body">
                             <h3 class="h4">@(i.Value<string>("title"))</h3>
-                            @if (!string.IsNullOrWhiteSpace(i.Value<string>("text"))) { <p>@(i.Value<string>("text"))</p> }
+                            @if (!string.IsNullOrWhiteSpace(i.Value<string>("text"))) { <p>@SimpleFormat.Render(i.Value<string>("text"))</p> }
                         </div>
                     </li>
                 }
