@@ -164,3 +164,6 @@ admin inbox, campus and page editing, on a phone and a computer.
   optional event times with a Clear button in the admin panel. No database change. Every page answered 200.
 - 11 November 2026: `18_news_venue` ran through `deploy/smarterasp-db`; the site (commit 8e2bf44: news date and
   venue, bold/italic text, full-width detail title, "News & Events" admin menu) went up first time, every page 200.
+- 13 November 2026: `19_home_content_and_stage_classes` ran through `deploy/smarterasp-db`; the site (commit ee706af:
+  Admin > Home Page, photo fields, list items, bold/italic, footer spacing) went up first time, every page 200.
+  Still to confirm on the server: one photo upload in a page section (write permission on `media\public-media\pages`).
