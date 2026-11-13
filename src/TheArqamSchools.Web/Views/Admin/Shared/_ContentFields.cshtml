@@ -72,7 +72,7 @@
                     {
                         <label for="f@(i)" class="admin-hint-label">@(fld.ImageUrl != null ? "Replace with a new picture" : "Add a picture")</label>
                         <input type="file" id="f@(i)" name="f@(i)" accept="image/jpeg,image/png" aria-describedby="fh@(i)" />
-                        <p class="admin-hint" id="fh@(i)">JPG or PNG, up to 15 MB. A PNG keeps its transparent background.</p>
+                        <p class="admin-hint" id="fh@(i)">JPG or PNG, up to 15 MB. Change one or two photos at a time (all photos in one save: up to 18 MB together). A PNG keeps its transparent background.</p>
                     }
                     <label for="a@(i)" class="admin-hint-label">Picture description (for blind visitors and Google)</label>
                     <input type="text" id="a@(i)" name="a@(i)" value="@fld.Alt" maxlength="250" @ro />

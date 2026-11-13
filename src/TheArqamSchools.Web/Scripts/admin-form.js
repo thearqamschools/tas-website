@@ -51,3 +51,22 @@
     });
   });
 })();
+
+/* Content forms: refuse to send more photos at once than the server accepts (20 MB per save). */
+(function () {
+  "use strict";
+  var LIMIT = 18 * 1024 * 1024;
+  Array.prototype.forEach.call(document.querySelectorAll('form[enctype="multipart/form-data"]'), function (form) {
+    if (form.hasAttribute("data-photo-upload")) return; // news photos are sent one by one
+    form.addEventListener("submit", function (e) {
+      var total = 0;
+      Array.prototype.forEach.call(form.querySelectorAll('input[type="file"]'), function (f) {
+        Array.prototype.forEach.call(f.files || [], function (x) { total += x.size; });
+      });
+      if (total > LIMIT) {
+        e.preventDefault();
+        window.alert("The photos chosen add up to " + Math.round(total / 1048576) + " MB. Please save one or two photos at a time (up to 18 MB together).");
+      }
+    });
+  });
+})();

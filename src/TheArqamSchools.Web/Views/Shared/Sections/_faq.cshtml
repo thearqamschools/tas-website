@@ -2,6 +2,7 @@
 @using TheArqamSchools.Web.Helpers
 @{
     var items = Model.Data["items"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
+    items = new Newtonsoft.Json.Linq.JArray(items.Where(x => x.Type != Newtonsoft.Json.Linq.JTokenType.Object || !string.IsNullOrWhiteSpace(x.Value<string>("question"))));  // items added in the admin panel stay hidden until they have a question
 }
 <section class="section tone-@Model.Tone("white")" @(Model.Anchor != null ? "id=" + Model.Anchor : "") aria-labelledby="h-@Model.Id">
     <div class="container faq">

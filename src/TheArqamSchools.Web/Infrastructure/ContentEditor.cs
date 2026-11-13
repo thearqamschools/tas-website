@@ -61,7 +61,7 @@ namespace TheArqamSchools.Web.Infrastructure
                     {
                         var img = ImageStore.Save(file.InputStream, file.ContentLength, file.FileName, "pages", true);
                         result.NewFiles.Add(img.StoragePath);
-                        JsonContentFields.SetImage(root, fields[i], img, form["a" + i]);
+                        JsonContentFields.SetImage(root, fields[i], img, CleanAlt(form["a" + i]));
                     }
                     catch (ImageRejectedException ex)
                     {
@@ -77,13 +77,21 @@ namespace TheArqamSchools.Web.Infrastructure
             {
                 foreach (var p in result.NewFiles) ImageStore.Delete(p);
                 result.NewFiles.Clear();
+                // Show what was typed, so a refused photo does not lose the other changes.
+                for (var i = 0; i < fields.Count; i++)
+                {
+                    if (fields[i].Kind == JsonContentFields.FieldKind.Image) fields[i].Alt = form["a" + i];
+                    else fields[i].Value = form["v" + i];
+                }
                 result.PostedFields = fields;
                 return result;
             }
 
             // The list button that was pressed, for example "add:items", "remove:items:2", "up:items:2".
             var op = (form["op"] ?? "save").Split(':');
-            if (op.Length >= 2 && (root[op[1]] as JArray) != null)
+            // Only lists of items (objects) such as stages, people or slides; not lists of paragraphs.
+            var list = op.Length >= 2 ? root[op[1]] as JArray : null;
+            if (list != null && list.Count > 0 && list[0].Type == JTokenType.Object)
             {
                 int index = -1;
                 if (op.Length >= 3) int.TryParse(op[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out index);
@@ -104,6 +112,12 @@ namespace TheArqamSchools.Web.Infrastructure
                 }
             }
             return result;
+        }
+
+        private static string CleanAlt(string alt)
+        {
+            alt = (alt ?? "").Replace("\r\n", " ").Replace("\n", " ").Trim();
+            return alt.Length > 250 ? alt.Substring(0, 250) : alt;
         }
 
         private static bool Contains(this string[] values, string value)

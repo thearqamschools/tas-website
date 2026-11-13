@@ -332,7 +332,9 @@ namespace TheArqamSchools.Web.Infrastructure
                            || (key ?? "").IndexOf("description", StringComparison.OrdinalIgnoreCase) >= 0
                            || (key ?? "").IndexOf("text", StringComparison.OrdinalIgnoreCase) >= 0
                            || (key ?? "").IndexOf("answer", StringComparison.OrdinalIgnoreCase) >= 0
-                           || (key ?? "").IndexOf("message", StringComparison.OrdinalIgnoreCase) >= 0) ? FieldKind.LongText
+                           || (key ?? "").IndexOf("message", StringComparison.OrdinalIgnoreCase) >= 0
+                           || (key ?? "").IndexOf("summary", StringComparison.OrdinalIgnoreCase) >= 0
+                           || (key ?? "").IndexOf("intro", StringComparison.OrdinalIgnoreCase) >= 0) ? FieldKind.LongText
                         : FieldKind.Text;
                     fields.Add(new Field { Path = token.Path, Label = Label(token.Path, sectionType), Kind = kind, Value = s, Formatted = formatted && kind != FieldKind.Link });
                     break;

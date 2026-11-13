@@ -41,7 +41,8 @@ UPDATE s SET updated_at = SYSDATETIMEOFFSET(),
         OUTER APPLY (SELECT STRING_AGG(c.name, N', ') WITHIN GROUP (ORDER BY c.sort_order) AS classes
                      FROM dbo.class_levels c WHERE c.stage = JSON_VALUE(j.[value], '$.stage')) x), N'') + N']'))
 FROM dbo.page_sections s
-WHERE s.[type] = N'academic_levels' AND ISJSON(s.data) = 1 AND JSON_QUERY(s.data, '$.items') IS NOT NULL;
+WHERE s.[type] = N'academic_levels' AND ISJSON(s.data) = 1 AND JSON_QUERY(s.data, '$.items') IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM OPENJSON(s.data, '$.items') k WHERE k.[type] <> 5); -- only lists of stage objects
 
 INSERT INTO dbo.schema_migrations (id) VALUES (N'19_home_content_and_stage_classes');
 COMMIT TRANSACTION;

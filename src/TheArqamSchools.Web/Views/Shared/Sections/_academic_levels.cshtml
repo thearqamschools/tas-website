@@ -4,6 +4,7 @@
 @{
     var d = Model.Data;
     var items = d["items"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
+    items = new Newtonsoft.Json.Linq.JArray(items.Where(x => x.Type != Newtonsoft.Json.Linq.JTokenType.Object || !string.IsNullOrWhiteSpace(x.Value<string>("title"))));  // items added in the admin panel stay hidden until they have a title
     var compact = d.Value<bool?>("compact") ?? false;
     // layout "stack" (or the older "tabs"): one card per stage, one under another (Academics page).
     var stack = !compact && (d.Value<string>("layout") == "stack" || d.Value<string>("layout") == "tabs");
