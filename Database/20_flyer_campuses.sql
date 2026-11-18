@@ -9,10 +9,10 @@
 -- Chakwal, Gujranwala, Narowal, Sialkot, Sargodha, Karachi and some in the Faisalabad region.
 -- Only the address and the phone number printed on the flyer are used. Campus names are made
 -- from the area (for example "Johar Town Campus") and can be changed in the admin panel.
--- 6 campuses whose details could not be read clearly or need the owner's confirmation are
+-- 7 campuses whose details could not be read clearly or need the owner's confirmation are
 -- added HIDDEN (not on the website) until they are checked in the admin panel.
 -- Hidden: Township, Lahore (phone unclear); Buchiki (the flyer also names "Aala Campus, Bhara Ghar" on the same line);
--- second Manawala number; Kunjah Road, Gujrat (town not printed); The Arqam College, Narang Mandi; Khadim Ali Road, Sialkot.
+-- Ram Dewali (2 Chak), Faisalabad (may be the website's "2 Chak" campus at Islamia Park); second Manawala number; Kunjah Road, Gujrat (town not printed); The Arqam College, Narang Mandi; Khadim Ali Road, Sialkot.
 -- New regions (Islamabad Capital Territory, Sindh), districts and cities are added when missing.
 -- Nothing is deleted; a campus that already exists (same city and web address or name) is skipped.
 -- =============================================================================
@@ -31,7 +31,7 @@ DECLARE @c TABLE (row_no INT, name NVARCHAR(150), slug NVARCHAR(120), city NVARC
                   district NVARCHAR(100), district_slug NVARCHAR(120), region NVARCHAR(100), region_slug NVARCHAR(120),
                   area NVARCHAR(120), area_slug NVARCHAR(120), address NVARCHAR(300), phone NVARCHAR(20), published BIT);
 INSERT INTO @c VALUES
-  (40, N'Ram Dewali Campus', N'ram-dewali-campus', N'Faisalabad', N'faisalabad', N'Faisalabad', N'faisalabad', N'Punjab', N'punjab', N'Ram Dewali', N'ram-dewali', N'2 Chak, Ram Dewali, Sargodha Road, Faisalabad', N'0302-3444414', 1),
+  (40, N'Ram Dewali Campus', N'ram-dewali-campus', N'Faisalabad', N'faisalabad', N'Faisalabad', N'faisalabad', N'Punjab', N'punjab', N'Ram Dewali', N'ram-dewali', N'2 Chak, Ram Dewali, Sargodha Road, Faisalabad', N'0302-3444414', 0),
   (43, N'Chak 208 RB Campus', N'chak-208-rb-campus', N'Faisalabad', N'faisalabad', N'Faisalabad', N'faisalabad', N'Punjab', N'punjab', N'Chak 208 RB', N'chak-208-rb', N'Chak No. 208 RB, Faisalabad', N'0301-7001141', 1),
   (19, N'Chak 72 Gadian Campus', N'chak-72-gadian-campus', N'Faisalabad', N'faisalabad', N'Faisalabad', N'faisalabad', N'Punjab', N'punjab', N'Satiana Road', N'satiana-road', N'Chak 72 Gadian, Satiana Road, Faisalabad', N'0306-4210506', 1),
   (21, N'Satiana Campus', N'satiana-campus', N'Satiana', N'satiana', N'Faisalabad', N'faisalabad', N'Punjab', N'punjab', N'Jhamra Road', N'jhamra-road', N'39 GB, Jhamra Road, Satiana', N'0306-4564690', 1),
