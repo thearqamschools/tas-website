@@ -11,6 +11,8 @@
 -- from the area (for example "Johar Town Campus") and can be changed in the admin panel.
 -- 6 campuses whose details could not be read clearly or need the owner's confirmation are
 -- added HIDDEN (not on the website) until they are checked in the admin panel.
+-- Hidden: Township, Lahore (phone unclear); Buchiki (the flyer also names "Aala Campus, Bhara Ghar" on the same line);
+-- second Manawala number; Kunjah Road, Gujrat (town not printed); The Arqam College, Narang Mandi; Khadim Ali Road, Sialkot.
 -- New regions (Islamabad Capital Territory, Sindh), districts and cities are added when missing.
 -- Nothing is deleted; a campus that already exists (same city and web address or name) is skipped.
 -- =============================================================================
@@ -76,7 +78,7 @@ INSERT INTO @c VALUES
   (115, N'Habib Park Campus', N'habib-park-campus', N'Lahore', N'lahore', N'Lahore', N'lahore', N'Punjab', N'punjab', N'Multan Road', N'multan-road', N'103 Habib Park, Multan Road, Lahore', N'0300-4532394', 1),
   (116, N'Bhagatpura Campus', N'bhagatpura-campus', N'Lahore', N'lahore', N'Lahore', N'lahore', N'Punjab', N'punjab', N'Bhagatpura', N'bhagatpura', N'Mehar Tufail Road, Near Majid Shadi Hall, Bhagatpura, Lahore', N'0322-4617858', 1),
   (117, N'Ittefaq Town Campus', N'ittefaq-town-campus', N'Lahore', N'lahore', N'Lahore', N'lahore', N'Punjab', N'punjab', N'Ittefaq Town', N'ittefaq-town', N'Chairman Plaza, Ittefaq Town, Lahore', N'042-35461611', 1),
-  (118, N'Buchiki Campus', N'buchiki-campus', N'Buchiki', N'buchiki', N'Nankana Sahib', N'nankana-sahib', N'Punjab', N'punjab', N'Buchiki', N'buchiki', N'Near Govt. Iqbal Model School, Buchiki, District Nankana Sahib (also listed: Aala Campus, Bhara Ghar)', N'0321-4243444', 0),
+  (118, N'Buchiki Campus', N'buchiki-campus', N'Buchiki', N'buchiki', N'Nankana Sahib', N'nankana-sahib', N'Punjab', N'punjab', N'Buchiki', N'buchiki', N'Near Govt. Iqbal Model School, Buchiki, District Nankana Sahib', N'0321-4243444', 0),
   (119, N'Sheikhupura Campus', N'sheikhupura-campus', N'Sheikhupura', N'sheikhupura', N'Sheikhupura', N'sheikhupura', N'Punjab', N'punjab', N'PSO Pump', N'pso-pump', N'Behind Yousaf Qureshi Hospital, Near PSO Pump, Sheikhupura', N'0300-4400877', 1),
   (120, N'Manawala Campus', N'manawala-campus', N'Manawala', N'manawala', N'Sheikhupura', N'sheikhupura', N'Punjab', N'punjab', N'Main Bazar', N'main-bazar', N'Awan Market, Main Bazar, Manawala, District Sheikhupura', N'056-3771717', 1),
   (121, N'Ferozwala Campus', N'ferozwala-campus', N'Ferozwala', N'ferozwala', N'Sheikhupura', N'sheikhupura', N'Punjab', N'punjab', N'People''s Colony', N'peoples-colony', N'People''s Colony, Main Bazar, Near Police Station, Ferozwala, District Sheikhupura', N'0334-8061124', 1),
@@ -119,7 +121,7 @@ INSERT INTO @c VALUES
   (158, N'Dolat Nagar Campus', N'dolat-nagar-campus', N'Gujrat', N'gujrat', N'Gujrat', N'gujrat', N'Punjab', N'punjab', N'Dolat Nagar', N'dolat-nagar', N'Bhimber Road, Dolat Nagar, Tehsil and District Gujrat', N'0344-6248673', 1),
   (159, N'Karianwala Campus', N'karianwala-campus', N'Karianwala', N'karianwala', N'Gujrat', N'gujrat', N'Punjab', N'punjab', N'Jalalpur Jattan Road', N'jalalpur-jattan-road', N'Jalalpur Jattan Road, Karianwala, Tehsil and District Gujrat', N'0300-6280047', 1),
   (160, N'Qamar Sialvi Road Campus', N'qamar-sialvi-road-campus', N'Gujrat', N'gujrat', N'Gujrat', N'gujrat', N'Punjab', N'punjab', N'Qamar Sialvi Road', N'qamar-sialvi-road', N'Qamar Sialvi Road, Near NBP, Gujrat', N'0302-9646860', 1),
-  (161, N'Kunjah Road Campus', N'kunjah-road-campus', N'Gujrat', N'gujrat', N'Gujrat', N'gujrat', N'Punjab', N'punjab', N'Kunjah Road', N'kunjah-road', N'Shaheen Chowk, Kunjah Road, Near Noori Masjid', N'0307-6499311', 0),
+  (161, N'Kunjah Road Campus', N'kunjah-road-campus', N'Gujrat', N'gujrat', N'Gujrat', N'gujrat', N'Punjab', N'punjab', N'Kunjah Road', N'kunjah-road', N'Shaheen Chowk, Kunjah Road, Near Noori Masjid, Gujrat', N'0307-6499311', 0),
   (162, N'The Arqam College, Narang Mandi', N'the-arqam-college-narang-mandi', N'Narang Mandi', N'narang-mandi', N'Sheikhupura', N'sheikhupura', N'Punjab', N'punjab', N'Sadar Bazar', N'sadar-bazar', N'Mandi Sadar Bazar, Narang Mandi', N'0341-0041804', 0),
   (163, N'Allied Park Campus', N'allied-park-campus', N'Chakwal', N'chakwal', N'Chakwal', N'chakwal', N'Punjab', N'punjab', N'Allied Park', N'allied-park', N'Allied Park, Chakwal', N'0332-5781640', 1),
   (164, N'Choa Saidan Shah Campus', N'choa-saidan-shah-campus', N'Choa Saidan Shah', N'choa-saidan-shah', N'Chakwal', N'chakwal', N'Punjab', N'punjab', N'Choa Saidan Shah', N'choa-saidan-shah', N'Choa Saidan Shah, District Chakwal', N'0345-5775552', 1),
@@ -166,6 +168,15 @@ SELECT d.region_id, d.id, c.city, c.city_slug, 0
 FROM (SELECT DISTINCT city, city_slug, district_slug FROM @c) c
 JOIN dbo.districts d ON d.slug = c.district_slug
 WHERE NOT EXISTS (SELECT 1 FROM dbo.cities x WHERE x.slug = c.city_slug OR x.name = c.city);
+
+-- Existing cities that have no district or region yet (for example added in the admin panel) get them. Backed up first.
+IF OBJECT_ID(N'archive.cities_20261118') IS NULL
+    SELECT * INTO archive.cities_20261118 FROM dbo.cities;
+UPDATE ci SET district_id = COALESCE(ci.district_id, d.id), region_id = COALESCE(ci.region_id, d.region_id), updated_at = SYSDATETIMEOFFSET()
+FROM dbo.cities ci
+JOIN (SELECT DISTINCT city, city_slug, district_slug FROM @c) c ON ci.slug = c.city_slug OR ci.name = c.city
+JOIN dbo.districts d ON d.slug = c.district_slug
+WHERE ci.district_id IS NULL OR ci.region_id IS NULL;
 
 -- Campuses
 INSERT INTO dbo.branches (city_id, name, slug, area, area_slug, address_line, phone, status,
