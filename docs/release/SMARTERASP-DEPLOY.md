@@ -49,6 +49,7 @@ database and run, in this order:
 18. `Database/18_news_venue.sql` (optional venue for news posts; the news date is now editable in the admin panel)
 19. `Database/19_home_content_and_stage_classes.sql` (homepage words and photos editable under Admin > Home Page;
     a "classes" line for each stage of the academic levels). Uploaded page photos go to `media\public-media\pages\`.
+20. `Database/20_flyer_campuses.sql` (campuses from the flyer that were not on the website; 7 hidden until confirmed)
 
 Skip `03_fulltext.sql` (optional, and Full-Text Search may not be offered).
 
@@ -167,3 +168,5 @@ admin inbox, campus and page editing, on a phone and a computer.
 - 13 November 2026: `19_home_content_and_stage_classes` ran through `deploy/smarterasp-db`; the site (commit ee706af:
   Admin > Home Page, photo fields, list items, bold/italic, footer spacing) went up first time, every page 200.
   Still to confirm on the server: one photo upload in a page section (write permission on `media\public-media\pages`).
+- 18 November 2026: `20_flyer_campuses` ran through `deploy/smarterasp-db` (campuses from the old "Admission Open" flyer
+  that were not on the website: 110 shown, 7 hidden until the owner confirms). No site upload was needed.
