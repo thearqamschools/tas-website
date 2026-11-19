@@ -1,0 +1,150 @@
+@model CampusEditViewModel
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    var f = Model.Form;
+    ViewBag.Title = Model.IsNew ? "Add campus" : f.Name;
+    var action = Model.IsNew ? "/admin/campuses/new" : "/admin/campuses/" + f.Id.ToString("D");
+    var statusLabels = new Dictionary<string, string> { { "active", "Active" }, { "coming_soon", "Coming soon" }, { "inactive", "Inactive (hidden)" } };
+    var admissionLabels = new Dictionary<string, string> { { "open", "Admissions open" }, { "closed", "Admissions closed" }, { "waiting_list", "Waiting list" }, { "opening_soon", "Opening soon" }, { "contact_campus", "Contact the campus" } };
+    var ro = Model.CanEdit ? null : "disabled";
+}
+@helper Text(string name, string label, string value, string hint = null, string type = "text", int max = 200)
+{
+    <div class="admin-field">
+        <label for="@name">@label</label>
+        <input type="@type" id="@name" name="@name" value="@(ViewData.ModelState.ContainsKey(name) && ViewData.ModelState[name].Value != null ? ViewData.ModelState[name].Value.AttemptedValue : value)" maxlength="@max" aria-describedby="@(name)-hint @(name)-error" @(Model.CanEdit ? null : "disabled") />
+        @if (hint != null) { <p class="admin-hint" id="@(name)-hint">@hint</p> }
+        @Html.ValidationMessage(name, null, new { id = name + "-error", @class = "admin-field-error" })
+    </div>
+}
+@helper Area(string name, string label, string value, int rows, int max, string hint = null)
+{
+    <div class="admin-field">
+        <label for="@name">@label</label>
+        <textarea id="@name" name="@name" rows="@rows" maxlength="@max" aria-describedby="@(name)-hint @(name)-error" @(Model.CanEdit ? null : "disabled")>@(ViewData.ModelState.ContainsKey(name) && ViewData.ModelState[name].Value != null ? ViewData.ModelState[name].Value.AttemptedValue : value)</textarea>
+        @if (hint != null) { <p class="admin-hint" id="@(name)-hint">@hint</p> }
+        @Html.ValidationMessage(name, null, new { id = name + "-error", @class = "admin-field-error" })
+    </div>
+}
+<p><a href="/admin/campuses">&larr; Campuses</a></p>
+<div class="admin-page-head">
+    <h1>@(Model.IsNew ? "Add campus" : f.Name)</h1>
+    @if (Model.PublicUrl != null) { <a href="@Model.PublicUrl" target="_blank" rel="noopener">View on website</a> }
+</div>
+@if (Model.Notice != null)
+{
+    <div class="admin-alert admin-alert--success" role="status"><p>@Model.Notice</p></div>
+}
+@if (f.IsArchived)
+{
+    <div class="admin-alert admin-alert--info" role="status"><p>This campus is archived and not shown on the website.</p></div>
+}
+@Html.Partial("~/Views/Admin/_Errors.cshtml")
+
+<form method="post" action="@action" class="admin-form" novalidate>
+    @Html.AntiForgeryToken()
+    <section class="admin-card">
+        <h2>Campus</h2>
+        <div class="admin-grid-2">
+            @Text("Name", "Campus name", f.Name, "For example: Model Town Campus", max: 150)
+            @Text("Code", "Campus code (optional)", f.Code, "Capital letters, digits and hyphens, for example FSD-001", max: 20)
+        </div>
+        <div class="admin-grid-2">
+            <div class="admin-field">
+                <label for="CityId">City</label>
+                <select id="CityId" name="CityId" aria-describedby="CityId-error" @ro>
+                    <option value="">Choose a city</option>
+                    @foreach (var c in Model.Cities)
+                    {
+                        <option value="@c.Id" @(c.Id == f.CityId ? "selected" : null)>@c.Name</option>
+                    }
+                </select>
+                @Html.ValidationMessage("CityId", null, new { id = "CityId-error", @class = "admin-field-error" })
+            </div>
+            @Text("NewCityName", "Or a new city", f.NewCityName, "Only if the city is not in the list. Leave empty otherwise.", max: 100)
+        </div>
+        <div class="admin-grid-2">
+            @Text("Area", "Area or locality", f.Area, "For example: Samanabad", max: 120)
+            @Text("Slug", "Web address", f.Slug, "The last part of the campus page address. Leave empty to make it from the name.", max: 120)
+        </div>
+        @Text("AddressLine", "Full address", f.AddressLine, max: 300)
+    </section>
+
+    <section class="admin-card">
+        <h2>Contact</h2>
+        <div class="admin-grid-2">
+            @Text("Phone", "Phone", f.Phone, type: "tel", max: 20)
+            @Text("PhoneAlt", "Second phone (optional)", f.PhoneAlt, type: "tel", max: 20)
+            @Text("Whatsapp", "WhatsApp (optional)", f.Whatsapp, type: "tel", max: 20)
+            @Text("Email", "Email (optional)", f.Email, type: "email", max: 254)
+        </div>
+        @Text("Timings", "Timings (optional)", f.Timings, "For example: Mon–Sat, 8:00 am – 2:00 pm", max: 200)
+        @Text("GoogleMapsUrl", "Google Maps link (optional)", f.GoogleMapsUrl, "In Google Maps, tap Share and copy the link.", type: "url", max: 500)
+        <div class="admin-grid-2">
+            @Text("Latitude", "Latitude (optional)", f.Latitude.HasValue ? f.Latitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : null, "For example 31.4504", max: 20)
+            @Text("Longitude", "Longitude (optional)", f.Longitude.HasValue ? f.Longitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : null, "For example 73.1350", max: 20)
+        </div>
+    </section>
+
+    <section class="admin-card">
+        <h2>About the campus</h2>
+        @Area("Overview", "Overview", f.Overview, 6, 5000, "A short description for the campus page. Please do not add figures or claims that are not confirmed.")
+        <div class="admin-grid-2">
+            @Text("PrincipalName", "Principal's name (optional)", f.PrincipalName, max: 120)
+            @Text("PrincipalTitle", "Principal's title (optional)", f.PrincipalTitle, "For example: Principal", max: 120)
+        </div>
+        @Area("PrincipalMessage", "Principal's message (optional)", f.PrincipalMessage, 5, 3000)
+    </section>
+
+    <section class="admin-card">
+        <h2>Status and admissions</h2>
+        <div class="admin-grid-2">
+            <div class="admin-field">
+                <label for="Status">Campus status</label>
+                <select id="Status" name="Status" @ro>
+                    @foreach (var s in statusLabels) { <option value="@s.Key" @(s.Key == f.Status ? "selected" : null)>@s.Value</option> }
+                </select>
+                @Html.ValidationMessage("Status", null, new { @class = "admin-field-error" })
+            </div>
+            <div class="admin-field">
+                <label for="AdmissionStatus">Admissions</label>
+                <select id="AdmissionStatus" name="AdmissionStatus" @ro>
+                    @foreach (var s in admissionLabels) { <option value="@s.Key" @(s.Key == f.AdmissionStatus ? "selected" : null)>@s.Value</option> }
+                </select>
+                @Html.ValidationMessage("AdmissionStatus", null, new { @class = "admin-field-error" })
+            </div>
+        </div>
+        @Text("AdmissionNote", "Admission note (optional)", f.AdmissionNote, "A short line shown with the admission status. Use only confirmed dates.", max: 200)
+        @Text("SortOrder", "Order in lists", f.SortOrder.ToString(), "Smaller numbers are shown first within a city.", type: "number", max: 6)
+        @if (Model.CanPublish)
+        {
+            <div class="admin-check">
+                <input type="checkbox" id="IsPublished" name="IsPublished" value="true" @(f.IsPublished ? "checked" : null) @ro />
+                <input type="hidden" name="IsPublished" value="false" />
+                <label for="IsPublished"><strong>Show on the website</strong><span class="admin-hint">When off, the campus is saved but visitors cannot see it.</span></label>
+            </div>
+        }
+        else
+        {
+            <p class="admin-muted">Shown on the website: @(f.IsPublished ? "yes" : "no"). A Content Manager or Super Admin can change this.</p>
+        }
+    </section>
+
+    @if (Model.CanEdit)
+    {
+        <div><button type="submit" class="admin-button">@(Model.IsNew ? "Add campus" : "Save changes")</button></div>
+    }
+</form>
+
+@if (Model.CanArchive)
+{
+    <section class="admin-card">
+        <h2>@(f.IsArchived ? "Restore" : "Archive")</h2>
+        <p class="admin-muted">@(f.IsArchived ? "Bring this campus back. It shows on the website again if \"Show on the website\" is on." : "Archiving hides the campus from the website. Nothing is deleted and it can be restored.")</p>
+        <form method="post" action="/admin/campuses/@f.Id.ToString("D")/archive">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="archived" value="@(f.IsArchived ? "false" : "true")" />
+            <button type="submit" class="admin-button admin-button--secondary">@(f.IsArchived ? "Restore campus" : "Archive campus")</button>
+        </form>
+    </section>
+}

@@ -18,7 +18,7 @@ namespace TheArqamSchools.Web.Data
     {
         public static RedirectRule Find(string path)
         {
-            var all = Cache.Get("redirects", () =>
+            var all = Cache.GetOrLastGood("redirects", () =>
             {
                 using (var db = Db.Open())
                 {
@@ -26,7 +26,7 @@ namespace TheArqamSchools.Web.Data
                         .GroupBy(r => r.FromPath.TrimEnd('/').ToLowerInvariant())
                         .ToDictionary(g => g.Key.Length == 0 ? "/" : g.Key, g => g.First());
                 }
-            });
+            }, () => new Dictionary<string, RedirectRule>());
             RedirectRule rule;
             return all.TryGetValue(path, out rule) ? rule : null;
         }

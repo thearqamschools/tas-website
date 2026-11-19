@@ -1,0 +1,40 @@
+@model AdminSetupForm
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = "Create the first Super Admin";
+}
+<section class="admin-card admin-card--narrow">
+    <h1>Create the first Super Admin</h1>
+    <p>This page works only once, while no Super Admin exists. You need the setup key that was set on the server.</p>
+    @Html.Partial("~/Views/Admin/_Errors.cshtml")
+    <form method="post" action="/admin/setup" class="admin-form" novalidate>
+        @Html.AntiForgeryToken()
+        <div class="admin-field">
+            <label for="SetupKey">Setup key</label>
+            @Html.PasswordFor(m => m.SetupKey, new { autocomplete = "off", required = "required", aria_describedby = "SetupKey-error" })
+            @Html.ValidationMessageFor(m => m.SetupKey, null, new { id = "SetupKey-error", @class = "admin-field-error" })
+        </div>
+        <div class="admin-field">
+            <label for="FullName">Full name</label>
+            @Html.TextBoxFor(m => m.FullName, new { autocomplete = "name", required = "required", maxlength = "120", aria_describedby = "FullName-error" })
+            @Html.ValidationMessageFor(m => m.FullName, null, new { id = "FullName-error", @class = "admin-field-error" })
+        </div>
+        <div class="admin-field">
+            <label for="Email">Email address</label>
+            @Html.TextBoxFor(m => m.Email, new { type = "email", autocomplete = "username", autocapitalize = "none", spellcheck = "false", required = "required", maxlength = "254", aria_describedby = "Email-error" })
+            @Html.ValidationMessageFor(m => m.Email, null, new { id = "Email-error", @class = "admin-field-error" })
+        </div>
+        <div class="admin-field">
+            <label for="Password">Password</label>
+            @Html.PasswordFor(m => m.Password, new { autocomplete = "new-password", required = "required", minlength = "12", maxlength = "128", aria_describedby = "Password-hint Password-error" })
+            <p class="admin-hint" id="Password-hint">At least 12 characters.</p>
+            @Html.ValidationMessageFor(m => m.Password, null, new { id = "Password-error", @class = "admin-field-error" })
+        </div>
+        <div class="admin-field">
+            <label for="ConfirmPassword">Password again</label>
+            @Html.PasswordFor(m => m.ConfirmPassword, new { autocomplete = "new-password", required = "required", aria_describedby = "ConfirmPassword-error" })
+            @Html.ValidationMessageFor(m => m.ConfirmPassword, null, new { id = "ConfirmPassword-error", @class = "admin-field-error" })
+        </div>
+        <button type="submit" class="admin-button">Create account</button>
+    </form>
+</section>

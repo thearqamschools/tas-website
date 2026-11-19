@@ -40,9 +40,12 @@ namespace TheArqamSchools.Web.Controllers
                 return View("~/Views/Pages/Show.cshtml", model);
             }
 
-            InquiryRepository.SaveAdmissionInquiry(form.BranchId, form.ClassLevelId, form.Name.Trim(), form.Phone.Trim(),
+            var inquiryId = InquiryRepository.SaveAdmissionInquiry(form.BranchId, form.ClassLevelId, form.Name.Trim(), form.Phone.Trim(),
                 string.IsNullOrWhiteSpace(form.Email) ? null : form.Email.Trim(),
                 string.IsNullOrWhiteSpace(form.Message) ? null : form.Message.Trim(), "/admissions");
+            var chosenCampus = form.BranchId.HasValue ? model.Inquiry.Campuses.FirstOrDefault(c => c.Id == form.BranchId.Value) : null;
+            var chosenClass = form.ClassLevelId.HasValue ? model.Inquiry.Classes.FirstOrDefault(c => c.Id == form.ClassLevelId.Value) : null;
+            Notifications.AdmissionInquiry(inquiryId, form.Name.Trim(), chosenCampus == null ? null : chosenCampus.Name, chosenClass == null ? null : chosenClass.Name);
             return Redirect("/admissions?sent=1#inquiry");
         }
     }

@@ -1,0 +1,81 @@
+@model InboxListViewModel
+@using TheArqamSchools.Web.Data
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = Model.Title;
+    var pk = (TimeZoneInfo)ViewBag.Pakistan;
+    Func<string, int, string> link = (status, page) =>
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrEmpty(status)) { parts.Add("status=" + Url.Encode(status)); }
+        if (!string.IsNullOrEmpty(Model.Query)) { parts.Add("q=" + Url.Encode(Model.Query)); }
+        if (page > 1) { parts.Add("page=" + page); }
+        return Model.BasePath + (parts.Count > 0 ? "?" + string.Join("&", parts) : "");
+    };
+    var exportParts = new List<string>();
+    if (!string.IsNullOrEmpty(Model.Status)) { exportParts.Add("status=" + Url.Encode(Model.Status)); }
+    if (!string.IsNullOrEmpty(Model.Query)) { exportParts.Add("q=" + Url.Encode(Model.Query)); }
+    var exportUrl = Model.BasePath + "/export.csv" + (exportParts.Count > 0 ? "?" + string.Join("&", exportParts) : "");
+}
+<div class="admin-page-head">
+    <h1>@Model.Title</h1>
+    <a class="admin-button admin-button--secondary" href="@exportUrl">Download CSV</a>
+</div>
+
+<nav class="admin-tabs" aria-label="Filter by status">
+    <a href="@link(null, 1)" @(Model.Status == null ? Html.Raw("aria-current=\"page\"") : null)>All</a>
+    @foreach (var s in InboxRepository.Statuses)
+    {
+        <a href="@link(s, 1)" @(Model.Status == s ? Html.Raw("aria-current=\"page\"") : null)>@InboxRepository.Label(s) <span class="admin-count">@Model.CountFor(s)</span></a>
+    }
+</nav>
+
+<form method="get" action="@Model.BasePath" class="admin-search" role="search">
+    @if (Model.Status != null)
+    {
+        <input type="hidden" name="status" value="@Model.Status" />
+    }
+    <label for="q" class="admin-visually-hidden">Search by name, phone or email</label>
+    <input type="search" id="q" name="q" value="@Model.Query" placeholder="Search name, phone or email" maxlength="100" />
+    <button type="submit" class="admin-button">Search</button>
+    @if (Model.Query != null)
+    {
+        <a href="@link(Model.Status, 1)">Clear</a>
+    }
+</form>
+
+@if (Model.Items.Count == 0)
+{
+    <section class="admin-card"><p>Nothing to show@(Model.Query != null || Model.Status != null ? " for this filter" : " yet").</p></section>
+}
+else
+{
+    <p class="admin-muted">@Model.Total.ToString("N0") in total &middot; page @Model.Page of @Model.PageCount</p>
+    <ul class="admin-list">
+        @foreach (var item in Model.Items)
+        {
+            <li class="admin-list-item">
+                <a href="@(Model.BasePath + "/" + item.Id.ToString("D"))" class="admin-list-link">
+                    <span class="admin-list-main">
+                        <strong>@item.Name</strong>
+                        <span class="admin-status admin-status--@item.Status">@InboxRepository.Label(item.Status)</span>
+                    </span>
+                    <span class="admin-list-meta">
+                        @item.Phone
+                        @if (!string.IsNullOrEmpty(item.CampusName)) { <text>&middot; @item.CampusName</text> }
+                        @if (!string.IsNullOrEmpty(item.ClassName)) { <text>&middot; @item.ClassName</text> }
+                        @if (!string.IsNullOrEmpty(item.Type)) { <text>&middot; @item.Type</text> }
+                    </span>
+                    <span class="admin-list-date">@TimeZoneInfo.ConvertTime(item.CreatedAt, pk).ToString("d MMM yyyy, h:mm tt")</span>
+                </a>
+            </li>
+        }
+    </ul>
+    if (Model.PageCount > 1)
+    {
+        <nav class="admin-pager" aria-label="Pages">
+            @if (Model.Page > 1) { <a href="@link(Model.Status, Model.Page - 1)" rel="prev">&larr; Newer</a> }
+            @if (Model.Page < Model.PageCount) { <a href="@link(Model.Status, Model.Page + 1)" rel="next">Older &rarr;</a> }
+        </nav>
+    }
+}

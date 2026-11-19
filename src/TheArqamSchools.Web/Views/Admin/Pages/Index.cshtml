@@ -1,0 +1,23 @@
+@model IList<PageListRow>
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = "Pages";
+}
+<h1>Pages</h1>
+<p class="admin-muted">Choose a page to change its title, search-engine text or the words in its sections. The homepage design is part of the website code and is not edited here.</p>
+<ul class="admin-list">
+    @foreach (var p in Model)
+    {
+        <li class="admin-list-item">
+            <a class="admin-list-link" href="/admin/pages/@p.Id.ToString("D")">
+                <span class="admin-list-main">
+                    <strong>@p.Title</strong>
+                    @if (p.Status != "published") { <span class="admin-status admin-status--@(p.Status == "archived" ? "spam" : "new")">@(p.Status == "in_review" ? "In review" : char.ToUpperInvariant(p.Status[0]) + p.Status.Substring(1))</span> }
+                    @if (p.DraftCount > 0) { <span class="admin-status admin-status--in_progress">@(p.DraftCount == 1 ? "1 draft" : p.DraftCount + " drafts") waiting</span> }
+                </span>
+                <span class="admin-list-meta">@p.Path</span>
+                <span class="admin-list-date">@p.SectionCount sections</span>
+            </a>
+        </li>
+    }
+</ul>

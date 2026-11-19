@@ -1,0 +1,78 @@
+# Sets up or updates the SmarterASP.NET testing database, so nobody needs SSMS.
+#
+# Runs ONLY when the branch deploy/smarterasp-db is pushed (with the owner's approval).
+# - Empty database: runs Database/hosting/smarterasp_setup.sql, 01, 02, 04, 05, 06.
+# - Database already set up: runs only the numbered change scripts 04 onwards; each
+#   records itself in dbo.schema_migrations and does nothing the second time.
+# Uses the secret DB_CONNECTION_STRING (the same one the website uses). Prints no secrets.
+
+name: Database setup (SmarterASP testing)
+
+on:
+  push:
+    branches:
+      - deploy/smarterasp-db
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database-smarterasp
+  cancel-in-progress: false
+
+jobs:
+  database:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
+    steps:
+      - name: Check the connection string is set
+        run: |
+          if [ -z "$DB_CONNECTION_STRING" ]; then echo "::error::Secret DB_CONNECTION_STRING is missing. Nothing was run."; exit 1; fi
+
+      - name: Check out code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Install sqlcmd (Microsoft ODBC tools 18)
+        run: |
+          if [ ! -x /opt/mssql-tools18/bin/sqlcmd ]; then
+            curl -sSL https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc >/dev/null
+            curl -sSL https://packages.microsoft.com/config/ubuntu/24.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list >/dev/null
+            sudo apt-get update -qq && sudo ACCEPT_EULA=Y apt-get install -y -qq mssql-tools18 unixodbc-dev >/dev/null
+          fi
+          /opt/mssql-tools18/bin/sqlcmd -? | head -1
+
+      - name: Read server, database, user and password from the connection string
+        run: |
+          get() { echo "$DB_CONNECTION_STRING" | tr ';' '\n' | grep -i -m1 -E "^\s*($1)\s*=" | cut -d= -f2- | sed 's/^ *//; s/ *$//'; }
+          SERVER=$(get 'data source|server'); DB=$(get 'initial catalog|database'); USER=$(get 'user id|uid|user'); PASS=$(get 'password|pwd')
+          if [ -z "$SERVER" ] || [ -z "$DB" ] || [ -z "$USER" ] || [ -z "$PASS" ]; then echo "::error::The connection string needs Data Source, Initial Catalog, User Id and Password."; exit 1; fi
+          echo "::add-mask::$PASS"
+          { echo "SQL_SERVER=$SERVER"; echo "SQL_DB=$DB"; echo "SQL_USER=$USER"; echo "SQLCMDPASSWORD=$PASS"; } >> "$GITHUB_ENV"
+
+      - name: Run the scripts
+        run: |
+          set -e
+          SQLCMD=/opt/mssql-tools18/bin/sqlcmd
+          run() { echo "== $1"; $SQLCMD -S "$SQL_SERVER" -d "$SQL_DB" -U "$SQL_USER" -C -b -I -i "$1"; }
+          VERSION=$($SQLCMD -S "$SQL_SERVER" -d "$SQL_DB" -U "$SQL_USER" -C -b -h -1 -W -Q "SET NOCOUNT ON; SELECT CAST(SERVERPROPERTY('ProductMajorVersion') AS INT)")
+          echo "SQL Server major version: $VERSION"
+          if [ "$VERSION" -lt 17 ]; then echo "::error::This database is not on SQL Server 2025. Create it again in the panel and choose MSSQL 2025."; exit 1; fi
+          HAS=$($SQLCMD -S "$SQL_SERVER" -d "$SQL_DB" -U "$SQL_USER" -C -b -h -1 -W -Q "SET NOCOUNT ON; SELECT CASE WHEN OBJECT_ID(N'dbo.pages') IS NULL THEN 0 ELSE 1 END")
+          if [ "$HAS" = "0" ]; then
+            echo "Empty database: full setup."
+            run Database/hosting/smarterasp_setup.sql
+            run Database/01_schema.sql
+            run Database/02_seed_data.sql
+          else
+            echo "Website tables already exist: only change scripts."
+          fi
+          for f in $(ls Database/[0-9][0-9]_*.sql | sort); do
+            n=$(basename "$f" | cut -c1-2)
+            if [ "$n" -ge 4 ]; then run "$f"; fi
+          done
+          echo "== Check"
+          $SQLCMD -S "$SQL_SERVER" -d "$SQL_DB" -U "$SQL_USER" -C -b -W -Q "SET NOCOUNT ON; SELECT (SELECT COUNT(*) FROM dbo.pages) AS pages, (SELECT COUNT(*) FROM dbo.roles) AS roles, (SELECT COUNT(*) FROM dbo.schema_migrations) AS migrations, (SELECT compatibility_level FROM sys.databases WHERE name = DB_NAME()) AS compat"

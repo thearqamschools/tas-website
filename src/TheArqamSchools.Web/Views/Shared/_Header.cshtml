@@ -12,15 +12,11 @@
     var campusCta = SiteSettingsRepository.Json(settings, "header.cta_branch");
     var campusHref = campusCta != null && campusCta.Type == Newtonsoft.Json.Linq.JTokenType.Object ? campusCta.Value<string>("href") : "/campuses";
     var campusLabel = campusCta != null && campusCta.Type == Newtonsoft.Json.Linq.JTokenType.Object ? campusCta.Value<string>("label") : "Find a campus";
-    var facebook = "https://www.facebook.com/TASHeadOffice";
+    var social = Social.Links(settings);
 }
 <header class="site-header" data-header>
     <div class="topbar">
         <div class="container topbar-inner">
-            @if (!string.IsNullOrEmpty(phone))
-            {
-                <a class="topbar-link" href="@Contact.TelUrl(phone)">@Icons.Svg("phone", 16) @phone</a>
-            }
             <div class="topbar-right">
                 <nav aria-label="Utility">
                     <ul class="topbar-menu">
@@ -30,14 +26,21 @@
                         }
                     </ul>
                 </nav>
-                <a class="icon-link" href="@facebook" target="_blank" rel="noopener">@Icons.Svg("facebook", 18)<span class="sr-only">Facebook (opens in a new tab)</span></a>
+                <ul class="social-list" aria-label="The Arqam Schools on social media">
+                    @foreach (var s in social)
+                    {
+                        <li><a class="icon-link" href="@s.Url" target="_blank" rel="noopener">@Icons.Svg(s.Icon, 18)<span class="sr-only">@s.Name (opens in a new tab)</span></a></li>
+                    }
+                </ul>
             </div>
         </div>
     </div>
     <div class="container header-bar">
         <a class="brand" href="/" aria-label="The Arqam Schools, home">
-            <img src="~/Content/brand/the-arqam-schools-logo-official.png" alt="" width="52" height="52" />
-            <span>The Arqam Schools</span>
+            <img src="~/Content/brand/the-arqam-schools-logo-128.png" srcset="@Url.Content("~/Content/brand/the-arqam-schools-logo-64.png") 64w, @Url.Content("~/Content/brand/the-arqam-schools-logo-128.png") 128w, @Url.Content("~/Content/brand/the-arqam-schools-logo-192.png") 192w" sizes="56px" alt="" width="56" height="56" />
+            <span class="brand-text">
+                <span class="brand-name">The Arqam Schools</span>
+            </span>
         </a>
         <nav class="main-nav" aria-label="Main">
             <ul>
@@ -94,8 +97,8 @@
     <dialog class="mobile-menu" id="mobile-menu" aria-label="Menu">
         <div class="mobile-menu-head">
             <a class="brand" href="/" aria-label="The Arqam Schools, home">
-                <img src="~/Content/brand/the-arqam-schools-logo-official.png" alt="" width="44" height="44" />
-                <span>The Arqam Schools</span>
+                <img src="~/Content/brand/the-arqam-schools-logo-128.png" srcset="@Url.Content("~/Content/brand/the-arqam-schools-logo-64.png") 64w, @Url.Content("~/Content/brand/the-arqam-schools-logo-128.png") 128w, @Url.Content("~/Content/brand/the-arqam-schools-logo-192.png") 192w" sizes="44px" alt="" width="44" height="44" />
+                <span class="brand-text"><span class="brand-name">The Arqam Schools</span></span>
             </a>
             <button type="button" class="menu-button" data-menu-close>@Icons.Svg("x", 24)<span class="sr-only">Close menu</span></button>
         </div>

@@ -1,0 +1,38 @@
+@model IList<NewsItem>
+@using TheArqamSchools.Web.Data
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = "News & Events";
+    var pk = TimeSpan.FromHours(5);
+}
+<div class="admin-page-head">
+    <h1>News &amp; Events</h1>
+    <div class="admin-status-form">
+        @if ((bool)ViewBag.CanNews) { <a class="admin-button" href="/admin/news/new/news">Add news</a> }
+        @if ((bool)ViewBag.CanEvents) { <a class="admin-button admin-button--secondary" href="/admin/news/new/event">Add event</a> }
+    </div>
+</div>
+<p class="admin-muted">Published items appear on <a href="/news-events" target="_blank" rel="noopener">News &amp; Events</a> and the newest three on the homepage. Please use real, confirmed news only.</p>
+@if (Model.Count == 0)
+{
+    <section class="admin-card"><p>No news or events yet.</p></section>
+}
+else
+{
+    <ul class="admin-list">
+        @foreach (var n in Model)
+        {
+            <li class="admin-list-item">
+                <a class="admin-list-link" href="/admin/news/@(n.IsEvent ? "event" : "news")/@n.Id.ToString("D")">
+                    <span class="admin-list-main">
+                        <strong>@n.Title</strong>
+                        <span class="admin-status admin-status--in_progress">@NewsRepository.FilterLabel(n.Category)</span>
+                        @if (n.Status != "published") { <span class="admin-status admin-status--@(n.Status == "archived" ? "spam" : "new")">@(n.Status == "archived" ? "Archived" : "Draft")</span> }
+                    </span>
+                    <span class="admin-list-meta">/news-events/@n.Slug</span>
+                    <span class="admin-list-date">@n.Date.ToOffset(pk).ToString("d MMM yyyy")</span>
+                </a>
+            </li>
+        }
+    </ul>
+}

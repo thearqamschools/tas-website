@@ -1,0 +1,45 @@
+@model IList<CampusListRow>
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = "Campuses";
+    var q = ViewBag.Query as string;
+}
+<div class="admin-page-head">
+    <h1>Campuses</h1>
+    @if ((bool)ViewBag.CanCreate)
+    {
+        <a class="admin-button" href="/admin/campuses/new">Add campus</a>
+    }
+</div>
+<form method="get" action="/admin/campuses" class="admin-search" role="search">
+    <label for="q" class="admin-visually-hidden">Search campuses</label>
+    <input type="search" id="q" name="q" value="@q" placeholder="Search by name, area, city or code" maxlength="100" />
+    <button type="submit" class="admin-button">Search</button>
+    @if (q != null) { <a href="/admin/campuses">Clear</a> }
+</form>
+@if (Model.Count == 0)
+{
+    <section class="admin-card"><p>No campuses found.</p></section>
+}
+else
+{
+    <p class="admin-muted">@Model.Count.ToString("N0") campuses</p>
+    <ul class="admin-list">
+        @foreach (var c in Model)
+        {
+            <li class="admin-list-item">
+                <a class="admin-list-link" href="/admin/campuses/@c.Id.ToString("D")">
+                    <span class="admin-list-main">
+                        <strong>@c.Name</strong>
+                        @if (c.ArchivedAt.HasValue) { <span class="admin-status admin-status--spam">Archived</span> }
+                        else if (!c.IsPublished) { <span class="admin-status admin-status--new">Not on website</span> }
+                        @if (c.Status == "coming_soon") { <span class="admin-status admin-status--in_progress">Coming soon</span> }
+                        @if (c.Status == "inactive") { <span class="admin-status admin-status--spam">Inactive</span> }
+                    </span>
+                    <span class="admin-list-meta">@c.CityName @if (!string.IsNullOrEmpty(c.Area)) { <text>&middot; @c.Area</text> } @if (!string.IsNullOrEmpty(c.Code)) { <text>&middot; @c.Code</text> }</span>
+                    <span class="admin-list-date">Admissions: @c.AdmissionStatus.Replace("_", " ")</span>
+                </a>
+            </li>
+        }
+    </ul>
+}

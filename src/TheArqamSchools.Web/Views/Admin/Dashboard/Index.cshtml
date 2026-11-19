@@ -1,0 +1,40 @@
+@model AdminDashboardViewModel
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = "Dashboard";
+}
+<section class="admin-card">
+    <h1>Assalamualaikum, @Model.User.DisplayName</h1>
+    <p class="admin-muted">
+        Signed in as @Model.User.Email
+        @if (Model.User.RoleNames.Count > 0)
+        {
+            <text>&middot; @string.Join(", ", Model.User.RoleNames)</text>
+        }
+    </p>
+</section>
+
+@if (Model.NewAdmissionInquiries.HasValue)
+{
+    <section class="admin-stats" aria-label="New form submissions">
+        <a class="admin-stat" href="/admin/inquiries?status=new">
+            <p class="admin-stat-value">@Model.NewAdmissionInquiries.Value.ToString("N0")</p>
+            <p class="admin-stat-label">New admission inquiries</p>
+        </a>
+        <a class="admin-stat" href="/admin/messages?status=new">
+            <p class="admin-stat-value">@Model.NewContactMessages.Value.ToString("N0")</p>
+            <p class="admin-stat-label">New messages</p>
+        </a>
+    </section>
+}
+
+<section class="admin-card">
+    <h2>Quick links</h2>
+    <ul class="admin-quick-links">
+        @if (Model.User.Can("inquiries.view")) { <li><a href="/admin/inquiries">Admission inquiries</a></li><li><a href="/admin/messages">Messages</a></li> }
+        @if (Model.User.Can("franchise.view")) { <li><a href="/admin/franchise">Franchise applications</a></li> }
+        @if (Model.User.Can("pages.view")) { <li><a href="/admin/pages">Pages</a></li> }
+        @if (Model.User.Can("branches.view")) { <li><a href="/admin/campuses">Campuses</a></li> }
+        <li><a href="/" target="_blank" rel="noopener">View the website</a></li>
+    </ul>
+</section>

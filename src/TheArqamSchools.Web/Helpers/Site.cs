@@ -19,11 +19,19 @@ namespace TheArqamSchools.Web.Helpers
             return BaseUrl + (path.StartsWith("/") ? path : "/" + path);
         }
 
+        /// <summary>True when the text contains Arabic letters (for example the school's motto), so it can be shown right to left with lang="ar".</summary>
+        public static bool IsArabic(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return false;
+            foreach (var ch in text) if (ch >= '\u0600' && ch <= '\u06FF') return true;
+            return false;
+        }
+
         /// <summary>Links from the CMS are only used if they are site-relative, https, mailto, tel or an in-page anchor.</summary>
         public static bool IsSafeHref(string href)
         {
             if (string.IsNullOrWhiteSpace(href)) return false;
-            return (href.StartsWith("/") && !href.StartsWith("//")) || href.StartsWith("#")
+            return (href.StartsWith("/") && !href.StartsWith("//") && !href.StartsWith("/\\")) || href.StartsWith("#")
                 || href.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
                 || href.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase)
                 || href.StartsWith("tel:", StringComparison.OrdinalIgnoreCase);
@@ -50,6 +58,16 @@ namespace TheArqamSchools.Web.Helpers
         public static bool RequireHttps
         {
             get { return !string.Equals(ConfigurationManager.AppSettings["Site:RequireHttps"], "false", StringComparison.OrdinalIgnoreCase); }
+        }
+
+        /// <summary>
+        /// Testing phase: Site:NoIndex = true hides the whole site from search engines
+        /// (robots.txt "Disallow: /", a noindex meta tag on every page and an X-Robots-Tag header).
+        /// Set it to false on launch day.
+        /// </summary>
+        public static bool NoIndex
+        {
+            get { return string.Equals(ConfigurationManager.AppSettings["Site:NoIndex"], "true", StringComparison.OrdinalIgnoreCase); }
         }
 
         public static string Encode(string s) { return HttpUtility.HtmlEncode(s ?? ""); }

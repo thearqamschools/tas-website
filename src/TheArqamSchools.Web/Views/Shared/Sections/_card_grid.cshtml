@@ -3,13 +3,14 @@
 @{
     var d = Model.Data;
     var items = d["items"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
+    items = new Newtonsoft.Json.Linq.JArray(items.Where(x => x.Type != Newtonsoft.Json.Linq.JTokenType.Object || !string.IsNullOrWhiteSpace(x.Value<string>("title"))));  // items added in the admin panel stay hidden until they have a title
     var cols = d.Value<int?>("columns") ?? (items.Count == 4 || items.Count > 6 ? 4 : 3);
 }
 <section class="section tone-@Model.Tone("grey")" @(Model.Anchor != null ? "id=" + Model.Anchor : "") aria-labelledby="h-@Model.Id">
     <div class="container">
         <div class="section-head">
             <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
-            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
+            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@SimpleFormat.Render(Model.Text("intro"))</p> }
         </div>
         <ul class="card-grid cols-@cols">
             @foreach (var it in items)
@@ -19,7 +20,8 @@
                 var imgUrl = Media.Url(img);
                 var icon = it.Value<string>("icon");
                 <li>
-                    <article class="card@(Site.IsSafeHref(href) ? " card-link" : "")">
+                    @* Icon cards (no photo) are centred, as the owner asked (3 November 2026). *@
+                    <article class="card@(Site.IsSafeHref(href) ? " card-link" : "")@(imgUrl == null && !string.IsNullOrEmpty(icon) ? " card-centered" : "")">
                         @if (imgUrl != null)
                         {
                             <div class="media-frame ratio-4-3 card-media">
@@ -27,7 +29,8 @@
                             </div>
                         }
                         <div class="card-body">
-                            @if (!string.IsNullOrEmpty(icon) && imgUrl == null) { <span class="icon-badge">@Icons.Svg(icon, 22)</span> }
+                            @{ var chip = string.IsNullOrEmpty(icon) || imgUrl != null ? null : Icons.Svg(icon, 22); }
+                            @if (chip != null && !string.IsNullOrEmpty(chip.ToString())) { <span class="icon-badge">@chip</span> }
                             @if (!string.IsNullOrEmpty(it.Value<string>("meta"))) { <p class="card-meta">@(it.Value<string>("meta"))</p> }
                             <h3 class="h4">
                                 @if (Site.IsSafeHref(href))
@@ -39,7 +42,8 @@
                                     @(it.Value<string>("title"))
                                 }
                             </h3>
-                            @if (!string.IsNullOrEmpty(it.Value<string>("summary"))) { <p>@(it.Value<string>("summary"))</p> }
+                            @if (!string.IsNullOrEmpty(it.Value<string>("summary"))) { <p>@SimpleFormat.Render(it.Value<string>("summary"))</p> }
+                            @if (Site.IsSafeHref(href)) { <span class="card-arrow" aria-hidden="true">@Icons.Svg("arrow-right", 20)</span> }
                         </div>
                     </article>
                 </li>

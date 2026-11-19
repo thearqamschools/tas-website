@@ -13,7 +13,7 @@
     <div class="container form-layout">
         <div class="form-intro">
             <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
-            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
+            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@SimpleFormat.Render(Model.Text("intro"))</p> }
             <p class="muted">Prefer to call? Contact your nearest campus on the <a href="/campuses">Campuses page</a>.</p>
         </div>
         <div class="form-card">
@@ -35,6 +35,7 @@
                 {
                     <div class="alert alert-error" role="alert" tabindex="-1" data-focus><p>Please check the highlighted fields and try again.</p></div>
                 }
+                <p class="form-note">Fields marked <span class="req">*</span> are required.</p>
                 <form method="post" action="/admissions/inquiry#inquiry" novalidate>
                     @Html.AntiForgeryToken()
                     <div class="hp" aria-hidden="true">

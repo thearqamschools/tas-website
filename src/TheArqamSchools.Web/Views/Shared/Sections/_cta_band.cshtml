@@ -1,4 +1,5 @@
 @model PageSection
+@using TheArqamSchools.Web.Helpers
 @{
     var d = Model.Data;
     var tone = Model.Tone("warm");
@@ -7,7 +8,7 @@
     <div class="container cta-inner">
         <div>
             <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
-            @if (!string.IsNullOrEmpty(Model.Text("body"))) { <p class="lead">@Model.Text("body")</p> }
+            @if (!string.IsNullOrEmpty(Model.Text("body"))) { <p class="lead">@SimpleFormat.Render(Model.Text("body"))</p> }
         </div>
         <div class="btn-row">
             @Html.Partial("_Button", d["primary_cta"], new ViewDataDictionary { { "variant", tone == "navy" ? "light" : "primary" } })

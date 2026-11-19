@@ -14,7 +14,7 @@ The previous version (`arqam-web`) is unchanged and remains the reference for ev
 | 1 | SQL Server 2025 database (all 51 tables, keys, checks, indexes), current content and roles, images, Visual Studio solution, status page | **Done**, scripts run on SQL Server 2025 |
 | 2a | Public website: design, header/footer, simplified navigation, CMS pages, About Us / Academics / Admissions / Campuses consolidated, campus directory and detail pages, admission and campus inquiry forms, redirects, sitemap | **Done**, tested (179/179 checks) |
 | 2b | Homepage in full, contact, careers and franchise forms, Turnstile, email notifications | Next |
-| 3 | Admin panel: sign-in with two-factor, roles and permissions, pages/homepage/menus editors, media library, branches, head offices, franchise applications, CSV export | Planned |
+| 3 | Admin panel: sign-in with two-factor, roles and permissions, inbox with CSV export, pages, campuses, menus, settings, users (see `docs/ADMIN-PANEL.md`); media library, head offices and franchise screens still to do | **Built, not yet tested on a database** |
 | 4 | SEO (sitemaps, redirects, sharing images), search, email, security review, IIS deployment guide | Planned |
 
 ## Folder layout
@@ -28,6 +28,18 @@ Database/
   04_simplify_navigation.sql  phase 2a content change: backs up to archive.*_20261024, simplifies the menu,
                            consolidates the four main pages, archives old subpages, adds 301 redirects
   05_franchise_header_button.sql  red header button becomes "Franchise"; Franchise hidden from the main menu
+  06_contact_franchise_forms.sql  adds the message form to /contact and the application form to /franchise/apply
+  07_news_and_flat_menu.sql       news categories, flat main menu (News & Events, Contact), footer "Explore"
+  08_about_timeline_leadership.sql  empty, hidden "Our journey" and "Our leadership" sections on /about
+  09_owner_review_changes.sql       owner's review: Home menu item, About/Academics/Admissions layout, Privacy and Terms pages
+  10_faisalabad_region_campuses.sql  93 Faisalabad region campuses from the 2026 list (no directors' names or cell numbers)
+  11_owner_second_review.sql        motto in Arabic, Facebook = TASHeadOffice, Class 9/10 names, level ages and points, journey 1993
+  12_approved_content_v1_4.sql      approved website content v1.4 (docs/content/TAS-Website-Content.md)
+  13_undo_content_except_about.sql  undoes the content v1.4 update everywhere except About Us (owner, 6 Nov 2026)
+  14_about_notes_and_sample_news.sql About: Our Journey heading, Vision seal, Core Values badge; five "Sample:" news posts
+  15_about_photos_and_core_values.sql founder and CEO photos on About; Core Values without the intro line and statement
+  16_photo_asad_sakhawat_ali.sql     photo of Mr. Asad Sakhawat Ali on About > Leadership
+  hosting/smarterasp_setup.sql    shared-hosting replacement for 00 (see docs/release/SMARTERASP-DEPLOY.md)
   tools/convert.py         generates 01_schema.sql from the PostgreSQL schema
   tools/export_data.py     generates 02_seed_data.sql from the current content
 src/

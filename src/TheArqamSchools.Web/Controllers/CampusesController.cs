@@ -73,10 +73,12 @@ namespace TheArqamSchools.Web.Controllers
             var email = string.IsNullOrWhiteSpace(form.Email) ? null : form.Email.Trim();
             if (form.Type == "admissions")
             {
-                InquiryRepository.SaveAdmissionInquiry(campus.Id, null, form.Name.Trim(), form.Phone.Trim(), email, form.Message.Trim(), campus.Url);
+                var inquiryId = InquiryRepository.SaveAdmissionInquiry(campus.Id, null, form.Name.Trim(), form.Phone.Trim(), email, form.Message.Trim(), campus.Url);
+                Notifications.AdmissionInquiry(inquiryId, form.Name.Trim(), campus.Name, null);
                 return Redirect(campus.Url + "?sent=admission#contact");
             }
-            InquiryRepository.SaveContactMessage(form.Type, campus.Id, form.Name.Trim(), form.Phone.Trim(), email, form.Message.Trim(), campus.Url);
+            var messageId = InquiryRepository.SaveContactMessage(form.Type, campus.Id, form.Name.Trim(), form.Phone.Trim(), email, form.Message.Trim(), campus.Url);
+            Notifications.ContactMessage(messageId, form.Type, form.Name.Trim(), campus.Name);
             return Redirect(campus.Url + "?sent=1#contact");
         }
 

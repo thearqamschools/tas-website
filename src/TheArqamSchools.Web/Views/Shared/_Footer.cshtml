@@ -8,6 +8,8 @@
     var quick = NavigationRepository.Menu("footer");
     var offices = HeadOfficeRepository.Published();
     var holder = SiteSettingsRepository.Text(settings, "legal.copyright_holder", "The Arqam Schools");
+    // Social links from the website settings (admin panel > Settings), WhatsApp first.
+    var social = Social.Links(settings);
 }
 <footer class="site-footer">
     @if (cta != null && !(ViewBag.HideFooterCta is bool && (bool)ViewBag.HideFooterCta))
@@ -26,12 +28,33 @@
         <div class="container footer-grid">
             <div class="footer-identity">
                 <a class="brand brand-light" href="/" aria-label="The Arqam Schools, home">
-                    <img src="~/Content/brand/the-arqam-schools-logo-official.png" alt="" width="64" height="64" />
-                    <span>The Arqam Schools</span>
+                    <img src="~/Content/brand/the-arqam-schools-logo-128.png" srcset="@Url.Content("~/Content/brand/the-arqam-schools-logo-64.png") 64w, @Url.Content("~/Content/brand/the-arqam-schools-logo-128.png") 128w, @Url.Content("~/Content/brand/the-arqam-schools-logo-192.png") 192w" sizes="64px" alt="" width="64" height="64" />
+                    <span class="brand-text"><span class="brand-name">The Arqam Schools</span></span>
                 </a>
-                @if (!string.IsNullOrEmpty(mission)) { <p>@mission</p> }
-                @if (!string.IsNullOrEmpty(tagline)) { <p class="footer-tagline">@tagline</p> }
-                <a class="icon-link" href="https://www.facebook.com/TASHeadOffice" target="_blank" rel="noopener">@Icons.Svg("facebook", 20)<span class="sr-only">Facebook (opens in a new tab)</span></a>
+                @* Order (owner, 6 November 2026): logo and name, the Arabic motto, then the footer text; the text
+                   breaks after its first sentence pair ("... Education with purpose.") onto a new line. *@
+                @if (!string.IsNullOrEmpty(tagline)) { <p class="footer-tagline" lang="@(Site.IsArabic(tagline) ? "ar" : null)" dir="@(Site.IsArabic(tagline) ? "rtl" : null)">@tagline</p> }
+                @if (!string.IsNullOrEmpty(mission))
+                {
+                    var marker = "Education with purpose.";
+                    var cut = mission.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+                    var rest = cut >= 0 ? mission.Substring(cut + marker.Length).Trim() : "";
+                    if (cut >= 0 && rest.Length > 0)
+                    {
+                        <p class="footer-statement">@mission.Substring(0, cut + marker.Length)</p>
+                        <p class="footer-statement-2">@rest</p>
+                    }
+                    else
+                    {
+                        <p class="footer-statement">@mission</p>
+                    }
+                }
+                <ul class="footer-social" aria-label="The Arqam Schools on social media">
+                    @foreach (var s in social)
+                    {
+                        <li><a class="icon-link" href="@s.Url" target="_blank" rel="noopener">@Icons.Svg(s.Icon, 20)<span class="sr-only">@s.Name (opens in a new tab)</span></a></li>
+                    }
+                </ul>
             </div>
             @foreach (var group in quick)
             {
@@ -100,7 +123,11 @@
         </div>
         <div class="container footer-bottom">
             <p>&copy; @DateTime.Now.Year @holder. All rights reserved.</p>
-            <p><a href="/contact">Contact</a></p>
+            <ul class="footer-legal">
+                <li><a href="/privacy">Privacy Policy</a></li>
+                <li><a href="/terms">Terms of Service</a></li>
+                <li><a href="/admin/login" rel="nofollow noopener" target="_blank">Admin<span class="sr-only"> (opens in a new tab)</span></a></li>
+            </ul>
         </div>
     </div>
 </footer>

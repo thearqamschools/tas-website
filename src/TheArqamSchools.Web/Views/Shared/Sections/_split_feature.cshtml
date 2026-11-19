@@ -7,20 +7,29 @@
     var left = Model.Text("image_side") == "left";
     var body = d["body"];
     var link = d["link"];
+    // Only the first section of the page is the page heading (Show.cshtml decides), so there is never a second h1.
+    var isIntro = ViewData["isPageIntro"] is bool && (bool)ViewData["isPageIntro"];
 }
 <section class="section tone-@Model.Tone("white")" @(Model.Anchor != null ? "id=" + Model.Anchor : "") aria-labelledby="h-@Model.Id">
-    <div class="container split@(left ? " split-image-left" : "")">
+    <div class="container split@(imgUrl == null ? " split-solo" : (left ? " split-image-left" : ""))@(isIntro ? " split-top" : "")">
         <div class="split-text">
             @if (!string.IsNullOrEmpty(Model.Text("eyebrow"))) { <p class="eyebrow">@Model.Text("eyebrow")</p> }
-            <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
+            @if (isIntro)
+            {
+                <h1 class="h1" id="h-@Model.Id">@Model.Text("heading")</h1>
+            }
+            else
+            {
+                <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
+            }
             <div class="prose-lg">
                 @if (body is Newtonsoft.Json.Linq.JArray)
                 {
-                    foreach (var p in body) { <p>@((string)p)</p> }
+                    foreach (var p in body) { <p>@SimpleFormat.Render((string)p)</p> }
                 }
                 else if (body != null)
                 {
-                    <p>@((string)body)</p>
+                    <p>@SimpleFormat.Render((string)body)</p>
                 }
             </div>
             @Html.Partial("_Button", link, new ViewDataDictionary { { "variant", "link" } })

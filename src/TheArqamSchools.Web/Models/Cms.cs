@@ -81,4 +81,37 @@ namespace TheArqamSchools.Web.Models
         public string Label { get; private set; }
         public string Url { get; private set; }
     }
+
+    /// <summary>A news post or an event, as shown on the public News &amp; Events page and in the admin list.</summary>
+    public class NewsItem
+    {
+        public string Kind { get; set; }
+        public Guid Id { get; set; }
+        public string Slug { get; set; }
+        public string Title { get; set; }
+        public string Summary { get; set; }
+        public string Body { get; set; }
+        public string Category { get; set; }
+        public DateTimeOffset Date { get; set; }
+        public DateTimeOffset? EndsAt { get; set; }
+        public string Venue { get; set; }
+        public string CampusName { get; set; }
+        public bool IsFeatured { get; set; }
+        public bool IsAllDay { get; set; }
+        public string Status { get; set; }
+        /// <summary>Main photo (news.cover_media_id / events.cover_media_id), path inside public-media; null when none.</summary>
+        public string CoverPath { get; set; }
+        public string CoverAlt { get; set; }
+        public bool IsEvent { get { return Kind == "event"; } }
+        public string CoverUrl { get { return string.IsNullOrEmpty(CoverPath) ? null : "/media/public-media/" + CoverPath; } }
+        public string CoverSmallUrl { get { return string.IsNullOrEmpty(CoverPath) ? null : "/media/public-media/" + TheArqamSchools.Web.Infrastructure.ImageStore.SmallPath(CoverPath); } }
+        public string Url { get { return "/news-events/" + Slug; } }
+    }
+
+    public class NewsListViewModel
+    {
+        public IList<NewsItem> Items { get; set; }
+        public string Filter { get; set; }
+        public PageMeta Meta { get; set; }
+    }
 }

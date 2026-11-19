@@ -1,19 +1,21 @@
 @model PageSection
+@using TheArqamSchools.Web.Helpers
 @{
     var steps = Model.Data["steps"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
+    steps = new Newtonsoft.Json.Linq.JArray(steps.Where(x => x.Type != Newtonsoft.Json.Linq.JTokenType.Object || !string.IsNullOrWhiteSpace(x.Value<string>("title"))));  // items added in the admin panel stay hidden until they have a title
 }
 <section class="section tone-@Model.Tone("white")" @(Model.Anchor != null ? "id=" + Model.Anchor : "") aria-labelledby="h-@Model.Id">
     <div class="container">
         <div class="section-head">
             <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
-            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@Model.Text("intro")</p> }
+            @if (!string.IsNullOrEmpty(Model.Text("intro"))) { <p class="lead">@SimpleFormat.Render(Model.Text("intro"))</p> }
         </div>
         <ol class="steps steps-@steps.Count">
             @foreach (var s in steps)
             {
                 <li>
                     <h3 class="h4">@(s.Value<string>("title"))</h3>
-                    <p>@(s.Value<string>("description"))</p>
+                    <p>@SimpleFormat.Render(s.Value<string>("description"))</p>
                 </li>
             }
         </ol>
