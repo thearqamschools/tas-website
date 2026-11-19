@@ -4,8 +4,8 @@
 --
 -- Source: the owner's Word file "TAS_Books_Quantity_Form.docx" (class, product name, sale price).
 -- 78 items: Play Group, Nursery, Prep, Class 1 to Class 7 and "All Classes" (diary, attendance
--- register, admission form, prospectus). The file's class names One…Seven are written as
--- Class 1…Class 7 (owner's choice) so the website sorts them in order.
+-- register, admission form, prospectus). The file's class names One to Seven are written as
+-- Class 1 to Class 7 (owner's choice) so the website sorts them in order.
 -- Only the sale price is in the file: purchase price and stock start at 0 and are entered by the
 -- office in Admin > Books. A book with no stock is not shown to customers, so nothing can be
 -- ordered until stock is entered.
