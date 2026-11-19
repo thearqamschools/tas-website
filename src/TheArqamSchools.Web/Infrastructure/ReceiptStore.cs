@@ -32,7 +32,7 @@ namespace TheArqamSchools.Web.Infrastructure
             else if (bytes.Length > 5 && bytes[0] == '%' && bytes[1] == 'P' && bytes[2] == 'D' && bytes[3] == 'F' && bytes[4] == '-') { mime = "application/pdf"; ext = ".pdf"; }
             else throw new ImageRejectedException("The receipt must be a photo (JPG or PNG) or a PDF.");
             var now = DateTime.UtcNow.AddHours(5);
-            var relative = "book-receipts/" + now.ToString("yyyy") + "/" + now.ToString("MM") + "/" + Guid.NewGuid().ToString("N") + ext;
+            var relative = "book-receipts/" + now.ToString("yyyy", System.Globalization.CultureInfo.InvariantCulture) + "/" + now.ToString("MM", System.Globalization.CultureInfo.InvariantCulture) + "/" + Guid.NewGuid().ToString("N") + ext;
             var full = PhysicalPath(relative);
             Directory.CreateDirectory(Path.GetDirectoryName(full));
             File.WriteAllBytes(full, bytes);

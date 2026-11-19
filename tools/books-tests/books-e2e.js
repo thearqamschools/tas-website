@@ -137,6 +137,26 @@ const BOOKS = [
   await admin.click('button:has-text("Cancel order")'); await admin.waitForLoadState();
   ok('unpaid order can be cancelled', (await admin.locator('.admin-order-head').innerText()).includes('Cancelled'));
 
+  // --- Books handed over before any payment: stock comes off then, and not again at payment --------
+  await admin.goto(B + '/admin/books/orders/new?q=0311'); await admin.click('a:has-text("DEMO Pickup Only")'); await admin.waitForLoadState();
+  await admin.fill('#' + await admin.locator('tr', { hasText: 'DEMO Colours and Shapes' }).locator('input').getAttribute('id'), '2');
+  await admin.click('button:has-text("Place order")'); await admin.waitForLoadState();
+  const thirdNo = Number((admin.url().match(/orders\/(\d+)/) || [])[1]);
+  await admin.click('button:has-text("Mark as collected")'); await admin.waitForLoadState();
+  ok('collected before payment takes stock (30-2=28)', (await stockOf('DEMO Colours and Shapes')) === 28);
+  await admin.goto(B + '/admin/books/orders/' + thirdNo);
+  ok('no backwards status buttons', (await admin.locator('button:has-text("Mark as checked")').count()) === 0);
+  const back = await admin.evaluate(async (no) => {
+    const token = document.querySelector('input[name=__RequestVerificationToken]').value;
+    const r = await fetch('/admin/books/orders/' + no + '/status', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'status=new&__RequestVerificationToken=' + encodeURIComponent(token) });
+    return r.text();
+  }, thirdNo);
+  ok('status cannot go back', back.includes('cannot go back'));
+  await admin.fill('#Amount', '440'); await admin.selectOption('#Method', 'cash');
+  await admin.evaluate(() => { const s = document.getElementById('AccountId'); const o = [...s.options].find(x => x.text.includes('DEMO Office cash')); s.value = o.value; });
+  await admin.click('button:has-text("Save payment")'); await admin.waitForLoadState();
+  ok('payment after hand-over does not take stock again', (await stockOf('DEMO Colours and Shapes')) === 28);
+
   await admin.goto(B + '/admin/books/orders'); await admin.screenshot({ path: OUT + '/admin-orders.png', fullPage: true });
   ok('no script errors ' + errors.join(' | '), errors.length === 0);
   console.log(results.join('\n'));

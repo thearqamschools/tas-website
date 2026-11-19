@@ -22,8 +22,9 @@ namespace TheArqamSchools.Web.Controllers
         // ---- Order list and order page ----------------------------------------------------
 
         [HttpGet]
-        public ActionResult Orders(string status, string payment, string from, string to, string q)
+        public ActionResult Orders(string status, string payment, string from, string to)
         {
+            var q = Request.Unvalidated.QueryString["q"];
             var f = new BookOrderFilter
             {
                 Status = BookOrderRepository.Statuses.Contains(status) ? status : null,
@@ -38,8 +39,9 @@ namespace TheArqamSchools.Web.Controllers
 
         /// <summary>GET /admin/books/find?code=BK-1001: what a barcode scanner types. Opens the order at its payment form.</summary>
         [HttpGet]
-        public ActionResult Find(string code)
+        public ActionResult Find()
         {
+            var code = Request.Unvalidated.QueryString["code"];
             var c = (Trim(code) ?? "").ToUpperInvariant();
             if (c.StartsWith("BK-")) c = c.Substring(3);
             long no;
@@ -146,6 +148,8 @@ namespace TheArqamSchools.Web.Controllers
             if (!System.IO.File.Exists(path)) return HttpNotFound();
             Response.Headers["X-Content-Type-Options"] = "nosniff";
             Response.Headers["Cache-Control"] = "private, no-store";
+            // A PDF opens in the browser, but in a sandbox: it cannot run scripts on the admin panel's address.
+            Response.Headers["Content-Security-Policy"] = "sandbox; default-src 'none'; img-src 'self'; style-src 'unsafe-inline'";
             return File(System.IO.File.ReadAllBytes(path), p.ReceiptMime ?? "application/octet-stream");
         }
 
@@ -173,8 +177,9 @@ namespace TheArqamSchools.Web.Controllers
         /// <summary>GET /admin/books/orders/new: choose the customer (by mobile, name or campus), then the books.</summary>
         [HttpGet]
         [AdminAuthorize("books.orders")]
-        public ActionResult NewOrder(Guid? customer, string q)
+        public ActionResult NewOrder(Guid? customer)
         {
+            var q = Request.Unvalidated.QueryString["q"];
             if (customer.HasValue)
             {
                 var c = BookRepository.Customer(customer.Value);

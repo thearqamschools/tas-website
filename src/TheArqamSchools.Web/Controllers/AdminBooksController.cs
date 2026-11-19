@@ -136,8 +136,9 @@ namespace TheArqamSchools.Web.Controllers
         // ---- Customers ------------------------------------------------------------------
 
         [HttpGet]
-        public ActionResult Customers(string q)
+        public ActionResult Customers()
         {
+            var q = Request.Unvalidated.QueryString["q"];
             q = Trim(q);
             if (q != null && q.Length > 100) q = q.Substring(0, 100);
             // A mobile number typed with dashes or +92 is searched in the stored format.

@@ -227,7 +227,8 @@ tools/compile-check/      Mono C# compile check with stub MVC/Dapper types (does
   (books, customers, placing and editing orders), `Data/BookOrderRepository.cs` (office: list, status, payments),
   `Controllers/BooksController.cs` (public `/books`), `Controllers/AdminBooks*.cs` (`/admin/books`), permissions `books.*`.
 - Owner's rules: only customers registered by the office (mobile number) can order; stock is taken off at the FIRST
-  payment, never below zero; customers can edit until a payment is recorded (every edit kept); returns are refunded at
+  payment (or when the books are marked Delivered/Collected, if that comes first), never below zero; statuses only
+  move forward; customers can edit until a payment is recorded (every edit kept); returns are refunded at
   once; customer credit is applied automatically on the next order; customers never see purchase prices, discounts,
   payments or other customers' data. Book invoices use the Faisalabad office contacts only.
 - Invoices: printable page and PDF from `Infrastructure/SimplePdf.cs` + `Code128.cs` (no outside library).

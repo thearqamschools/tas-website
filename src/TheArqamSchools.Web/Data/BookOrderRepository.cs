@@ -123,22 +123,37 @@ namespace TheArqamSchools.Web.Data
 
         // ---- Status -----------------------------------------------------------------------
 
-        /// <summary>Changes the order status. Returns an error message, or null when done.</summary>
+        private static int Step(string status)
+        {
+            switch (status) { case "new": return 0; case "checked": return 1; case "packed": return 2; case "delivered": case "collected": return 3; default: return 4; }
+        }
+
+        /// <summary>Changes the order status (forward only). Returns an error message, or null when done.</summary>
         public static string SetStatus(long orderNo, string status, Guid actorId)
         {
             if (!Statuses.Contains(status)) return "Unknown status.";
             using (var db = Db.Open())
             using (var tx = db.BeginTransaction())
             {
-                var o = db.QuerySingleOrDefault<BookOrder>(@"SELECT id, status, fulfilment, paid_total, discount_total FROM dbo.book_orders WITH (UPDLOCK, HOLDLOCK)
+                var o = db.QuerySingleOrDefault<BookOrder>(@"SELECT id, status, fulfilment, paid_total, discount_total, stock_taken_at FROM dbo.book_orders WITH (UPDLOCK, HOLDLOCK)
                                                              WHERE order_no = @orderNo", new { orderNo }, tx);
                 if (o == null) return "The order was not found.";
                 if (o.Status == status) { tx.Rollback(); return null; }
                 if (o.Status == "cancelled") return "This order is cancelled and cannot be changed.";
+                // Only forward: New → Checked → Packed → Delivered / Collected (or Cancelled before that).
+                if (Step(status) <= Step(o.Status) && status != "cancelled") return "An order cannot go back to an earlier status.";
+                if (status == "cancelled" && Step(o.Status) >= 3) return "A delivered or collected order cannot be cancelled. Record a return instead.";
                 if (status == "cancelled" && (o.PaidTotal > 0 || o.DiscountTotal > 0))
                     return "A payment has been recorded for this order, so it cannot be cancelled. Record a return instead.";
                 if (status == "delivered" && o.Fulfilment != "delivery") return "This order is for pick up; mark it as Collected.";
                 if (status == "collected" && o.Fulfilment != "pickup") return "This order is for delivery; mark it as Delivered.";
+                // When the books leave the office before any payment, they come off stock now (not again at payment).
+                var tookStock = false;
+                if ((status == "delivered" || status == "collected") && o.StockTakenAt == null)
+                {
+                    try { TakeStock(db, tx, o.Id, orderNo, DateTime.UtcNow.AddHours(5).Date, actorId); tookStock = true; }
+                    catch (BookOrderException ex) { return ex.Message; }
+                }
                 db.Execute("UPDATE dbo.book_orders SET status = @status, updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId WHERE id = @Id",
                     new { status, actorId, o.Id }, tx);
                 // A cancelled order gives back any credit it used.
@@ -146,7 +161,7 @@ namespace TheArqamSchools.Web.Data
                     db.Execute(@"UPDATE c SET credit = c.credit + o.credit_applied, updated_at = SYSDATETIMEOFFSET()
                                  FROM dbo.book_customers c JOIN dbo.book_orders o ON o.customer_id = c.id WHERE o.id = @Id;
                                  UPDATE dbo.book_orders SET credit_applied = 0 WHERE id = @Id;", new { o.Id }, tx);
-                AuditLog.Write(db, tx, actorId, "update", "book_orders", o.Id.ToString(), new { order_no = orderNo, status_from = o.Status, status_to = status });
+                AuditLog.Write(db, tx, actorId, "update", "book_orders", o.Id.ToString(), new { order_no = orderNo, status_from = o.Status, status_to = status, stock_taken = tookStock });
                 tx.Commit();
                 return null;
             }
@@ -182,25 +197,7 @@ namespace TheArqamSchools.Web.Data
 
                 var receivedOn = p.ReceivedOn.Date;
                 var first = o.StockTakenAt == null;
-                if (first)
-                {
-                    // The first payment: take every book of the order off stock (sorted by book id, the same lock order as orders).
-                    var lines = db.Query<BookOrderLine>("SELECT id, item_id, class_name, item_name, quantity FROM dbo.book_order_lines WHERE order_id = @Id AND quantity > 0",
-                        new { o.Id }, tx).OrderBy(l => l.ItemId).ToList();
-                    var stock = db.Query<BookItem>("SELECT id, stock FROM dbo.book_items WITH (UPDLOCK, HOLDLOCK) WHERE id IN @ids ORDER BY id",
-                        new { ids = lines.Select(l => l.ItemId).ToList() }, tx).ToDictionary(i => i.Id, i => i.Stock);
-                    var short_ = lines.Where(l => !stock.ContainsKey(l.ItemId) || stock[l.ItemId] < l.Quantity)
-                                      .Select(l => l.ClassName + " – " + l.ItemName + " (needs " + l.Quantity + ", in stock " + (stock.ContainsKey(l.ItemId) ? stock[l.ItemId] : 0) + ")").ToList();
-                    if (short_.Count > 0)
-                        throw new BookOrderException("There is not enough stock to complete this order: " + string.Join("; ", short_) + ". Add stock or change the order first.");
-                    foreach (var l in lines)
-                    {
-                        var after = stock[l.ItemId] - l.Quantity;
-                        BookRepository.Move(db, tx, l.ItemId, "sale", -l.Quantity, after, receivedOn, o.Id, null, "Order " + BookFormat.OrderLabel(orderNo), actorId);
-                        stock[l.ItemId] = after;
-                    }
-                    db.Execute("UPDATE dbo.book_orders SET stock_taken_at = SYSDATETIMEOFFSET() WHERE id = @Id", new { o.Id }, tx);
-                }
+                if (first) TakeStock(db, tx, o.Id, orderNo, receivedOn, actorId);
 
                 var id = db.ExecuteScalar<Guid>(@"
                     INSERT INTO dbo.book_payments (order_id, amount, discount, method, account_id, received_by, received_on, receipt_path, receipt_mime, note)
@@ -219,6 +216,29 @@ namespace TheArqamSchools.Web.Data
                 tx.Commit();
                 return id;
             }
+        }
+    
+        /// <summary>
+        /// Takes every book of the order off stock (sorted by book id, the same lock order everywhere) and marks the
+        /// order. Throws <see cref="BookOrderException"/> naming the books that do not have enough stock.
+        /// </summary>
+        private static void TakeStock(System.Data.IDbConnection db, System.Data.IDbTransaction tx, Guid orderId, long orderNo, DateTime on, Guid actorId)
+        {
+            var lines = db.Query<BookOrderLine>("SELECT id, item_id, class_name, item_name, quantity FROM dbo.book_order_lines WHERE order_id = @orderId AND quantity > 0",
+                new { orderId }, tx).OrderBy(l => l.ItemId).ToList();
+            var stock = db.Query<BookItem>("SELECT id, stock FROM dbo.book_items WITH (UPDLOCK, HOLDLOCK) WHERE id IN @ids ORDER BY id",
+                new { ids = lines.Select(l => l.ItemId).ToList() }, tx).ToDictionary(i => i.Id, i => i.Stock);
+            var shortList = lines.Where(l => !stock.ContainsKey(l.ItemId) || stock[l.ItemId] < l.Quantity)
+                                 .Select(l => l.ClassName + " – " + l.ItemName + " (needs " + l.Quantity + ", in stock " + (stock.ContainsKey(l.ItemId) ? stock[l.ItemId] : 0) + ")").ToList();
+            if (shortList.Count > 0)
+                throw new BookOrderException("There is not enough stock to complete this order: " + string.Join("; ", shortList) + ". Add stock or change the order first.");
+            foreach (var l in lines)
+            {
+                var after = stock[l.ItemId] - l.Quantity;
+                BookRepository.Move(db, tx, l.ItemId, "sale", -l.Quantity, after, on, orderId, null, "Order " + BookFormat.OrderLabel(orderNo), actorId);
+                stock[l.ItemId] = after;
+            }
+            db.Execute("UPDATE dbo.book_orders SET stock_taken_at = SYSDATETIMEOFFSET() WHERE id = @orderId", new { orderId }, tx);
         }
     }
 }

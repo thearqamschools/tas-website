@@ -47,7 +47,7 @@
                 <form method="post" action="/admin/books/orders/@o.OrderNo/status">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="status" value="@n.Key" />
-                    <button type="submit" class="admin-button@(n.Key == "cancelled" ? " admin-button--secondary admin-danger" : n.Key == "checked" || n.Key == "packed" ? "" : " admin-button--secondary")" @(n.Key == "cancelled" ? "data-confirm=\"Cancel order " + o.OrderLabel + "?\"" : null)>@n.Value</button>
+                    <button type="submit" class="admin-button@(n.Key == "cancelled" ? " admin-button--secondary admin-danger" : n.Key == "checked" || n.Key == "packed" ? "" : " admin-button--secondary")" data-confirm="@(n.Key == "cancelled" ? "Cancel order " + o.OrderLabel + "?" : null)">@n.Value</button>
                 </form>
             }
             @if (o.CustomerCanEdit) { <a class="admin-button admin-button--secondary" href="/admin/books/orders/@o.OrderNo/edit">Change books</a> }
