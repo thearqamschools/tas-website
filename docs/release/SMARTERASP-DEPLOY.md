@@ -177,3 +177,5 @@ admin inbox, campus and page editing, on a phone and a computer.
   books/stock, customers, orders, payments, invoices with barcode and PDF, returns, reports with Print/PDF/Excel) went up
   first time; `/`, `/books`, `/about`, `/campuses`, `/admin/login` answered 200 and the menu shows "Books".
   Still to do on the server: write permission on `App_Data\private` for payment receipts.
+- 19 November 2026 (later): `22_books_list` ran through `deploy/smarterasp-db`: 78 books from the owner's
+  "TAS Books Quantity Form" (sale prices only; purchase price and stock 0 until the office enters them). No site upload.
