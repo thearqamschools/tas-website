@@ -184,3 +184,7 @@ admin inbox, campus and page editing, on a phone and a computer.
   reads the views as UTF-8; it had shown "â€“"/"Â·" in the books pages) went up first time. `/`, `/books`, `/about`,
   `/campuses`, `/admin/login` answered 200; no garbled characters in `/` or `/books`. Script 23 must always run before
   this code (the book queries read the new columns).
+- 19 November 2026 (later): `24_book_categories` and `25_old_system_stock` ran through `deploy/smarterasp-db`
+  (old system "Product Stock" report: 78 items updated, 23 new, stock = Stock Left; the safety check found no unknown
+  items; 2 orders had already been handed over, 0 open). The site (commit aa440e5: Category books/stationery, book form
+  layout) went up; `/`, `/books`, `/about`, `/campuses`, `/admin/login` answered 200, new admin.css served.
