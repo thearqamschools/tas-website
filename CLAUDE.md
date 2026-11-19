@@ -220,3 +220,15 @@ tools/compile-check/      Mono C# compile check with stub MVC/Dapper types (does
 - The homepage's words and photos live in the site setting `home.content` (Database/19), edited at `/admin/home`;
   `Helpers/HomeContent.cs` holds the built-in copy used when the setting or a key is missing.
 
+## Books ordering (owner's specification, 19 November 2026; branch claude/books-ordering)
+
+- A separate books system (Database/21): `book_items`, `book_stock_moves`, `book_customers`, `book_orders`,
+  `book_order_lines`, `book_order_edits`, `book_accounts`, `book_payments`, `book_returns`. Code: `Data/BookRepository.cs`
+  (books, customers, placing and editing orders), `Data/BookOrderRepository.cs` (office: list, status, payments),
+  `Controllers/BooksController.cs` (public `/books`), `Controllers/AdminBooks*.cs` (`/admin/books`), permissions `books.*`.
+- Owner's rules: only customers registered by the office (mobile number) can order; stock is taken off at the FIRST
+  payment, never below zero; customers can edit until a payment is recorded (every edit kept); returns are refunded at
+  once; customer credit is applied automatically on the next order; customers never see purchase prices, discounts,
+  payments or other customers' data. Book invoices use the Faisalabad office contacts only.
+- Invoices: printable page and PDF from `Infrastructure/SimplePdf.cs` + `Code128.cs` (no outside library).
+- Tests: `tools/books-tests/books-e2e.js` (Playwright, synthetic data only, local site only).

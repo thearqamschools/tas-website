@@ -28,6 +28,20 @@
     </section>
 }
 
+@if (Model.Books != null)
+{
+    <section class="admin-stats" aria-label="Book orders">
+        <a class="admin-stat@(Model.Books.NewOrders > 0 ? " admin-stat--new" : "")" href="/admin/books/orders?status=new">
+            <p class="admin-stat-value">@Model.Books.NewOrders.ToString("N0")</p>
+            <p class="admin-stat-label">New book orders@(Model.Books.LastDay > 0 ? " (" + Model.Books.LastDay + " in the last 24 hours)" : "")</p>
+        </a>
+        <a class="admin-stat" href="/admin/books/orders?payment=unpaid">
+            <p class="admin-stat-value">@Model.Books.UnpaidOrders.ToString("N0")</p>
+            <p class="admin-stat-label">Book orders not fully paid</p>
+        </a>
+    </section>
+}
+
 <section class="admin-card">
     <h2>Quick links</h2>
     <ul class="admin-quick-links">

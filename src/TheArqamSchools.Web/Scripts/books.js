@@ -13,9 +13,10 @@
       if (!(q > 0)) q = 0;
       var line = q * parseFloat(inp.getAttribute("data-price"));
       total += line;
-      var out = inp.parentNode.querySelector("[data-line-total]");
+      var row = inp.closest ? (inp.closest("tr") || inp.closest(".books-row") || inp.parentNode) : inp.parentNode;
+      var out = row.querySelector("[data-line-total]");
       if (out) out.textContent = q > 0 ? fmt(line) : "";
-      inp.parentNode.classList.toggle("is-chosen", q > 0);
+      row.classList.toggle("is-chosen", q > 0);
     });
     if (totalEl) totalEl.textContent = fmt(total);
   }

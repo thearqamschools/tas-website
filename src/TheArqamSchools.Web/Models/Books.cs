@@ -218,4 +218,70 @@ namespace TheArqamSchools.Web.Models
         public IList<string> Errors { get; set; }
         public bool Preview { get; set; }
     }
+
+    // ---- Part 2: accounts, payments, office order list ---------------------------------------
+
+    /// <summary>A cash or bank account that book payments go into (dbo.book_accounts).</summary>
+    public class BookAccount
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public string Kind { get; set; }
+        public string Details { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    public class BookPayment
+    {
+        public Guid Id { get; set; }
+        public decimal Amount { get; set; }
+        public decimal Discount { get; set; }
+        public string Method { get; set; }
+        public string AccountName { get; set; }
+        public string ReceivedByName { get; set; }
+        public DateTime ReceivedOn { get; set; }
+        public string ReceiptPath { get; set; }
+        public string ReceiptMime { get; set; }
+        public string Note { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+    }
+
+    /// <summary>What the office types when recording a payment. "Received by" is never posted: it is the signed-in user.</summary>
+    public class BookPaymentForm
+    {
+        public decimal Amount { get; set; }
+        public decimal Discount { get; set; }
+        public string Method { get; set; }
+        public Guid? AccountId { get; set; }
+        public DateTime ReceivedOn { get; set; }
+        public string Note { get; set; }
+    }
+
+    public class BookOrderFilter
+    {
+        public string Status { get; set; }
+        public string Payment { get; set; }
+        public DateTime? From { get; set; }
+        public DateTime? To { get; set; }
+        public string Query { get; set; }
+    }
+
+    public class BookCounts
+    {
+        public int NewOrders { get; set; }
+        public int UnpaidOrders { get; set; }
+        public int LastDay { get; set; }
+    }
+
+    public class BookOrderAdminViewModel
+    {
+        public BookOrder Order { get; set; }
+        public IList<BookPayment> Payments { get; set; }
+        public IList<BookAccount> Accounts { get; set; }
+        public BookPaymentForm PaymentForm { get; set; }
+        public string Notice { get; set; }
+        public string Error { get; set; }
+        public bool CanOrders { get; set; }
+        public bool CanPay { get; set; }
+    }
 }

@@ -1,0 +1,66 @@
+@model BookOrder
+@using System.Globalization
+@using TheArqamSchools.Web.Helpers
+@using TheArqamSchools.Web.Infrastructure
+@{
+    Layout = null;
+    var pk = TimeSpan.FromHours(5);
+    var inv = CultureInfo.InvariantCulture;
+}
+<!DOCTYPE html>
+<html lang="en-PK">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Invoice @Model.OrderLabel | The Arqam Schools</title>
+    <link rel="stylesheet" href="/Content/admin.css?v=20261119b" />
+</head>
+<body class="invoice-page">
+    <div class="invoice-tools">
+        <button type="button" class="admin-button" onclick="window.print()">Print</button>
+        <a class="admin-button admin-button--secondary" href="/admin/books/orders/@Model.OrderNo/invoice.pdf">Download PDF</a>
+        <a href="/admin/books/orders/@Model.OrderNo">Back to the order</a>
+    </div>
+    <main class="invoice">
+        <header class="invoice-head">
+            <div class="invoice-brand">
+                <img src="/Content/brand/the-arqam-schools-logo-192.png" alt="The Arqam Schools logo" width="64" height="64" />
+                <div>
+                    <p class="invoice-name">THE ARQAM SCHOOLS</p>
+                    @foreach (var line in BookInvoice.Contact) { <p class="invoice-contact">@line</p> }
+                </div>
+            </div>
+            <div class="invoice-meta">
+                <p class="invoice-title">INVOICE</p>
+                <p><strong>Order ID: @Model.OrderLabel</strong></p>
+                <p>Date: @Model.CreatedAt.ToOffset(pk).ToString("d MMMM yyyy", inv)</p>
+                <div class="invoice-barcode">@Html.Raw(Code128.Svg(Model.OrderLabel))<span>@Model.OrderLabel</span></div>
+            </div>
+        </header>
+        <section class="invoice-parties">
+            <div><p class="invoice-label">Bill to</p><p><strong>@Model.CustomerName</strong></p><p>Mobile: @Mobile.Format(Model.CustomerMobile)</p>@if (!string.IsNullOrEmpty(Model.CampusName)) { <p>@Model.CampusName</p> }</div>
+            <div><p class="invoice-label">@BookFormat.FulfilmentLabel(Model.Fulfilment)</p><p>@(Model.Fulfilment == "delivery" ? Model.DeliveryAddress : "Collect from the office")</p></div>
+        </section>
+        <table class="invoice-table">
+            <thead><tr><th scope="col">Class</th><th scope="col">Book</th><th scope="col" class="num">Qty</th><th scope="col" class="num">Price</th><th scope="col" class="num">Total</th></tr></thead>
+            <tbody>
+                @foreach (var l in Model.Lines)
+                {
+                    <tr><td>@l.ClassName</td><td>@l.ItemName</td><td class="num">@l.Quantity@if (l.ReturnedQty > 0) { <text> (@l.ReturnedQty returned)</text> }</td><td class="num">@BookFormat.Money(l.UnitPrice)</td><td class="num">@BookFormat.Money(l.LineTotal)</td></tr>
+                }
+            </tbody>
+        </table>
+        <table class="invoice-totals">
+            <tr><th scope="row">Total</th><td>@BookFormat.Money(Model.Subtotal)</td></tr>
+            @if (Model.ReturnedTotal > 0) { <tr><th scope="row">Returned</th><td>− @BookFormat.Money(Model.ReturnedTotal)</td></tr> }
+            @if (Model.DiscountTotal > 0) { <tr><th scope="row">Discount</th><td>− @BookFormat.Money(Model.DiscountTotal)</td></tr> }
+            @if (Model.CreditApplied > 0) { <tr><th scope="row">Credit</th><td>− @BookFormat.Money(Model.CreditApplied)</td></tr> }
+            <tr><th scope="row">Paid</th><td>@BookFormat.Money(Model.PaidTotal)</td></tr>
+            @if (Model.RefundedTotal > 0) { <tr><th scope="row">Refunded</th><td>@BookFormat.Money(Model.RefundedTotal)</td></tr> }
+            <tr class="is-total"><th scope="row">Balance</th><td>@BookFormat.Money(Model.Balance)</td></tr>
+        </table>
+        <p class="invoice-foot">Thank you for your order. Amounts are in Pakistani rupees.</p>
+    </main>
+</body>
+</html>

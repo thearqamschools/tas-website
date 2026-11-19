@@ -1,0 +1,24 @@
+@using TheArqamSchools.Web.Helpers
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = "New book order";
+    var q = ViewBag.Query as string;
+    var list = ViewBag.Customers as IList<BookCustomer>;
+}
+<p><a href="/admin/books/orders">&larr; Book orders</a></p>
+<div class="admin-page-head"><h1>New order for a customer</h1></div>
+<form method="get" action="/admin/books/orders/new" class="admin-search" role="search">
+    <label for="q">Find the customer by mobile, name or campus</label>
+    <input type="search" id="q" name="q" value="@q" maxlength="100" autofocus />
+    <button type="submit" class="admin-button">Find</button>
+</form>
+@if (q != null && list.Count == 0) { <section class="admin-card"><p>No customer found. <a href="/admin/books/customers/new">Add the customer</a> first.</p></section> }
+@if (list.Count > 0)
+{
+    <ul class="admin-list">
+        @foreach (var c in list)
+        {
+            <li class="admin-list-item"><a class="admin-list-link" href="/admin/books/orders/new?customer=@c.Id.ToString("D")"><span class="admin-list-main"><strong>@c.Name</strong>@if (!c.IsActive) { <span class="admin-status admin-status--spam">Cannot order</span> }</span><span class="admin-list-meta">@Mobile.Format(c.Mobile)@if (!string.IsNullOrEmpty(c.CampusName)) { <text> · @c.CampusName</text> }</span></a></li>
+        }
+    </ul>
+}

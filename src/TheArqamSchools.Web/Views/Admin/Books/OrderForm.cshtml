@@ -1,0 +1,46 @@
+@model BookOrderFormViewModel
+@using System.Globalization
+@using TheArqamSchools.Web.Helpers
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    var editing = Model.Editing;
+    ViewBag.Title = editing == null ? "New book order" : "Change order " + editing.OrderLabel;
+    var action = editing == null ? "/admin/books/orders/new?customer=" + Model.Customer.Id.ToString("D") : "/admin/books/orders/" + editing.OrderNo.ToString(CultureInfo.InvariantCulture) + "/edit";
+    Func<Guid, int> qty = id => Model.Quantities.ContainsKey(id) ? Model.Quantities[id] : 0;
+    var canDeliver = !string.IsNullOrWhiteSpace(Model.Customer.Address);
+}
+<p><a href="@(editing == null ? "/admin/books/orders" : "/admin/books/orders/" + editing.OrderNo)">&larr; @(editing == null ? "Book orders" : "Order " + editing.OrderLabel)</a></p>
+<div class="admin-page-head"><h1>@ViewBag.Title</h1></div>
+<p><strong>@Model.Customer.Name</strong> · @Mobile.Format(Model.Customer.Mobile)@if (!string.IsNullOrEmpty(Model.Customer.CampusName)) { <text> · @Model.Customer.CampusName</text> }</p>
+@if (Model.Errors != null && Model.Errors.Count > 0) { <div class="admin-alert admin-alert--error" role="alert">@foreach (var e in Model.Errors) { <p>@e</p> }</div> }
+<form method="post" action="@action" class="admin-form" data-books-form novalidate>
+    @Html.AntiForgeryToken()
+    @if (editing == null) { <input type="hidden" name="customer" value="@Model.Customer.Id.ToString("D")" /> }
+    <div class="admin-table-wrap">
+        <table class="admin-table">
+            <thead><tr><th scope="col">Class</th><th scope="col">Book</th><th scope="col" class="num">Stock</th><th scope="col" class="num">Price</th><th scope="col" class="num">Quantity</th><th scope="col" class="num">Total</th></tr></thead>
+            <tbody>
+                @foreach (var i in Model.Items)
+                {
+                    var id = "q_" + i.Id.ToString("N");
+                    <tr>
+                        <td>@i.ClassName</td><td><label for="@id">@i.Name</label>@if (!i.IsActive) { <span class="admin-tag">hidden</span> }</td>
+                        <td class="num">@i.Stock</td><td class="num">@BookFormat.Money(i.SalePrice)</td>
+                        <td class="num"><input type="number" class="admin-qty" id="@id" name="@id" value="@(qty(i.Id) > 0 ? qty(i.Id).ToString(CultureInfo.InvariantCulture) : "")" min="0" inputmode="numeric" data-price="@i.SalePrice.ToString(CultureInfo.InvariantCulture)" /></td>
+                        <td class="num"><output data-line-total></output></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="admin-field">
+        <label for="fulfilment">Pick up or delivery</label>
+        <select id="fulfilment" name="fulfilment">
+            <option value="pickup" @(Model.Fulfilment != "delivery" ? "selected" : null)>Pick up</option>
+            @if (canDeliver) { <option value="delivery" @(Model.Fulfilment == "delivery" ? "selected" : null)>Delivery to @Model.Customer.Address</option> }
+        </select>
+    </div>
+    <p class="admin-order-total">Total: <strong data-books-total>Rs. 0</strong></p>
+    <div><button type="submit" class="admin-button">@(editing == null ? "Place order" : "Save changes")</button></div>
+</form>
+<script src="/Scripts/books.js?v=20261119b" defer></script>

@@ -99,6 +99,7 @@
     <Compile Include="Controllers\AdminCampusesController.cs" />
     <Compile Include="Controllers\AdminDashboardController.cs" />
     <Compile Include="Controllers\AdminBooksController.cs" />
+    <Compile Include="Controllers\AdminBooksOrdersController.cs" />
     <Compile Include="Controllers\AdminFranchiseController.cs" />
     <Compile Include="Controllers\AdminHomeController.cs" />
     <Compile Include="Controllers\AdminInboxController.cs" />
@@ -118,6 +119,7 @@
     <Compile Include="Data\Cache.cs" />
     <Compile Include="Data\AdminUserRepository.cs" />
     <Compile Include="Data\BookRepository.cs" />
+    <Compile Include="Data\BookOrderRepository.cs" />
     <Compile Include="Data\CampusAdminRepository.cs" />
     <Compile Include="Data\CampusRepository.cs" />
     <Compile Include="Data\ClassLevelRepository.cs" />
@@ -148,6 +150,8 @@
     <Compile Include="Infrastructure\ClientAddress.cs" />
     <Compile Include="Infrastructure\JsonContentFields.cs" />
     <Compile Include="Infrastructure\ContentEditor.cs" />
+    <Compile Include="Infrastructure\BookInvoice.cs" />
+    <Compile Include="Infrastructure\Code128.cs" />
     <Compile Include="Infrastructure\ImageStore.cs" />
     <Compile Include="Infrastructure\LegacyUrls.cs" />
     <Compile Include="Infrastructure\Notifications.cs" />
@@ -157,6 +161,8 @@
     <Compile Include="Infrastructure\Auth\Totp.cs" />
     <Compile Include="Infrastructure\PageBuilder.cs" />
     <Compile Include="Infrastructure\RateLimiter.cs" />
+    <Compile Include="Infrastructure\ReceiptStore.cs" />
+    <Compile Include="Infrastructure\SimplePdf.cs" />
     <Compile Include="Models\Campus.cs" />
     <Compile Include="Models\Admin.cs" />
     <Compile Include="Models\Books.cs" />
@@ -222,6 +228,12 @@
     <Content Include="Views\Books\Detail.cshtml" />
     <Content Include="Views\Books\_Who.cshtml" />
     <Content Include="Views\Admin\Books\_Tabs.cshtml" />
+    <Content Include="Views\Admin\Books\Orders.cshtml" />
+    <Content Include="Views\Admin\Books\Order.cshtml" />
+    <Content Include="Views\Admin\Books\Invoice.cshtml" />
+    <Content Include="Views\Admin\Books\ChooseCustomer.cshtml" />
+    <Content Include="Views\Admin\Books\OrderForm.cshtml" />
+    <Content Include="Views\Admin\Books\Accounts.cshtml" />
     <Content Include="Views\Admin\Books\Index.cshtml" />
     <Content Include="Views\Admin\Books\Items.cshtml" />
     <Content Include="Views\Admin\Books\Item.cshtml" />

@@ -1,0 +1,33 @@
+@model IList<BookAccount>
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = "Book accounts";
+}
+<div class="admin-page-head"><h1>Accounts</h1></div>
+@Html.Partial("~/Views/Admin/Books/_Tabs.cshtml", "accounts")
+<p class="admin-muted">The cash and bank accounts that book payments go into. Hide an account that is no longer used; it stays on old payments.</p>
+@if (ViewBag.Notice != null) { <div class="admin-alert admin-alert--success" role="status"><p>@ViewBag.Notice</p></div> }
+@if (ViewBag.Error != null) { <div class="admin-alert admin-alert--error" role="alert"><p>@ViewBag.Error</p></div> }
+@foreach (var a in Model)
+{
+    <form method="post" action="/admin/books/accounts/@a.Id.ToString("D")" class="admin-card admin-form admin-account">
+        @Html.AntiForgeryToken()
+        @AccountFields(a.Id.ToString("N"), a)
+        <div><button type="submit" class="admin-button admin-button--secondary">Save</button></div>
+    </form>
+}
+<form method="post" action="/admin/books/accounts" class="admin-card admin-form admin-account">
+    @Html.AntiForgeryToken()
+    <h2>Add an account</h2>
+    @AccountFields("new", new BookAccount { Kind = "cash", IsActive = true })
+    <div><button type="submit" class="admin-button">Add account</button></div>
+</form>
+@helper AccountFields(string key, BookAccount a)
+{
+    <div class="admin-grid-2">
+        <div class="admin-field"><label for="name-@key">Name</label><input type="text" id="name-@key" name="Name" value="@a.Name" maxlength="120" placeholder="For example: Office cash, or Meezan Bank" /></div>
+        <div class="admin-field"><label for="kind-@key">Type</label><select id="kind-@key" name="Kind"><option value="cash" @(a.Kind == "cash" ? "selected" : null)>Cash</option><option value="bank" @(a.Kind == "bank" ? "selected" : null)>Bank</option></select></div>
+        <div class="admin-field"><label for="details-@key">Details (optional)</label><input type="text" id="details-@key" name="Details" value="@a.Details" maxlength="300" placeholder="For example the account title and last 4 digits" /></div>
+    </div>
+    <div class="admin-check"><input type="checkbox" id="active-@key" name="IsActive" value="true" @(a.IsActive ? "checked" : null) /><input type="hidden" name="IsActive" value="false" /><label for="active-@key"><strong>In use</strong></label></div>
+}

@@ -50,6 +50,8 @@ database and run, in this order:
 19. `Database/19_home_content_and_stage_classes.sql` (homepage words and photos editable under Admin > Home Page;
     a "classes" line for each stage of the academic levels). Uploaded page photos go to `media\public-media\pages\`.
 20. `Database/20_flyer_campuses.sql` (campuses from the flyer that were not on the website; 7 hidden until confirmed)
+21. `Database/21_books_ordering.sql` (books ordering: books, stock, customers, orders, payments, returns; Books Manager role).
+    Payment receipts are saved under `App_Data\private\book-receipts\` (needs write permission; never served directly).
 
 Skip `03_fulltext.sql` (optional, and Full-Text Search may not be offered).
 

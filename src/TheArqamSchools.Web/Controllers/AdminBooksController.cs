@@ -15,7 +15,7 @@ namespace TheArqamSchools.Web.Controllers
     /// returns and reports follow in the next parts.
     /// </summary>
     [AdminAuthorize("books.view")]
-    public class AdminBooksController : Controller
+    public partial class AdminBooksController : Controller
     {
         private static readonly TimeSpan Pakistan = TimeSpan.FromHours(5);
 

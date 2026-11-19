@@ -119,6 +119,8 @@ namespace TheArqamSchools.Web.Models
 
     public class AdminDashboardViewModel
     {
+        /// <summary>Book order numbers, for users with books.view (null otherwise).</summary>
+        public BookCounts Books { get; set; }
         public AdminPrincipal User { get; set; }
         public int? NewAdmissionInquiries { get; set; }
         public int? NewContactMessages { get; set; }

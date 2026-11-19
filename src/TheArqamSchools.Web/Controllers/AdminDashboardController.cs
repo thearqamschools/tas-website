@@ -24,6 +24,7 @@ namespace TheArqamSchools.Web.Controllers
                         "SELECT COUNT(*) FROM dbo.contact_messages WHERE status = N'new' AND deleted_at IS NULL");
                 }
             }
+            if (user.Can("books.view")) model.Books = BookOrderRepository.Counts();
             return View("~/Views/Admin/Dashboard/Index.cshtml", model);
         }
 

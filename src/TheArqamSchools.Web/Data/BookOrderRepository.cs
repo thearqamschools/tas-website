@@ -1,0 +1,224 @@
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using Dapper;
+using TheArqamSchools.Web.Models;
+
+namespace TheArqamSchools.Web.Data
+{
+    /// <summary>
+    /// The office side of book orders (part 2): the order list, status changes, accounts and payments.
+    /// Rules (owner's specification and decisions of 19 November 2026):
+    /// - a payment may be part of the balance; amount + discount may not be more than the balance;
+    /// - the method (cash/bank) must match the kind of account the money went into;
+    /// - stock is taken off at the FIRST payment of an order, for all its books, never below zero;
+    ///   if a book does not have enough stock then, the payment is refused with a clear message;
+    /// - "received by" is always the signed-in admin user;
+    /// - a cancelled order takes no payments, and an order with payments cannot be cancelled (use a return);
+    /// - every change is written to the audit log in the same transaction.
+    /// </summary>
+    public static class BookOrderRepository
+    {
+        public static readonly string[] Statuses = { "new", "checked", "packed", "delivered", "collected", "cancelled" };
+
+        private const string BalanceSql = "(o.subtotal - o.returned_total - o.discount_total - o.credit_applied - o.paid_total + o.refunded_total)";
+
+        // ---- Accounts ---------------------------------------------------------------------
+
+        public static IList<BookAccount> Accounts(bool activeOnly)
+        {
+            using (var db = Db.Open())
+                return db.Query<BookAccount>("SELECT id, name, kind, details, is_active FROM dbo.book_accounts" +
+                                             (activeOnly ? " WHERE is_active = 1" : "") + " ORDER BY kind, name").ToList();
+        }
+
+        public static BookAccount Account(Guid id)
+        {
+            using (var db = Db.Open())
+                return db.QuerySingleOrDefault<BookAccount>("SELECT id, name, kind, details, is_active FROM dbo.book_accounts WHERE id = @id", new { id });
+        }
+
+        public static Guid SaveAccount(BookAccount a, bool isNew, Guid actorId)
+        {
+            using (var db = Db.Open())
+            using (var tx = db.BeginTransaction())
+            {
+                if (isNew)
+                    a.Id = db.ExecuteScalar<Guid>(@"INSERT INTO dbo.book_accounts (name, kind, details, is_active, created_by, updated_by)
+                                                    OUTPUT inserted.id VALUES (@Name, @Kind, @Details, @IsActive, @actorId, @actorId)",
+                        new { a.Name, a.Kind, a.Details, a.IsActive, actorId }, tx);
+                else
+                    db.Execute(@"UPDATE dbo.book_accounts SET name = @Name, kind = @Kind, details = @Details, is_active = @IsActive,
+                                        updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId WHERE id = @Id",
+                        new { a.Id, a.Name, a.Kind, a.Details, a.IsActive, actorId }, tx);
+                AuditLog.Write(db, tx, actorId, isNew ? "insert" : "update", "book_accounts", a.Id.ToString(), new { a.Name, a.Kind, a.Details, a.IsActive });
+                tx.Commit();
+                return a.Id;
+            }
+        }
+
+        // ---- Order list -------------------------------------------------------------------
+
+        public static IList<BookOrder> List(BookOrderFilter f)
+        {
+            var where = new List<string>();
+            if (!string.IsNullOrEmpty(f.Status)) where.Add("o.status = @Status");
+            if (f.Payment == "pending") where.Add("o.paid_total = 0 AND o.discount_total = 0 AND o.status <> N'cancelled'");
+            else if (f.Payment == "part") where.Add("(o.paid_total > 0 OR o.discount_total > 0) AND " + BalanceSql + " > 0");
+            else if (f.Payment == "paid") where.Add("(o.paid_total > 0 OR o.discount_total > 0) AND " + BalanceSql + " <= 0");
+            else if (f.Payment == "unpaid") where.Add(BalanceSql + " > 0 AND o.status <> N'cancelled'");
+            if (f.From.HasValue) where.Add("o.created_at >= @fromUtc");
+            if (f.To.HasValue) where.Add("o.created_at < @toUtc");
+            long no;
+            var q = (f.Query ?? "").Trim();
+            var qNo = q.StartsWith("BK-", StringComparison.OrdinalIgnoreCase) ? q.Substring(3) : q;
+            if (q.Length > 0)
+                where.Add(long.TryParse(qNo, out no) ? "(o.order_no = @no OR c.mobile LIKE @like ESCAPE '\\')"
+                                                     : "(c.name LIKE @like ESCAPE '\\' OR c.mobile LIKE @like ESCAPE '\\' OR c.campus_name LIKE @like ESCAPE '\\')");
+            long.TryParse(qNo, out no);
+            var pk = TimeSpan.FromHours(5);
+            using (var db = Db.Open())
+                return db.Query<BookOrder>(@"
+                    SELECT TOP (500) o.id, o.order_no, o.customer_id, c.name AS customer_name, c.mobile AS customer_mobile, c.campus_name,
+                           o.fulfilment, o.delivery_address, o.status, o.source, o.subtotal, o.discount_total, o.credit_applied, o.paid_total,
+                           o.returned_total, o.refunded_total, o.edit_count, o.stock_taken_at, o.created_at
+                    FROM dbo.book_orders o JOIN dbo.book_customers c ON c.id = o.customer_id" +
+                    (where.Count > 0 ? " WHERE " + string.Join(" AND ", where) : "") + " ORDER BY o.created_at DESC",
+                    new
+                    {
+                        f.Status, no, like = "%" + CampusRepository.EscapeLike(Helpers.Mobile.Normalize(q) ?? q) + "%",
+                        fromUtc = f.From.HasValue ? new DateTimeOffset(f.From.Value.Date, pk) : (DateTimeOffset?)null,
+                        toUtc = f.To.HasValue ? new DateTimeOffset(f.To.Value.Date.AddDays(1), pk) : (DateTimeOffset?)null
+                    }).ToList();
+        }
+
+        /// <summary>Numbers for the dashboard: orders waiting to be checked, and orders not fully paid.</summary>
+        public static BookCounts Counts()
+        {
+            using (var db = Db.Open())
+                return db.QuerySingle<BookCounts>(@"
+                    SELECT (SELECT COUNT(*) FROM dbo.book_orders WHERE status = N'new') AS new_orders,
+                           (SELECT COUNT(*) FROM dbo.book_orders o WHERE o.status <> N'cancelled' AND " + BalanceSql + @" > 0) AS unpaid_orders,
+                           (SELECT COUNT(*) FROM dbo.book_orders WHERE created_at >= DATEADD(day, -1, SYSDATETIMEOFFSET())) AS last_day");
+        }
+
+        public static IList<BookPayment> Payments(Guid orderId)
+        {
+            using (var db = Db.Open())
+                return db.Query<BookPayment>(@"
+                    SELECT p.id, p.amount, p.discount, p.method, a.name AS account_name, u.full_name AS received_by_name, p.received_on,
+                           p.receipt_path, p.receipt_mime, p.note, p.created_at
+                    FROM dbo.book_payments p
+                    LEFT JOIN dbo.book_accounts a ON a.id = p.account_id
+                    LEFT JOIN dbo.users u ON u.id = p.received_by
+                    WHERE p.order_id = @orderId ORDER BY p.created_at", new { orderId }).ToList();
+        }
+
+        public static BookPayment Payment(Guid id)
+        {
+            using (var db = Db.Open())
+                return db.QuerySingleOrDefault<BookPayment>("SELECT id, receipt_path, receipt_mime FROM dbo.book_payments WHERE id = @id", new { id });
+        }
+
+        // ---- Status -----------------------------------------------------------------------
+
+        /// <summary>Changes the order status. Returns an error message, or null when done.</summary>
+        public static string SetStatus(long orderNo, string status, Guid actorId)
+        {
+            if (!Statuses.Contains(status)) return "Unknown status.";
+            using (var db = Db.Open())
+            using (var tx = db.BeginTransaction())
+            {
+                var o = db.QuerySingleOrDefault<BookOrder>(@"SELECT id, status, fulfilment, paid_total, discount_total FROM dbo.book_orders WITH (UPDLOCK, HOLDLOCK)
+                                                             WHERE order_no = @orderNo", new { orderNo }, tx);
+                if (o == null) return "The order was not found.";
+                if (o.Status == status) { tx.Rollback(); return null; }
+                if (o.Status == "cancelled") return "This order is cancelled and cannot be changed.";
+                if (status == "cancelled" && (o.PaidTotal > 0 || o.DiscountTotal > 0))
+                    return "A payment has been recorded for this order, so it cannot be cancelled. Record a return instead.";
+                if (status == "delivered" && o.Fulfilment != "delivery") return "This order is for pick up; mark it as Collected.";
+                if (status == "collected" && o.Fulfilment != "pickup") return "This order is for delivery; mark it as Delivered.";
+                db.Execute("UPDATE dbo.book_orders SET status = @status, updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId WHERE id = @Id",
+                    new { status, actorId, o.Id }, tx);
+                // A cancelled order gives back any credit it used.
+                if (status == "cancelled")
+                    db.Execute(@"UPDATE c SET credit = c.credit + o.credit_applied, updated_at = SYSDATETIMEOFFSET()
+                                 FROM dbo.book_customers c JOIN dbo.book_orders o ON o.customer_id = c.id WHERE o.id = @Id;
+                                 UPDATE dbo.book_orders SET credit_applied = 0 WHERE id = @Id;", new { o.Id }, tx);
+                AuditLog.Write(db, tx, actorId, "update", "book_orders", o.Id.ToString(), new { order_no = orderNo, status_from = o.Status, status_to = status });
+                tx.Commit();
+                return null;
+            }
+        }
+
+        // ---- Payments ---------------------------------------------------------------------
+
+        /// <summary>
+        /// Records a payment and/or a discount. At the first payment the order's books are taken off stock.
+        /// Throws <see cref="BookOrderException"/> with a message for the office when it cannot be recorded.
+        /// </summary>
+        public static Guid RecordPayment(long orderNo, BookPaymentForm p, string receiptPath, string receiptMime, Guid actorId)
+        {
+            if (p.Amount < 0 || p.Discount < 0) throw new BookOrderException("Amounts cannot be negative.");
+            if (p.Amount == 0 && p.Discount == 0) throw new BookOrderException("Please enter the amount received, a discount, or both.");
+            if (decimal.Round(p.Amount, 2) != p.Amount || decimal.Round(p.Discount, 2) != p.Discount) throw new BookOrderException("Please enter amounts with at most two decimals.");
+            using (var db = Db.Open())
+            using (var tx = db.BeginTransaction())
+            {
+                var o = db.QuerySingleOrDefault<BookOrder>(@"
+                    SELECT id, order_no, status, subtotal, discount_total, credit_applied, paid_total, returned_total, refunded_total, stock_taken_at
+                    FROM dbo.book_orders WITH (UPDLOCK, HOLDLOCK) WHERE order_no = @orderNo", new { orderNo }, tx);
+                if (o == null) throw new BookOrderException("The order was not found.");
+                if (o.Status == "cancelled") throw new BookOrderException("This order is cancelled; no payment can be recorded.");
+                if (p.Amount + p.Discount > o.Balance)
+                    throw new BookOrderException("The amount and discount together (" + BookFormat.Money(p.Amount + p.Discount) + ") are more than the balance of " + BookFormat.Money(o.Balance) + ".");
+                if (p.Amount > 0)
+                {
+                    var account = db.QuerySingleOrDefault<BookAccount>("SELECT id, name, kind, is_active FROM dbo.book_accounts WHERE id = @AccountId", new { p.AccountId }, tx);
+                    if (account == null || !account.IsActive) throw new BookOrderException("Please choose the account the money went into.");
+                    if (account.Kind != p.Method) throw new BookOrderException("The account \"" + account.Name + "\" is a " + account.Kind + " account; please choose a " + p.Method + " account or change the method.");
+                }
+
+                var receivedOn = p.ReceivedOn.Date;
+                var first = o.StockTakenAt == null;
+                if (first)
+                {
+                    // The first payment: take every book of the order off stock (sorted by book id, the same lock order as orders).
+                    var lines = db.Query<BookOrderLine>("SELECT id, item_id, class_name, item_name, quantity FROM dbo.book_order_lines WHERE order_id = @Id AND quantity > 0",
+                        new { o.Id }, tx).OrderBy(l => l.ItemId).ToList();
+                    var stock = db.Query<BookItem>("SELECT id, stock FROM dbo.book_items WITH (UPDLOCK, HOLDLOCK) WHERE id IN @ids ORDER BY id",
+                        new { ids = lines.Select(l => l.ItemId).ToList() }, tx).ToDictionary(i => i.Id, i => i.Stock);
+                    var short_ = lines.Where(l => !stock.ContainsKey(l.ItemId) || stock[l.ItemId] < l.Quantity)
+                                      .Select(l => l.ClassName + " – " + l.ItemName + " (needs " + l.Quantity + ", in stock " + (stock.ContainsKey(l.ItemId) ? stock[l.ItemId] : 0) + ")").ToList();
+                    if (short_.Count > 0)
+                        throw new BookOrderException("There is not enough stock to complete this order: " + string.Join("; ", short_) + ". Add stock or change the order first.");
+                    foreach (var l in lines)
+                    {
+                        var after = stock[l.ItemId] - l.Quantity;
+                        BookRepository.Move(db, tx, l.ItemId, "sale", -l.Quantity, after, receivedOn, o.Id, null, "Order " + BookFormat.OrderLabel(orderNo), actorId);
+                        stock[l.ItemId] = after;
+                    }
+                    db.Execute("UPDATE dbo.book_orders SET stock_taken_at = SYSDATETIMEOFFSET() WHERE id = @Id", new { o.Id }, tx);
+                }
+
+                var id = db.ExecuteScalar<Guid>(@"
+                    INSERT INTO dbo.book_payments (order_id, amount, discount, method, account_id, received_by, received_on, receipt_path, receipt_mime, note)
+                    OUTPUT inserted.id
+                    VALUES (@orderId, @Amount, @Discount, @method, @accountId, @actorId, @receivedOn, @receiptPath, @receiptMime, @Note)",
+                    new
+                    {
+                        orderId = o.Id, p.Amount, p.Discount, method = p.Amount > 0 ? p.Method : null, accountId = p.Amount > 0 ? p.AccountId : (Guid?)null,
+                        actorId, receivedOn, receiptPath, receiptMime, p.Note
+                    }, tx);
+                db.Execute(@"UPDATE dbo.book_orders SET paid_total = paid_total + @Amount, discount_total = discount_total + @Discount,
+                                    updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId WHERE id = @Id",
+                    new { p.Amount, p.Discount, actorId, o.Id }, tx);
+                AuditLog.Write(db, tx, actorId, "insert", "book_payments", id.ToString(),
+                    new { order_no = orderNo, p.Amount, p.Discount, p.Method, account_id = p.AccountId, received_on = receivedOn, stock_taken = first, receipt = receiptPath != null });
+                tx.Commit();
+                return id;
+            }
+        }
+    }
+}

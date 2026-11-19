@@ -1,0 +1,201 @@
+@model BookOrderAdminViewModel
+@using System.Globalization
+@using TheArqamSchools.Web.Helpers
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    var o = Model.Order;
+    ViewBag.Title = "Order " + o.OrderLabel;
+    var pk = TimeSpan.FromHours(5);
+    var inv = CultureInfo.InvariantCulture;
+    var pf = Model.PaymentForm;
+    var next = new List<KeyValuePair<string, string>>();
+    if (o.Status == "new") { next.Add(new KeyValuePair<string, string>("checked", "Mark as checked")); }
+    if (o.Status == "new" || o.Status == "checked") { next.Add(new KeyValuePair<string, string>("packed", "Mark as packed")); }
+    if (o.Status != "cancelled" && o.Status != "delivered" && o.Status != "collected")
+    {
+        next.Add(o.Fulfilment == "delivery" ? new KeyValuePair<string, string>("delivered", "Mark as delivered") : new KeyValuePair<string, string>("collected", "Mark as collected"));
+        if (o.PaidTotal == 0 && o.DiscountTotal == 0) { next.Add(new KeyValuePair<string, string>("cancelled", "Cancel order")); }
+    }
+}
+<p><a href="/admin/books/orders">&larr; Book orders</a></p>
+<div class="admin-page-head">
+    <div class="admin-order-head">
+        <h1>Order @o.OrderLabel</h1>
+        <span class="admin-status admin-status--@(o.Status == "new" ? "new" : o.Status == "cancelled" ? "spam" : (o.Status == "delivered" || o.Status == "collected") ? "closed" : "in_progress")">@BookFormat.StatusLabel(o.Status)</span>
+        <span class="admin-status">@o.PaymentStatus</span>
+    </div>
+    <div class="admin-status-buttons">
+        <a class="admin-button admin-button--secondary" href="/admin/books/orders/@o.OrderNo/invoice" target="_blank" rel="noopener">Print invoice</a>
+        <a class="admin-button admin-button--secondary" href="/admin/books/orders/@o.OrderNo/invoice.pdf">Download PDF</a>
+    </div>
+</div>
+@if (Model.Notice != null) { <div class="admin-alert admin-alert--success" role="status"><p>@Model.Notice</p></div> }
+@if (Model.Error != null) { <div class="admin-alert admin-alert--error" role="alert"><p>@Model.Error</p></div> }
+
+<section class="admin-card">
+    <dl class="admin-details">
+        <dt>Customer</dt><dd><a href="/admin/books/customers/@o.CustomerId.ToString("D")">@o.CustomerName</a> · @Mobile.Format(o.CustomerMobile)@if (!string.IsNullOrEmpty(o.CampusName)) { <text> · @o.CampusName</text> }</dd>
+        <dt>Placed</dt><dd>@o.CreatedAt.ToOffset(pk).ToString("dddd, d MMMM yyyy, h:mm tt", inv) · @(o.Source == "office" ? "by the office" : "on the website")</dd>
+        <dt>@BookFormat.FulfilmentLabel(o.Fulfilment)</dt><dd>@(o.Fulfilment == "delivery" ? o.DeliveryAddress : "The customer collects the books.")</dd>
+        <dt>Stock</dt><dd>@(o.StockTakenAt.HasValue ? "Taken off at the first payment, " + o.StockTakenAt.Value.ToOffset(pk).ToString("d MMM yyyy", inv) + "." : "Not taken yet (taken at the first payment).")</dd>
+    </dl>
+    @if (Model.CanOrders && next.Count > 0)
+    {
+        <div class="admin-status-buttons">
+            @foreach (var n in next)
+            {
+                <form method="post" action="/admin/books/orders/@o.OrderNo/status">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="status" value="@n.Key" />
+                    <button type="submit" class="admin-button@(n.Key == "cancelled" ? " admin-button--secondary admin-danger" : n.Key == "checked" || n.Key == "packed" ? "" : " admin-button--secondary")" @(n.Key == "cancelled" ? "data-confirm=\"Cancel order " + o.OrderLabel + "?\"" : null)>@n.Value</button>
+                </form>
+            }
+            @if (o.CustomerCanEdit) { <a class="admin-button admin-button--secondary" href="/admin/books/orders/@o.OrderNo/edit">Change books</a> }
+        </div>
+    }
+</section>
+
+<section class="admin-card">
+    <h2>Books</h2>
+    <div class="admin-table-wrap">
+        <table class="admin-table">
+            <thead><tr><th scope="col">Class</th><th scope="col">Book</th><th scope="col" class="num">Qty</th><th scope="col" class="num">Price</th><th scope="col" class="num">Total</th></tr></thead>
+            <tbody>
+                @foreach (var l in o.Lines)
+                {
+                    <tr><td>@l.ClassName</td><td>@l.ItemName</td><td class="num">@l.Quantity@if (l.ReturnedQty > 0) { <span class="admin-tag">@l.ReturnedQty returned</span> }</td><td class="num">@BookFormat.Money(l.UnitPrice)</td><td class="num">@BookFormat.Money(l.LineTotal)</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <table class="admin-money">
+        <tr><th scope="row">Total</th><td>@BookFormat.Money(o.Subtotal)</td></tr>
+        @if (o.ReturnedTotal > 0) { <tr><th scope="row">Returned</th><td>− @BookFormat.Money(o.ReturnedTotal)</td></tr> }
+        @if (o.DiscountTotal > 0) { <tr><th scope="row">Discount</th><td>− @BookFormat.Money(o.DiscountTotal)</td></tr> }
+        @if (o.CreditApplied > 0) { <tr><th scope="row">Customer credit</th><td>− @BookFormat.Money(o.CreditApplied)</td></tr> }
+        <tr><th scope="row">Paid</th><td>− @BookFormat.Money(o.PaidTotal)</td></tr>
+        @if (o.RefundedTotal > 0) { <tr><th scope="row">Refunded</th><td>+ @BookFormat.Money(o.RefundedTotal)</td></tr> }
+        <tr class="is-total"><th scope="row">Balance</th><td>@BookFormat.Money(o.Balance)</td></tr>
+    </table>
+</section>
+
+<section class="admin-card" id="payments">
+    <h2>Payments</h2>
+    @if (Model.Payments.Count == 0)
+    {
+        <p class="admin-muted">No payments yet.</p>
+    }
+    else
+    {
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead><tr><th scope="col">Date</th><th scope="col" class="num">Amount</th><th scope="col" class="num">Discount</th><th scope="col">Method / account</th><th scope="col">Received by</th><th scope="col">Receipt</th><th scope="col">Note</th></tr></thead>
+                <tbody>
+                    @foreach (var p in Model.Payments)
+                    {
+                        <tr>
+                            <td>@p.ReceivedOn.ToString("d MMM yyyy", inv)</td>
+                            <td class="num">@BookFormat.Money(p.Amount)</td>
+                            <td class="num">@(p.Discount > 0 ? BookFormat.Money(p.Discount) : "")</td>
+                            <td>@(p.Method == null ? "" : (p.Method == "bank" ? "Bank" : "Cash") + " · " + p.AccountName)</td>
+                            <td>@p.ReceivedByName</td>
+                            <td>@if (p.ReceiptPath != null && Model.CanPay) { <a href="/admin/books/payments/@p.Id.ToString("D")/receipt" target="_blank" rel="noopener">View</a> }</td>
+                            <td>@p.Note</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    @if (Model.CanPay && o.Status != "cancelled" && o.Balance > 0)
+    {
+        <h3 class="admin-subhead" id="payment">Record a payment</h3>
+        if (Model.Accounts.Count == 0)
+        {
+            <p>Please add a cash or bank account first under <a href="/admin/books/accounts">Accounts</a>.</p>
+        }
+        else
+        {
+            if (!o.StockTakenAt.HasValue) { <p class="admin-hint">This is the first payment: the order's books will be taken off stock when you save it.</p> }
+            <form method="post" action="/admin/books/orders/@o.OrderNo/payments" class="admin-form" enctype="multipart/form-data" novalidate>
+                @Html.AntiForgeryToken()
+                <div class="admin-grid-2">
+                    <div class="admin-field">
+                        <label for="Amount">Amount received (Rs.)</label>
+                        <input type="text" inputmode="decimal" id="Amount" name="Amount" value="@(pf.Amount > 0 ? pf.Amount.ToString("0.##", inv) : "")" placeholder="Balance @o.Balance.ToString("0.##", inv)" />
+                        <p class="admin-hint">Part payments are allowed.</p>
+                    </div>
+                    <div class="admin-field">
+                        <label for="Discount">Discount (Rs., optional)</label>
+                        <input type="text" inputmode="decimal" id="Discount" name="Discount" value="@(pf.Discount > 0 ? pf.Discount.ToString("0.##", inv) : "")" />
+                        <p class="admin-hint">Reduces the balance. Never shown to the customer.</p>
+                    </div>
+                    <div class="admin-field">
+                        <label for="Method">Method</label>
+                        <select id="Method" name="Method" data-account-filter>
+                            <option value="cash" @(pf.Method != "bank" ? "selected" : null)>Cash</option>
+                            <option value="bank" @(pf.Method == "bank" ? "selected" : null)>Bank transfer</option>
+                        </select>
+                    </div>
+                    <div class="admin-field">
+                        <label for="AccountId">Account</label>
+                        <select id="AccountId" name="AccountId">
+                            <option value="">Choose…</option>
+                            @foreach (var a in Model.Accounts) { <option value="@a.Id.ToString("D")" data-kind="@a.Kind" @(pf.AccountId == a.Id ? "selected" : null)>@(a.Kind == "bank" ? "Bank" : "Cash"): @a.Name</option> }
+                        </select>
+                    </div>
+                    <div class="admin-field">
+                        <label for="ReceivedOn">Date</label>
+                        <input type="date" id="ReceivedOn" name="ReceivedOn" value="@pf.ReceivedOn.ToString("yyyy-MM-dd", inv)" />
+                    </div>
+                    <div class="admin-field">
+                        <label>Received by</label>
+                        <p class="admin-readonly">@ViewBag.AdminUser.DisplayName (you)</p>
+                    </div>
+                    <div class="admin-field">
+                        <label for="Receipt">Receipt (photo or PDF, optional for cash)</label>
+                        <input type="file" id="Receipt" name="Receipt" accept="image/jpeg,image/png,application/pdf" />
+                    </div>
+                    <div class="admin-field">
+                        <label for="Note">Note (optional)</label>
+                        <input type="text" id="Note" name="Note" value="@pf.Note" maxlength="500" />
+                    </div>
+                </div>
+                <div><button type="submit" class="admin-button">Save payment</button></div>
+            </form>
+        }
+    }
+</section>
+
+@if (o.Edits != null && o.Edits.Count > 0)
+{
+    <section class="admin-card">
+        <h2>Changes to this order</h2>
+        <ul class="admin-edit-list">
+            @foreach (var e in o.Edits)
+            {
+                <li>
+                    <strong>@e.CreatedAt.ToOffset(pk).ToString("d MMM yyyy, h:mm tt", inv)</strong> · @(e.ByCustomer ? "by the customer" : "by " + (e.UserName ?? "the office")) · total @BookFormat.Money(e.OldSubtotal) → @BookFormat.Money(e.NewSubtotal)
+                    <ul>@foreach (var c in EditLines(e.Changes)) { <li>@c</li> }</ul>
+                </li>
+            }
+        </ul>
+    </section>
+}
+<script src="/Scripts/admin-form.js?v=20261119a" defer></script>
+@functions {
+    static IEnumerable<string> EditLines(string json)
+    {
+        var list = new List<string>();
+        try
+        {
+            foreach (var t in Newtonsoft.Json.Linq.JArray.Parse(json))
+            {
+                if (t["book"] != null) list.Add((string)t["book"] + ": " + (int)t["from"] + " → " + (int)t["to"]);
+                else if (t["fulfilment"] != null) list.Add("Pick up / delivery: " + (string)t["fulfilment"]["from"] + " → " + (string)t["fulfilment"]["to"]);
+            }
+        }
+        catch (Newtonsoft.Json.JsonException) { list.Add("(details not readable)"); }
+        return list;
+    }
+}
