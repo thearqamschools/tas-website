@@ -172,3 +172,8 @@ admin inbox, campus and page editing, on a phone and a computer.
   Still to confirm on the server: one photo upload in a page section (write permission on `media\public-media\pages`).
 - 18 November 2026: `20_flyer_campuses` ran through `deploy/smarterasp-db` (campuses from the old "Admission Open" flyer
   that were not on the website: 110 shown, 7 hidden until the owner confirms). No site upload was needed.
+- 19 November 2026: Books ordering (parts 1–3). `21_books_ordering` ran through `deploy/smarterasp-db` (earlier scripts
+  "already applied"; roles now 10 with "Books Manager"). The site (commit 1b6637d: public `/books`, Admin > Books with
+  books/stock, customers, orders, payments, invoices with barcode and PDF, returns, reports with Print/PDF/Excel) went up
+  first time; `/`, `/books`, `/about`, `/campuses`, `/admin/login` answered 200 and the menu shows "Books".
+  Still to do on the server: write permission on `App_Data\private` for payment receipts.
