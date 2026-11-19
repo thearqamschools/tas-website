@@ -1,0 +1,14 @@
+@model BookCustomer
+@using TheArqamSchools.Web.Helpers
+@* The signed-in customer: name, campus and part of the address, with links to the order pages. *@
+<div class="books-who">
+    <div>
+        <p class="books-who-name">@Model.Name</p>
+        <p class="books-who-meta">@Mobile.Format(Model.Mobile)@if (!string.IsNullOrEmpty(Model.CampusName)) { <text> · @Model.CampusName</text> }</p>
+    </div>
+    <div class="books-who-links">
+        <a href="/books/order">New order</a>
+        <a href="/books/orders">My orders</a>
+        <form method="post" action="/books/signout">@Html.AntiForgeryToken()<button type="submit" class="books-link-button">Sign out</button></form>
+    </div>
+</div>

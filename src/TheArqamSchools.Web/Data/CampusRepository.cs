@@ -130,7 +130,7 @@ namespace TheArqamSchools.Web.Data
             }
         }
 
-        private static string EscapeLike(string s)
+        internal static string EscapeLike(string s)
         {
             return s.Replace("[", "[[]").Replace("%", "[%]").Replace("_", "[_]");
         }

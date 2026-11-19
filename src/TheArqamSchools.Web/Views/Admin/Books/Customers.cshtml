@@ -1,0 +1,35 @@
+@model IList<BookCustomer>
+@using TheArqamSchools.Web.Helpers
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = "Book customers";
+    var q = ViewBag.Query as string;
+}
+<div class="admin-page-head"><h1>Customers</h1>@if ((bool)ViewBag.CanEdit) { <a class="admin-button" href="/admin/books/customers/new">Add customer</a> }</div>
+@Html.Partial("~/Views/Admin/Books/_Tabs.cshtml", "customers")
+<form method="get" action="/admin/books/customers" class="admin-search" role="search">
+    <label for="q" class="admin-visually-hidden">Search customers</label>
+    <input type="search" id="q" name="q" value="@q" placeholder="Search by mobile, name or campus" maxlength="100" />
+    <button type="submit" class="admin-button">Search</button>
+    @if (q != null) { <a href="/admin/books/customers">Clear</a> }
+</form>
+@if (Model.Count == 0)
+{
+    <section class="admin-card"><p>@(q == null ? "No customers yet. Only numbers registered here can order on the website." : "No customers found.")</p></section>
+}
+else
+{
+    <p class="admin-muted">@Model.Count.ToString("N0") customers</p>
+    <ul class="admin-list">
+        @foreach (var c in Model)
+        {
+            <li class="admin-list-item">
+                <a class="admin-list-link" href="/admin/books/customers/@c.Id.ToString("D")">
+                    <span class="admin-list-main"><strong>@c.Name</strong>@if (!c.IsActive) { <span class="admin-status admin-status--spam">Cannot order</span> }</span>
+                    <span class="admin-list-meta">@Mobile.Format(c.Mobile)@if (!string.IsNullOrEmpty(c.CampusName)) { <text> &middot; @c.CampusName</text> }</span>
+                    <span class="admin-list-date">@c.OrderCount @(c.OrderCount == 1 ? "order" : "orders")</span>
+                </a>
+            </li>
+        }
+    </ul>
+}

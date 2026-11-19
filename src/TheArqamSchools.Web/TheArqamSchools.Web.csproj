@@ -94,9 +94,11 @@
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Controllers\AdmissionsController.cs" />
+    <Compile Include="Controllers\BooksController.cs" />
     <Compile Include="Controllers\AdminAccountController.cs" />
     <Compile Include="Controllers\AdminCampusesController.cs" />
     <Compile Include="Controllers\AdminDashboardController.cs" />
+    <Compile Include="Controllers\AdminBooksController.cs" />
     <Compile Include="Controllers\AdminFranchiseController.cs" />
     <Compile Include="Controllers\AdminHomeController.cs" />
     <Compile Include="Controllers\AdminInboxController.cs" />
@@ -115,6 +117,7 @@
     <Compile Include="Controllers\StatusController.cs" />
     <Compile Include="Data\Cache.cs" />
     <Compile Include="Data\AdminUserRepository.cs" />
+    <Compile Include="Data\BookRepository.cs" />
     <Compile Include="Data\CampusAdminRepository.cs" />
     <Compile Include="Data\CampusRepository.cs" />
     <Compile Include="Data\ClassLevelRepository.cs" />
@@ -139,6 +142,7 @@
     <Compile Include="Helpers\SimpleFormat.cs" />
     <Compile Include="Helpers\Social.cs" />
     <Compile Include="Helpers\Media.cs" />
+    <Compile Include="Helpers\Mobile.cs" />
     <Compile Include="Helpers\RichText.cs" />
     <Compile Include="Helpers\Site.cs" />
     <Compile Include="Infrastructure\ClientAddress.cs" />
@@ -155,6 +159,7 @@
     <Compile Include="Infrastructure\RateLimiter.cs" />
     <Compile Include="Models\Campus.cs" />
     <Compile Include="Models\Admin.cs" />
+    <Compile Include="Models\Books.cs" />
     <Compile Include="Models\Cms.cs" />
     <Compile Include="Models\Forms.cs" />
     <Compile Include="Models\HeadOffice.cs" />
@@ -179,6 +184,7 @@
     <Content Include="Global.asax" />
     <Content Include="Scripts\admin-form.js" />
     <Content Include="Scripts\admin-photos.js" />
+    <Content Include="Scripts\books.js" />
     <Content Include="Scripts\site.js" />
     <Content Include="Views\Admin\_AdminLayout.cshtml" />
     <Content Include="Views\Admin\_Errors.cshtml" />
@@ -210,6 +216,17 @@
     <Content Include="Views\Campuses\Detail.cshtml" />
     <Content Include="Views\Home\Index.cshtml" />
     <Content Include="Views\NewsEvents\_Card.cshtml" />
+    <Content Include="Views\Books\Index.cshtml" />
+    <Content Include="Views\Books\Order.cshtml" />
+    <Content Include="Views\Books\Orders.cshtml" />
+    <Content Include="Views\Books\Detail.cshtml" />
+    <Content Include="Views\Books\_Who.cshtml" />
+    <Content Include="Views\Admin\Books\_Tabs.cshtml" />
+    <Content Include="Views\Admin\Books\Index.cshtml" />
+    <Content Include="Views\Admin\Books\Items.cshtml" />
+    <Content Include="Views\Admin\Books\Item.cshtml" />
+    <Content Include="Views\Admin\Books\Customers.cshtml" />
+    <Content Include="Views\Admin\Books\Customer.cshtml" />
     <Content Include="Views\NewsEvents\Detail.cshtml" />
     <Content Include="Views\NewsEvents\Index.cshtml" />
     <Content Include="Views\Pages\Show.cshtml" />

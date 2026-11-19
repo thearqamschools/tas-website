@@ -39,6 +39,18 @@ namespace TheArqamSchools.Web
             routes.MapRoute("NewsEvents", "news-events", new { controller = "NewsEvents", action = "Index" });
             routes.MapRoute("NewsEventsDetail", "news-events/{slug}", new { controller = "NewsEvents", action = "Detail" });
 
+            // Books ordering (customers registered by the office order with their mobile number).
+            var post = new HttpMethodConstraint("POST");
+            var get = new HttpMethodConstraint("GET", "HEAD");
+            routes.MapRoute("BooksStart", "books", new { controller = "Books", action = "Index" });
+            routes.MapRoute("BooksSignOut", "books/signout", new { controller = "Books", action = "SignOut" }, new { httpMethod = post });
+            routes.MapRoute("BooksOrderPost", "books/order", new { controller = "Books", action = "Submit" }, new { httpMethod = post });
+            routes.MapRoute("BooksOrder", "books/order", new { controller = "Books", action = "Order" }, new { httpMethod = get });
+            routes.MapRoute("BooksOrders", "books/orders", new { controller = "Books", action = "Orders" }, new { httpMethod = get });
+            routes.MapRoute("BooksEditPost", "books/orders/{orderNo}/edit", new { controller = "Books", action = "Submit" }, new { orderNo = @"\d{1,12}", httpMethod = post });
+            routes.MapRoute("BooksEdit", "books/orders/{orderNo}/edit", new { controller = "Books", action = "Edit" }, new { orderNo = @"\d{1,12}", httpMethod = get });
+            routes.MapRoute("BooksDetail", "books/orders/{orderNo}", new { controller = "Books", action = "Detail" }, new { orderNo = @"\d{1,12}", httpMethod = get });
+
             // Admin panel. Every /admin address is handled here, never by the CMS catch-all.
             routes.MapRoute("AdminHome", "admin", new { controller = "AdminDashboard", action = "Index" });
             routes.MapRoute("AdminLogin", "admin/login", new { controller = "AdminAccount", action = "Login" });
@@ -88,6 +100,15 @@ namespace TheArqamSchools.Web
                 new { kind = "news|event", id = new GuidRouteConstraint(), httpMethod = new HttpMethodConstraint("POST") });
             routes.MapRoute("AdminNewsPhoto", "admin/news/{kind}/{id}/photos/{photoId}/{op}", new { controller = "AdminNews", action = "Photo" },
                 new { kind = "news|event", id = new GuidRouteConstraint(), photoId = new GuidRouteConstraint(), op = "cover|remove|up|down", httpMethod = new HttpMethodConstraint("POST") });
+            routes.MapRoute("AdminBooks", "admin/books", new { controller = "AdminBooks", action = "Index" });
+            routes.MapRoute("AdminBookItems", "admin/books/items", new { controller = "AdminBooks", action = "Items" });
+            routes.MapRoute("AdminBookItemNew", "admin/books/items/new", new { controller = "AdminBooks", action = "NewItem" });
+            routes.MapRoute("AdminBookItemStock", "admin/books/items/{id}/stock", new { controller = "AdminBooks", action = "Stock" },
+                new { id = new GuidRouteConstraint(), httpMethod = new HttpMethodConstraint("POST") });
+            routes.MapRoute("AdminBookItem", "admin/books/items/{id}", new { controller = "AdminBooks", action = "Item" }, new { id = new GuidRouteConstraint() });
+            routes.MapRoute("AdminBookCustomers", "admin/books/customers", new { controller = "AdminBooks", action = "Customers" });
+            routes.MapRoute("AdminBookCustomerNew", "admin/books/customers/new", new { controller = "AdminBooks", action = "NewCustomer" });
+            routes.MapRoute("AdminBookCustomer", "admin/books/customers/{id}", new { controller = "AdminBooks", action = "Customer" }, new { id = new GuidRouteConstraint() });
             routes.MapRoute("AdminFranchise", "admin/franchise", new { controller = "AdminFranchise", action = "Index" });
             routes.MapRoute("AdminFranchiseExport", "admin/franchise/export.csv", new { controller = "AdminFranchise", action = "Export" });
             routes.MapRoute("AdminFranchiseStatus", "admin/franchise/{id}/status", new { controller = "AdminFranchise", action = "Status" },

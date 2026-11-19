@@ -1,0 +1,121 @@
+@model BookItemEditViewModel
+@using System.Globalization
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    var f = Model.Form;
+    ViewBag.Title = Model.IsNew ? "Add book" : f.Name;
+    var ro = Model.CanEdit ? null : "disabled";
+    var action = Model.IsNew ? "/admin/books/items/new" : "/admin/books/items/" + f.Id.ToString("D");
+    var today = DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(5)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+}
+<p><a href="/admin/books/items">&larr; Books &amp; stock</a></p>
+<div class="admin-page-head"><h1>@(Model.IsNew ? "Add book" : f.ClassName + " – " + f.Name)</h1></div>
+@if (Model.Notice != null) { <div class="admin-alert admin-alert--success" role="status"><p>@Model.Notice</p></div> }
+@Html.Partial("~/Views/Admin/_Errors.cshtml")
+<form method="post" action="@action" class="admin-form" novalidate>
+    @Html.AntiForgeryToken()
+    <section class="admin-card">
+        <div class="admin-grid-2">
+            <div class="admin-field">
+                <label for="ClassName">Class</label>
+                <input type="text" id="ClassName" name="ClassName" value="@f.ClassName" list="classes" maxlength="60" required aria-describedby="ClassName-hint ClassName-error" @ro />
+                <datalist id="classes">@foreach (var c in Model.Classes) { <option value="@c"></option> }</datalist>
+                <p class="admin-hint" id="ClassName-hint">For example Play Group, Nursery, Prep, Class 1 … Class 10, Matric.</p>
+                @Html.ValidationMessage("ClassName", null, new { id = "ClassName-error", @class = "admin-field-error" })
+            </div>
+            <div class="admin-field">
+                <label for="Name">Book name</label>
+                <input type="text" id="Name" name="Name" value="@f.Name" maxlength="200" required aria-describedby="Name-error" @ro />
+                @Html.ValidationMessage("Name", null, new { id = "Name-error", @class = "admin-field-error" })
+            </div>
+            <div class="admin-field">
+                <label for="PurchasePrice">Purchase price (Rs.)</label>
+                <input type="text" inputmode="decimal" id="PurchasePrice" name="PurchasePrice" value="@(Model.IsNew && f.PurchasePrice == 0 ? "" : f.PurchasePrice.ToString("0.##", CultureInfo.InvariantCulture))" aria-describedby="PurchasePrice-hint PurchasePrice-error" @ro />
+                <p class="admin-hint" id="PurchasePrice-hint">Never shown to customers.</p>
+                @Html.ValidationMessage("PurchasePrice", null, new { id = "PurchasePrice-error", @class = "admin-field-error" })
+            </div>
+            <div class="admin-field">
+                <label for="SalePrice">Sale price (Rs.)</label>
+                <input type="text" inputmode="decimal" id="SalePrice" name="SalePrice" value="@(Model.IsNew && f.SalePrice == 0 ? "" : f.SalePrice.ToString("0.##", CultureInfo.InvariantCulture))" aria-describedby="SalePrice-hint SalePrice-error" @ro />
+                <p class="admin-hint" id="SalePrice-hint">The price customers pay. A new price applies to new orders; orders already placed keep their price.</p>
+                @Html.ValidationMessage("SalePrice", null, new { id = "SalePrice-error", @class = "admin-field-error" })
+            </div>
+            <div class="admin-field">
+                <label for="SortOrder">Order in the list (optional)</label>
+                <input type="text" inputmode="numeric" id="SortOrder" name="SortOrder" value="@f.SortOrder" aria-describedby="SortOrder-hint" @ro />
+                <p class="admin-hint" id="SortOrder-hint">Smaller numbers come first within the class.</p>
+            </div>
+        </div>
+        <div class="admin-check">
+            <input type="checkbox" id="IsActive" name="IsActive" value="true" @(f.IsActive ? "checked" : null) @ro />
+            <input type="hidden" name="IsActive" value="false" />
+            <label for="IsActive"><strong>Shown to customers</strong><span class="admin-hint">Untick to hide the book from the order page.</span></label>
+        </div>
+    </section>
+    @if (Model.CanEdit) { <div><button type="submit" class="admin-button">@(Model.IsNew ? "Add book" : "Save changes")</button></div> }
+</form>
+@if (!Model.IsNew)
+{
+    <section class="admin-card" id="stock" aria-labelledby="stock-h">
+        <h2 id="stock-h">Stock: <strong>@Model.Stock</strong> in hand</h2>
+        @if (Model.CanEdit)
+        {
+            <form method="post" action="/admin/books/items/@f.Id.ToString("D")/stock" class="admin-form" novalidate>
+                @Html.AntiForgeryToken()
+                <div class="admin-grid-2">
+                    <div class="admin-field">
+                        <label for="kind">Type</label>
+                        <select id="kind" name="kind">
+                            <option value="purchase">Books received (purchase)</option>
+                            <option value="correction">Correction (+ or −)</option>
+                        </select>
+                    </div>
+                    <div class="admin-field">
+                        <label for="quantity">Number of books</label>
+                        <input type="text" inputmode="numeric" id="quantity" name="quantity" aria-describedby="quantity-hint quantity-error" />
+                        <p class="admin-hint" id="quantity-hint">For a correction, use a minus sign to take books off, for example −3.</p>
+                        @Html.ValidationMessage("quantity", null, new { id = "quantity-error", @class = "admin-field-error" })
+                    </div>
+                    <div class="admin-field">
+                        <label for="date">Date</label>
+                        <input type="date" id="date" name="date" value="@today" aria-describedby="date-error" />
+                        @Html.ValidationMessage("date", null, new { id = "date-error", @class = "admin-field-error" })
+                    </div>
+                    <div class="admin-field">
+                        <label for="note">Note</label>
+                        <input type="text" id="note" name="note" maxlength="500" aria-describedby="note-hint note-error" />
+                        <p class="admin-hint" id="note-hint">For example the supplier or bill number. Required for a correction.</p>
+                        @Html.ValidationMessage("note", null, new { id = "note-error", @class = "admin-field-error" })
+                    </div>
+                </div>
+                <div><button type="submit" class="admin-button">Save stock</button></div>
+            </form>
+        }
+        <h3 class="admin-subhead">Stock history</h3>
+        @if (Model.Moves.Count == 0)
+        {
+            <p class="admin-muted">No stock changes yet.</p>
+        }
+        else
+        {
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead><tr><th scope="col">Date</th><th scope="col">Type</th><th scope="col" class="num">Change</th><th scope="col" class="num">Stock after</th><th scope="col">Order / note</th><th scope="col">By</th></tr></thead>
+                    <tbody>
+                        @foreach (var m in Model.Moves)
+                        {
+                            <tr>
+                                <td>@m.MovedOn.ToString("d MMM yyyy", CultureInfo.InvariantCulture)</td>
+                                <td>@(char.ToUpperInvariant(m.Kind[0]) + m.Kind.Substring(1))</td>
+                                <td class="num">@(m.Change > 0 ? "+" : "")@m.Change</td>
+                                <td class="num">@m.StockAfter</td>
+                                <td>@if (m.OrderNo.HasValue) { <text>@BookFormat.OrderLabel(m.OrderNo.Value) </text> }@m.Note</td>
+                                <td>@m.UserName</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+}

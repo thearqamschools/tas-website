@@ -1,0 +1,7 @@
+@model string
+@* Tabs of the Books area. Orders, payments, returns and reports come in the next parts. *@
+<nav class="admin-tabs" aria-label="Books">
+    <a href="/admin/books" @(Model == "home" ? "aria-current=page" : null)>Overview</a>
+    <a href="/admin/books/items" @(Model == "items" ? "aria-current=page" : null)>Books &amp; stock</a>
+    <a href="/admin/books/customers" @(Model == "customers" ? "aria-current=page" : null)>Customers</a>
+</nav>

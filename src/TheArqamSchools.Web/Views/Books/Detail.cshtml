@@ -1,0 +1,51 @@
+@model BookOrder
+@using TheArqamSchools.Web.Helpers
+@{
+    var customer = ViewBag.Customer as BookCustomer;
+    var pk = TimeSpan.FromHours(5);
+}
+<section class="page-header tone-warm">
+    <div class="container">
+        <h1 class="h1">Order @Model.OrderLabel</h1>
+        <p class="lead">@Model.CreatedAt.ToOffset(pk).ToString("dddd, d MMMM yyyy", System.Globalization.CultureInfo.InvariantCulture)</p>
+    </div>
+</section>
+<section class="section tone-white books">
+    <div class="container books-wide">
+        @Html.Partial("~/Views/Books/_Who.cshtml", customer)
+        @if ((bool)ViewBag.Placed)
+        {
+            <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p><strong>Thank you. Your order @Model.OrderLabel has been placed.</strong> Our office will check it and contact you. Please keep the order number.</p></div>
+        }
+        @if ((bool)ViewBag.Changed)
+        {
+            <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p>Your changes to order @Model.OrderLabel have been saved.</p></div>
+        }
+        <div class="books-card">
+            <p class="books-detail-status"><span class="books-status books-status-@Model.Status">@BookFormat.StatusLabel(Model.Status)</span> <span>@BookFormat.FulfilmentLabel(Model.Fulfilment)@if (Model.Fulfilment == "delivery") { <text>: @BookFormat.PartAddress(Model.DeliveryAddress)</text> }</span></p>
+            <table class="books-table">
+                <thead><tr><th scope="col">Book</th><th scope="col" class="num">Qty</th><th scope="col" class="num">Price</th><th scope="col" class="num">Total</th></tr></thead>
+                <tbody>
+                    @foreach (var l in Model.Lines)
+                    {
+                        <tr><td><span class="books-class">@l.ClassName</span> @l.ItemName</td><td class="num">@l.Quantity</td><td class="num">@BookFormat.Money(l.UnitPrice)</td><td class="num">@BookFormat.Money(l.LineTotal)</td></tr>
+                    }
+                </tbody>
+                <tfoot>
+                    @if (Model.CreditApplied > 0)
+                    {
+                        <tr><th scope="row" colspan="3">Books</th><td class="num">@BookFormat.Money(Model.Subtotal)</td></tr>
+                        <tr><th scope="row" colspan="3">Your credit</th><td class="num">− @BookFormat.Money(Model.CreditApplied)</td></tr>
+                    }
+                    <tr class="books-total-row"><th scope="row" colspan="3">Total</th><td class="num">@BookFormat.Money(Model.CustomerTotal)</td></tr>
+                </tfoot>
+            </table>
+            @if (Model.EditCount > 0) { <p class="form-note">This order was changed @Model.EditCount @(Model.EditCount == 1 ? "time" : "times").</p> }
+        </div>
+        <div class="books-actions">
+            <a class="btn btn-outline" href="/books/orders">All my orders</a>
+            @if (Model.CustomerCanEdit) { <a class="btn btn-primary" href="/books/orders/@Model.OrderNo/edit">Change this order</a> }
+        </div>
+        @if (!Model.CustomerCanEdit && Model.Status != "cancelled") { <p class="form-note">This order can no longer be changed online. For any change, please contact the office.</p> }
+    </div>
+</section>

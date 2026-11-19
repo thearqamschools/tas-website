@@ -1,0 +1,77 @@
+@model BookCustomerForm
+@using TheArqamSchools.Web.Helpers
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    var isNew = (bool)ViewBag.IsNew;
+    var stored = ViewBag.Stored as BookCustomer;
+    var orders = ViewBag.Orders as IList<BookOrder>;
+    var canEdit = (bool)ViewBag.CanEdit;
+    var ro = canEdit ? null : "disabled";
+    ViewBag.Title = isNew ? "Add customer" : Model.Name;
+    var action = isNew ? "/admin/books/customers/new" : "/admin/books/customers/" + Model.Id.ToString("D");
+    var pk = TimeSpan.FromHours(5);
+}
+<p><a href="/admin/books/customers">&larr; Customers</a></p>
+<div class="admin-page-head"><h1>@(isNew ? "Add customer" : Model.Name)</h1></div>
+@if (ViewBag.Notice != null) { <div class="admin-alert admin-alert--success" role="status"><p>@ViewBag.Notice</p></div> }
+@Html.Partial("~/Views/Admin/_Errors.cshtml")
+<form method="post" action="@action" class="admin-form" novalidate>
+    @Html.AntiForgeryToken()
+    <section class="admin-card">
+        <div class="admin-grid-2">
+            <div class="admin-field">
+                <label for="Mobile">Mobile number</label>
+                <input type="tel" id="Mobile" name="Mobile" value="@Model.Mobile" placeholder="0300-1234567" maxlength="20" required aria-describedby="Mobile-hint Mobile-error" @ro />
+                <p class="admin-hint" id="Mobile-hint">The customer orders on the website with this number.</p>
+                @Html.ValidationMessage("Mobile", null, new { id = "Mobile-error", @class = "admin-field-error" })
+            </div>
+            <div class="admin-field">
+                <label for="Name">Name</label>
+                <input type="text" id="Name" name="Name" value="@Model.Name" maxlength="150" required aria-describedby="Name-error" @ro />
+                @Html.ValidationMessage("Name", null, new { id = "Name-error", @class = "admin-field-error" })
+            </div>
+            <div class="admin-field">
+                <label for="CampusName">Campus or shop name (optional)</label>
+                <input type="text" id="CampusName" name="CampusName" value="@Model.CampusName" maxlength="150" aria-describedby="CampusName-error" @ro />
+                @Html.ValidationMessage("CampusName", null, new { id = "CampusName-error", @class = "admin-field-error" })
+            </div>
+            <div class="admin-field">
+                <label for="Address">Address</label>
+                <textarea id="Address" name="Address" rows="2" maxlength="400" aria-describedby="Address-hint Address-error" @ro>@Model.Address</textarea>
+                <p class="admin-hint" id="Address-hint">Used as the delivery address. Without an address the customer can only choose Pick up.</p>
+                @Html.ValidationMessage("Address", null, new { id = "Address-error", @class = "admin-field-error" })
+            </div>
+        </div>
+        <div class="admin-check">
+            <input type="checkbox" id="IsActive" name="IsActive" value="true" @(Model.IsActive ? "checked" : null) @ro />
+            <input type="hidden" name="IsActive" value="false" />
+            <label for="IsActive"><strong>Can order on the website</strong><span class="admin-hint">Untick to stop orders from this number.</span></label>
+        </div>
+        @if (stored != null && stored.Credit > 0) { <p>Credit: <strong>@BookFormat.Money(stored.Credit)</strong> (used automatically on the next order)</p> }
+    </section>
+    @if (canEdit) { <div><button type="submit" class="admin-button">@(isNew ? "Add customer" : "Save changes")</button></div> }
+</form>
+@if (!isNew)
+{
+    <section class="admin-card">
+        <h2>Orders</h2>
+        @if (orders.Count == 0)
+        {
+            <p class="admin-muted">No orders yet.</p>
+        }
+        else
+        {
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead><tr><th scope="col">Order</th><th scope="col">Date</th><th scope="col">Status</th><th scope="col" class="num">Total</th><th scope="col">Payment</th></tr></thead>
+                    <tbody>
+                        @foreach (var o in orders)
+                        {
+                            <tr><td>@o.OrderLabel</td><td>@o.CreatedAt.ToOffset(pk).ToString("d MMM yyyy", System.Globalization.CultureInfo.InvariantCulture)</td><td>@BookFormat.StatusLabel(o.Status)</td><td class="num">@BookFormat.Money(o.Subtotal)</td><td>@o.PaymentStatus</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+}

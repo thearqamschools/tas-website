@@ -1,0 +1,33 @@
+@model IList<BookItem>
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = "Books & stock";
+    var canEdit = (bool)ViewBag.CanEdit;
+}
+<div class="admin-page-head"><h1>Books &amp; stock</h1>@if (canEdit) { <a class="admin-button" href="/admin/books/items/new">Add book</a> }</div>
+@Html.Partial("~/Views/Admin/Books/_Tabs.cshtml", "items")
+@if (Model.Count == 0)
+{
+    <section class="admin-card"><p>No books yet. Add the first book with its class and prices.</p></section>
+}
+else
+{
+    <div class="admin-table-wrap">
+        <table class="admin-table">
+            <thead><tr><th scope="col">Class</th><th scope="col">Book</th><th scope="col" class="num">Stock</th><th scope="col" class="num">Purchase</th><th scope="col" class="num">Sale</th><th scope="col">Shown</th></tr></thead>
+            <tbody>
+                @foreach (var b in Model)
+                {
+                    <tr class="@(b.IsActive ? null : "is-muted")">
+                        <td>@b.ClassName</td>
+                        <td><a href="/admin/books/items/@b.Id.ToString("D")">@b.Name</a></td>
+                        <td class="num@(b.Stock <= 5 ? " is-low" : "")">@b.Stock</td>
+                        <td class="num">@BookFormat.Money(b.PurchasePrice)</td>
+                        <td class="num">@BookFormat.Money(b.SalePrice)</td>
+                        <td>@(b.IsActive ? "Yes" : "Hidden")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

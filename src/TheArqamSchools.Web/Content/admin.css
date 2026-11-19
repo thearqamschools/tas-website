@@ -178,3 +178,14 @@ a.admin-stat:hover { border-color: var(--blue); }
 .admin-label, .admin-hint-label { display: block; font-weight: 600; }
 .admin-hint-label { font-weight: 500; font-size: .9375rem; }
 .admin-check-small { margin-top: .25rem; font-size: .9375rem; }
+/* Books (19 November 2026): tables of books, stock history and orders. */
+.admin-stat--warn .admin-stat-value { color: var(--error); }
+.admin-table-wrap { overflow-x: auto; margin-bottom: 1rem; background: var(--white); border: 1px solid var(--line); border-radius: var(--r-md); }
+.admin-table { width: 100%; border-collapse: collapse; font-size: .9375rem; }
+.admin-table th, .admin-table td { padding: .5rem .75rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.admin-table thead th { background: var(--grey); font-size: .8125rem; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); white-space: nowrap; }
+.admin-table tbody tr:last-child td { border-bottom: 0; }
+.admin-table .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.admin-table .is-low { color: var(--error); font-weight: 700; }
+.admin-table tr.is-muted td { color: var(--muted); }
+.admin-subhead { font-size: 1rem; margin: 1.25rem 0 .5rem; }

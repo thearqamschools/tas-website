@@ -1,0 +1,37 @@
+@model IList<BookOrder>
+@using TheArqamSchools.Web.Helpers
+@{
+    var customer = ViewBag.Customer as BookCustomer;
+    var pk = TimeSpan.FromHours(5);
+}
+<section class="page-header tone-warm">
+    <div class="container">
+        <h1 class="h1">My orders</h1>
+        <p class="lead">Your book orders, newest first.</p>
+    </div>
+</section>
+<section class="section tone-white books">
+    <div class="container books-wide">
+        @Html.Partial("~/Views/Books/_Who.cshtml", customer)
+        @if (Model.Count == 0)
+        {
+            <div class="books-card"><p>You have no orders yet.</p><p><a class="btn btn-primary" href="/books/order">Order books</a></p></div>
+        }
+        else
+        {
+            <ul class="books-history">
+                @foreach (var o in Model)
+                {
+                    <li class="books-card books-history-item">
+                        <div class="books-history-head">
+                            <a class="books-order-link" href="/books/orders/@o.OrderNo">@o.OrderLabel</a>
+                            <span class="books-status books-status-@o.Status">@BookFormat.StatusLabel(o.Status)</span>
+                        </div>
+                        <p class="books-history-meta">@o.CreatedAt.ToOffset(pk).ToString("d MMMM yyyy", System.Globalization.CultureInfo.InvariantCulture) · @o.Lines.Sum(l => l.Quantity) books · <strong>@BookFormat.Money(o.CustomerTotal)</strong></p>
+                        @if (o.CustomerCanEdit) { <p><a href="/books/orders/@o.OrderNo/edit">Change this order</a></p> }
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</section>

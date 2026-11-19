@@ -1,0 +1,33 @@
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = "Books";
+    var low = ViewBag.LowStock as IList<BookItem>;
+}
+<div class="admin-page-head"><h1>Books</h1><a href="/books" target="_blank" rel="noopener">Open the order page</a></div>
+@Html.Partial("~/Views/Admin/Books/_Tabs.cshtml", "home")
+<div class="admin-stats">
+    <a class="admin-stat" href="/admin/books/items"><p class="admin-stat-value">@ViewBag.ItemCount</p><p class="admin-stat-label">books on sale</p></a>
+    <a class="admin-stat" href="/admin/books/customers"><p class="admin-stat-value">@ViewBag.CustomerCount</p><p class="admin-stat-label">customers</p></a>
+    <a class="admin-stat@(low.Count > 0 ? " admin-stat--warn" : "")" href="/admin/books/items"><p class="admin-stat-value">@low.Count</p><p class="admin-stat-label">books with 5 or fewer in stock</p></a>
+</div>
+@if (low.Count > 0)
+{
+    <section class="admin-card">
+        <h2>Low stock</h2>
+        <ul class="admin-list">
+            @foreach (var b in low)
+            {
+                <li class="admin-list-item"><a class="admin-list-link" href="/admin/books/items/@b.Id.ToString("D")"><span class="admin-list-main"><strong>@b.ClassName – @b.Name</strong></span><span class="admin-list-meta">@b.Stock in stock</span></a></li>
+            }
+        </ul>
+    </section>
+}
+<section class="admin-card">
+    <h2>How it works</h2>
+    <ol class="admin-steps">
+        <li>Add the books with their class, purchase price and sale price, then add the stock received.</li>
+        <li>Register each customer (a branch, a book shop or anyone else) with the mobile number, name, campus and address.</li>
+        <li>Customers open <strong>Books</strong> on the website, enter that mobile number and place their order.</li>
+    </ol>
+    <p class="admin-muted">Orders, payments, invoices with barcodes, returns and reports are the next parts of this feature.</p>
+</section>
