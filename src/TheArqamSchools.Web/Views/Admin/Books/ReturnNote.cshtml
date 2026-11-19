@@ -1,0 +1,58 @@
+@model BookReturn
+@using System.Globalization
+@using TheArqamSchools.Web.Helpers
+@using TheArqamSchools.Web.Infrastructure
+@{
+    Layout = null;
+    var inv = CultureInfo.InvariantCulture;
+}
+<!DOCTYPE html>
+<html lang="en-PK">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Return note @Model.ReturnLabel | The Arqam Schools</title>
+    <link rel="stylesheet" href="/Content/admin.css?v=20261119c" />
+</head>
+<body class="invoice-page">
+    <div class="invoice-tools">
+        <button type="button" class="admin-button" onclick="window.print()">Print</button>
+        <a href="/admin/books/orders/@Model.OrderNo#returns">Back to the order</a>
+    </div>
+    <main class="invoice">
+        <header class="invoice-head">
+            <div class="invoice-brand">
+                <img src="/Content/brand/the-arqam-schools-logo-192.png" alt="The Arqam Schools logo" width="64" height="64" />
+                <div>
+                    <p class="invoice-name">THE ARQAM SCHOOLS</p>
+                    @foreach (var line in BookInvoice.Contact) { <p class="invoice-contact">@line</p> }
+                </div>
+            </div>
+            <div class="invoice-meta">
+                <p class="invoice-title">RETURN NOTE</p>
+                <p><strong>@Model.ReturnLabel</strong> · Order @BookFormat.OrderLabel(Model.OrderNo)</p>
+                <p>Date: @Model.RefundedOn.ToString("d MMMM yyyy", inv)</p>
+            </div>
+        </header>
+        <section class="invoice-parties">
+            <div><p class="invoice-label">Customer</p><p><strong>@Model.CustomerName</strong></p><p>Mobile: @Mobile.Format(Model.CustomerMobile)</p></div>
+            <div><p class="invoice-label">Received by</p><p>@Model.CreatedByName</p>@if (!string.IsNullOrEmpty(Model.Note)) { <p>@Model.Note</p> }</div>
+        </section>
+        <table class="invoice-table">
+            <thead><tr><th scope="col">Class</th><th scope="col">Book</th><th scope="col" class="num">Qty</th><th scope="col" class="num">Price</th><th scope="col" class="num">Total</th></tr></thead>
+            <tbody>
+                @foreach (var l in Model.Lines)
+                {
+                    <tr><td>@l.ClassName</td><td>@l.ItemName</td><td class="num">@l.Quantity</td><td class="num">@BookFormat.Money(l.UnitPrice)</td><td class="num">@BookFormat.Money(l.LineTotal)</td></tr>
+                }
+            </tbody>
+        </table>
+        <table class="invoice-totals">
+            <tr><th scope="row">Value of books returned</th><td>@BookFormat.Money(Model.Amount)</td></tr>
+            <tr class="is-total"><th scope="row">Paid back</th><td>@BookFormat.Money(Model.RefundAmount)@if (Model.RefundAmount > 0) { <text> (@(Model.RefundMethod == "bank" ? "bank" : "cash"))</text> }</td></tr>
+        </table>
+        <p class="invoice-foot">Signature: ______________________ &nbsp; &nbsp; Customer: ______________________</p>
+    </main>
+</body>
+</html>

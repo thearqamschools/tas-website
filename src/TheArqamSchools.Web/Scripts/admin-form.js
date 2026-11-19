@@ -71,21 +71,22 @@
   });
 })();
 
-/* Book payments: the account list shows only accounts of the chosen method (cash or bank). */
+/* Book payments and returns: the account list shows only accounts of the chosen method (cash or bank). */
 (function () {
   "use strict";
-  var method = document.querySelector("[data-account-filter]");
-  var account = document.getElementById("AccountId");
-  if (!method || !account) return;
-  function sync() {
-    Array.prototype.forEach.call(account.options, function (o) {
-      var kind = o.getAttribute("data-kind");
-      if (!kind) return;
-      o.hidden = kind !== method.value;
-      o.disabled = kind !== method.value;
-      if (o.selected && o.disabled) account.value = "";
-    });
-  }
-  method.addEventListener("change", sync);
-  sync();
+  Array.prototype.forEach.call(document.querySelectorAll("[data-account-filter]"), function (method) {
+    var account = document.getElementById(method.getAttribute("data-account-filter") || "AccountId");
+    if (!account) return;
+    function sync() {
+      Array.prototype.forEach.call(account.options, function (o) {
+        var kind = o.getAttribute("data-kind");
+        if (!kind) return;
+        o.hidden = kind !== method.value;
+        o.disabled = kind !== method.value;
+        if (o.selected && o.disabled) account.value = "";
+      });
+    }
+    method.addEventListener("change", sync);
+    sync();
+  });
 })();

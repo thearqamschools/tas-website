@@ -1,0 +1,54 @@
+@model TheArqamSchools.Web.Infrastructure.ReportTable
+@using System.Globalization
+@using TheArqamSchools.Web.Data
+@using TheArqamSchools.Web.Infrastructure
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = Model == null ? "Book reports" : Model.Title;
+    var kind = ViewBag.Kind as string;
+    var from = ((DateTime)ViewBag.From).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    var to = ((DateTime)ViewBag.To).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    var query = "kind=" + kind + "&from=" + from + "&to=" + to;
+}
+<div class="admin-page-head admin-no-print"><h1>Book reports</h1></div>
+<div class="admin-no-print">@Html.Partial("~/Views/Admin/Books/_Tabs.cshtml", "reports")</div>
+<form method="get" action="/admin/books/reports" class="admin-filters admin-no-print">
+    <div class="admin-field"><label for="kind">Report</label>
+        <select id="kind" name="kind">@foreach (var k in BookReports.Kinds) { <option value="@k[0]" @(kind == k[0] ? "selected" : null)>@k[1]</option> }</select></div>
+    <div class="admin-field"><label for="from">From</label><input type="date" id="from" name="from" value="@from" /></div>
+    <div class="admin-field"><label for="to">To</label><input type="date" id="to" name="to" value="@to" /></div>
+    <div class="admin-filters-actions"><button type="submit" class="admin-button">Show</button></div>
+</form>
+@if (Model == null)
+{
+    <section class="admin-card admin-no-print"><p>Choose a report and the dates, then press Show. Stock and unpaid orders are always for today.</p></section>
+}
+else
+{
+    <div class="admin-status-buttons admin-no-print admin-report-actions">
+        <button type="button" class="admin-button admin-button--secondary" onclick="window.print()">Print</button>
+        <a class="admin-button admin-button--secondary" href="/admin/books/reports?@query&amp;format=pdf">Download PDF</a>
+        <a class="admin-button admin-button--secondary" href="/admin/books/reports?@query&amp;format=xlsx">Download Excel</a>
+    </div>
+    <section class="admin-report">
+        <h2>The Arqam Schools – @Model.Title</h2>
+        @if (!string.IsNullOrEmpty(Model.Subtitle)) { <p class="admin-muted">@Model.Subtitle</p> }
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead><tr>@foreach (var c in Model.Columns) { <th scope="col" class="@(c.Kind != "text" ? "num" : null)">@c.Name</th> }</tr></thead>
+                <tbody>
+                    @if (Model.Rows.Count == 0) { <tr><td colspan="@Model.Columns.Count">Nothing to show for this period.</td></tr> }
+                    @foreach (var r in Model.Rows)
+                    {
+                        <tr>@for (var i = 0; i < Model.Columns.Count; i++) { <td class="@(Model.Columns[i].Kind != "text" ? "num" : null)">@ReportTable.Format(i < r.Length ? r[i] : null, Model.Columns[i].Kind)</td> }</tr>
+                    }
+                </tbody>
+                @if (Model.Totals != null)
+                {
+                    <tfoot><tr class="admin-report-total">@for (var i = 0; i < Model.Columns.Count; i++) { <td class="@(Model.Columns[i].Kind != "text" ? "num" : null)">@ReportTable.Format(i < Model.Totals.Length ? Model.Totals[i] : null, Model.Columns[i].Kind)</td> }</tr></tfoot>
+                }
+            </table>
+        </div>
+        @foreach (var n in Model.Notes) { <p class="admin-hint">@n</p> }
+    </section>
+}

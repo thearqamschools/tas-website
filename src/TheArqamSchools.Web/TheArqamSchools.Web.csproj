@@ -49,6 +49,7 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.IO.Compression" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Runtime.Caching" />
     <Reference Include="System.Web" />
@@ -100,6 +101,7 @@
     <Compile Include="Controllers\AdminDashboardController.cs" />
     <Compile Include="Controllers\AdminBooksController.cs" />
     <Compile Include="Controllers\AdminBooksOrdersController.cs" />
+    <Compile Include="Controllers\AdminBooksReportsController.cs" />
     <Compile Include="Controllers\AdminFranchiseController.cs" />
     <Compile Include="Controllers\AdminHomeController.cs" />
     <Compile Include="Controllers\AdminInboxController.cs" />
@@ -120,6 +122,8 @@
     <Compile Include="Data\AdminUserRepository.cs" />
     <Compile Include="Data\BookRepository.cs" />
     <Compile Include="Data\BookOrderRepository.cs" />
+    <Compile Include="Data\BookReports.cs" />
+    <Compile Include="Data\BookReturnRepository.cs" />
     <Compile Include="Data\CampusAdminRepository.cs" />
     <Compile Include="Data\CampusRepository.cs" />
     <Compile Include="Data\ClassLevelRepository.cs" />
@@ -162,6 +166,7 @@
     <Compile Include="Infrastructure\PageBuilder.cs" />
     <Compile Include="Infrastructure\RateLimiter.cs" />
     <Compile Include="Infrastructure\ReceiptStore.cs" />
+    <Compile Include="Infrastructure\ReportTable.cs" />
     <Compile Include="Infrastructure\SimplePdf.cs" />
     <Compile Include="Models\Campus.cs" />
     <Compile Include="Models\Admin.cs" />
@@ -228,6 +233,8 @@
     <Content Include="Views\Books\Detail.cshtml" />
     <Content Include="Views\Books\_Who.cshtml" />
     <Content Include="Views\Admin\Books\_Tabs.cshtml" />
+    <Content Include="Views\Admin\Books\ReturnNote.cshtml" />
+    <Content Include="Views\Admin\Books\Reports.cshtml" />
     <Content Include="Views\Admin\Books\Orders.cshtml" />
     <Content Include="Views\Admin\Books\Order.cshtml" />
     <Content Include="Views\Admin\Books\Invoice.cshtml" />

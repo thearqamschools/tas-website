@@ -117,6 +117,9 @@ namespace TheArqamSchools.Web
             routes.MapRoute("AdminBookInvoicePdf", "admin/books/orders/{orderNo}/invoice.pdf", new { controller = "AdminBooks", action = "InvoicePdf" }, new { orderNo = bookNo });
             routes.MapRoute("AdminBookInvoice", "admin/books/orders/{orderNo}/invoice", new { controller = "AdminBooks", action = "Invoice" }, new { orderNo = bookNo });
             routes.MapRoute("AdminBookOrderEdit", "admin/books/orders/{orderNo}/edit", new { controller = "AdminBooks", action = "EditOrder" }, new { orderNo = bookNo });
+            routes.MapRoute("AdminBookOrderReturn", "admin/books/orders/{orderNo}/returns", new { controller = "AdminBooks", action = "Return" }, new { orderNo = bookNo, httpMethod = postOnly });
+            routes.MapRoute("AdminBookReturnNote", "admin/books/returns/{returnNo}", new { controller = "AdminBooks", action = "ReturnNote" }, new { returnNo = bookNo });
+            routes.MapRoute("AdminBookReports", "admin/books/reports", new { controller = "AdminBooks", action = "Reports" });
             routes.MapRoute("AdminBookOrder", "admin/books/orders/{orderNo}", new { controller = "AdminBooks", action = "Order" }, new { orderNo = bookNo });
             routes.MapRoute("AdminBookReceipt", "admin/books/payments/{id}/receipt", new { controller = "AdminBooks", action = "Receipt" }, new { id = new GuidRouteConstraint() });
             routes.MapRoute("AdminBookAccountsPost", "admin/books/accounts", new { controller = "AdminBooks", action = "SaveAccount" }, new { httpMethod = postOnly });

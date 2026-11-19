@@ -10,7 +10,9 @@ system (owner's specification, November 2026):
 - the payment method must match the account (cash/bank); "received by" is the signed-in user;
 - stock is taken off at the **first** payment only, never below zero, and a payment is refused when stock is short;
 - statuses (pick up → Collected, delivery → Delivered; no cancelling after a payment);
-- invoice page with barcode, PDF download, barcode search, receipts visible to the admin only.
+- invoice page with barcode, PDF download, barcode search, receipts visible to the admin only;
+- returns: never more than was taken, books go back into stock, the money is paid back at once, printable return note;
+- reports (stock, sales by book and by customer, payments, unpaid, discounts, returns, profit) on screen, as PDF and as Excel, admin only.
 
 It uses **synthetic data only** (books and customers named "DEMO …", numbers 0300-1234567 / 0311-7654321)
 and must never be run against the live website or a database with real data.
@@ -19,4 +21,4 @@ and must never be run against the live website or a database with real data.
 node books-e2e.js <base-url> <admin-email> <admin-password> <admin-totp-secret> <folder-for-screenshots> <a-test-jpeg>
 ```
 
-The local database must have Database/21 applied and no books, book customers or orders yet.
+The local database must have Database/21 applied and no books, book customers, orders or returns yet.

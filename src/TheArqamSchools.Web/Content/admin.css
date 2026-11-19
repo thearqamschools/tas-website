@@ -245,3 +245,13 @@ body.invoice-page { display: block; background: var(--grey); font-family: var(--
   @page { size: A4; margin: 14mm; }
 }
 @media (max-width: 40rem) { .invoice { padding: 1rem; } .invoice-parties { grid-template-columns: 1fr; } .invoice-meta { text-align: left; } }
+.admin-report-actions { margin-bottom: 1rem; }
+.admin-report h2 { margin-bottom: .25rem; }
+.admin-report-total td { font-weight: 700; background: var(--grey); }
+@media print {
+  .admin-header, .admin-footer, .admin-no-print, .skip-link { display: none !important; }
+  body.admin { background: #fff; }
+  .admin-main { padding: 0; max-width: none; }
+  .admin-table-wrap { border: 0; overflow: visible; }
+  .admin-table { font-size: 9pt; }
+}

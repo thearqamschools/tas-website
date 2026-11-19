@@ -88,8 +88,8 @@ namespace TheArqamSchools.Web.Data
                     new
                     {
                         f.Status, no, like = "%" + CampusRepository.EscapeLike(Helpers.Mobile.Normalize(q) ?? q) + "%",
-                        fromUtc = f.From.HasValue ? new DateTimeOffset(f.From.Value.Date, pk) : (DateTimeOffset?)null,
-                        toUtc = f.To.HasValue ? new DateTimeOffset(f.To.Value.Date.AddDays(1), pk) : (DateTimeOffset?)null
+                        fromUtc = f.From.HasValue ? new DateTimeOffset(DateTime.SpecifyKind(f.From.Value.Date, DateTimeKind.Unspecified), pk) : (DateTimeOffset?)null,
+                        toUtc = f.To.HasValue ? new DateTimeOffset(DateTime.SpecifyKind(f.To.Value.Date.AddDays(1), DateTimeKind.Unspecified), pk) : (DateTimeOffset?)null
                     }).ToList();
         }
 

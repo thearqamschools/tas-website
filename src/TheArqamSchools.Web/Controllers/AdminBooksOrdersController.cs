@@ -51,11 +51,12 @@ namespace TheArqamSchools.Web.Controllers
         }
 
         [HttpGet]
-        public ActionResult Order(long orderNo, string notice)
+        public ActionResult Order(long orderNo, string notice, long? rn)
         {
             var o = BookRepository.Order(orderNo);
             if (o == null) return HttpNotFound();
-            var msg = notice == "status" ? "Status changed." : notice == "paid" ? "Payment recorded." : notice == "placed" ? "Order placed." : notice == "edited" ? "Order changed." : null;
+            var msg = notice == "status" ? "Status changed." : notice == "paid" ? "Payment recorded." : notice == "placed" ? "Order placed." : notice == "edited" ? "Order changed."
+                : notice == "returned" ? "Return " + (rn.HasValue ? "RN-" + rn.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + " " : "") + "recorded. The books are back in stock." : null;
             return OrderView(o, null, msg, null);
         }
 
@@ -64,7 +65,7 @@ namespace TheArqamSchools.Web.Controllers
             var actor = AdminAuth.Current(HttpContext);
             return View("~/Views/Admin/Books/Order.cshtml", new BookOrderAdminViewModel
             {
-                Order = o, Payments = BookOrderRepository.Payments(o.Id), Accounts = BookOrderRepository.Accounts(true),
+                Order = o, Payments = BookOrderRepository.Payments(o.Id), Accounts = BookOrderRepository.Accounts(true), Returns = BookReturnRepository.ForOrder(o.Id),
                 PaymentForm = form ?? new BookPaymentForm { ReceivedOn = DateTime.UtcNow.Add(PakistanTime).Date, Method = "cash" },
                 Notice = notice, Error = error, CanOrders = actor.Can("books.orders"), CanPay = actor.Can("books.payments")
             });

@@ -278,10 +278,42 @@ namespace TheArqamSchools.Web.Models
         public BookOrder Order { get; set; }
         public IList<BookPayment> Payments { get; set; }
         public IList<BookAccount> Accounts { get; set; }
+        public IList<BookReturn> Returns { get; set; }
         public BookPaymentForm PaymentForm { get; set; }
         public string Notice { get; set; }
         public string Error { get; set; }
         public bool CanOrders { get; set; }
         public bool CanPay { get; set; }
+    }
+
+    // ---- Part 3: returns and reports ------------------------------------------------------------
+
+    public class BookReturn
+    {
+        public Guid Id { get; set; }
+        public long ReturnNo { get; set; }
+        public Guid OrderId { get; set; }
+        public long OrderNo { get; set; }
+        public string CustomerName { get; set; }
+        public string CustomerMobile { get; set; }
+        public decimal Amount { get; set; }
+        public decimal RefundAmount { get; set; }
+        public string RefundMethod { get; set; }
+        public string AccountName { get; set; }
+        public DateTime RefundedOn { get; set; }
+        public string Note { get; set; }
+        public string CreatedByName { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+        public IList<BookReturnLine> Lines { get; set; }
+        public string ReturnLabel { get { return "RN-" + ReturnNo.ToString(System.Globalization.CultureInfo.InvariantCulture); } }
+    }
+
+    public class BookReturnLine
+    {
+        public string ClassName { get; set; }
+        public string ItemName { get; set; }
+        public int Quantity { get; set; }
+        public decimal UnitPrice { get; set; }
+        public decimal LineTotal { get { return UnitPrice * Quantity; } }
     }
 }
