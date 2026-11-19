@@ -19,6 +19,7 @@
 -- =============================================================================
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
+SET QUOTED_IDENTIFIER ON;
 GO
 IF EXISTS (SELECT 1 FROM dbo.schema_migrations WHERE id = N'25_old_system_stock')
 BEGIN
@@ -136,6 +137,19 @@ INSERT INTO @s (category, class_name, name, vendor, retail_price, discount_perce
     (N'books', N'Prep', N'Summer Vacation Work Book 26-27', N'Print Expert LHR', 300.00, 0.00, 300.00, 3),
     (N'books', N'Class 3', N'Summer Vacation Work Book 26-27', N'Print Expert LHR', 300.00, 0.00, 300.00, 11),
     (N'books', N'Class 2', N'Summer Vacation Work Book 26-27', N'Print Expert LHR', 300.00, 0.00, 300.00, 1);
+
+-- 0. Safety check: every active item on the website must be one of the report's lines. An item the office
+--    added or renamed by hand would otherwise get a near-duplicate; then nothing is changed and the names are listed.
+DECLARE @unknown NVARCHAR(MAX) = (SELECT STRING_AGG(i.class_name + N' / ' + i.name, N'; ') FROM dbo.book_items i
+                                 WHERE i.archived_at IS NULL AND NOT EXISTS (SELECT 1 FROM @s s WHERE s.class_name = i.class_name AND s.name = i.name));
+IF @unknown IS NOT NULL
+BEGIN
+    PRINT N'Items on the website that are not in the old-system report: ' + @unknown;
+    THROW 50025, N'25_old_system_stock stopped: some items on the website are not in the report. Nothing was changed.', 1;
+END
+DECLARE @taken INT = (SELECT COUNT(*) FROM dbo.book_orders WHERE stock_taken_at IS NOT NULL);
+DECLARE @open INT = (SELECT COUNT(*) FROM dbo.book_orders WHERE stock_taken_at IS NULL AND status <> N'cancelled');
+PRINT N'Orders already handed over (stock taken): ' + CAST(@taken AS NVARCHAR(10)) + N'; open orders not yet handed over: ' + CAST(@open AS NVARCHAR(10));
 
 -- 1. Items already on the website: vendor, prices and category from the report.
 UPDATE i SET i.category = s.category, i.vendor = s.vendor, i.retail_price = s.retail_price,

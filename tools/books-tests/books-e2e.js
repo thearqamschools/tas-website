@@ -39,6 +39,10 @@ const BOOKS = [
   ok('sale price worked out as you type (450)', (await admin.inputValue('#SalePrice')) === '450');
   await admin.click('button:has-text("Add book")'); await admin.waitForLoadState();
   itemUrl['DEMO Retail Book'] = admin.url().split('?')[0];
+  await admin.selectOption('#Category', 'stationery'); await admin.click('button:has-text("Save changes")'); await admin.waitForLoadState();
+  await admin.fill('#Vendor', 'DEMO Vendor Ltd'); await admin.click('button:has-text("Save changes")'); await admin.waitForLoadState();
+  ok('category kept after saving again', (await admin.inputValue('#Category')) === 'stationery');
+  await admin.selectOption('#Category', 'books'); await admin.click('button:has-text("Save changes")'); await admin.waitForLoadState();
   ok('sale price saved as retail less discount', (await admin.inputValue('#SalePrice')) === '450' && (await admin.inputValue('#Vendor')) === 'DEMO Vendor Ltd');
   await admin.fill('#quantity', '4'); await admin.fill('#note', 'DEMO'); await admin.click('button:has-text("Save stock")'); await admin.waitForLoadState();
   await admin.fill('#level', '5'); await admin.click('button:has-text("Save level")'); await admin.waitForLoadState();

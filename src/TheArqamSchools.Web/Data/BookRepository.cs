@@ -89,7 +89,7 @@ namespace TheArqamSchools.Web.Data
         {
             using (var db = Db.Open())
                 return db.QuerySingleOrDefault<BookItem>(
-                    "SELECT id, class_name, name, stock, purchase_price, sale_price, is_active, sort_order, updated_at, vendor, retail_price, discount_percent, reorder_level FROM dbo.book_items WHERE id = @id AND archived_at IS NULL", new { id });
+                    "SELECT id, class_name, name, stock, purchase_price, sale_price, is_active, sort_order, updated_at, vendor, retail_price, discount_percent, reorder_level, category FROM dbo.book_items WHERE id = @id AND archived_at IS NULL", new { id });
         }
 
         public static IList<string> Classes()

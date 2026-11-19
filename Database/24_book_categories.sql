@@ -8,6 +8,7 @@
 -- =============================================================================
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
+SET QUOTED_IDENTIFIER ON;
 GO
 IF EXISTS (SELECT 1 FROM dbo.schema_migrations WHERE id = N'24_book_categories')
 BEGIN
