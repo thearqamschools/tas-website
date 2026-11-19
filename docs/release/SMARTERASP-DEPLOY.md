@@ -179,3 +179,8 @@ admin inbox, campus and page editing, on a phone and a computer.
   Still to do on the server: write permission on `App_Data\private` for payment receipts.
 - 19 November 2026 (later): `22_books_list` ran through `deploy/smarterasp-db`: 78 books from the owner's
   "TAS Books Quantity Form" (sale prices only; purchase price and stock 0 until the office enters them). No site upload.
+- 19 November 2026 (later): `23_book_item_details` ran through `deploy/smarterasp-db` (vendor, retail price, discount %,
+  minimum stock level). Then the site (commit c6cfb0f: owner's books notes, `fileEncoding="utf-8"` in Web.config so IIS
+  reads the views as UTF-8; it had shown "â€“"/"Â·" in the books pages) went up first time. `/`, `/books`, `/about`,
+  `/campuses`, `/admin/login` answered 200; no garbled characters in `/` or `/books`. Script 23 must always run before
+  this code (the book queries read the new columns).
