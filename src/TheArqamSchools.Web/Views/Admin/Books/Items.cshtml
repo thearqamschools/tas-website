@@ -2,11 +2,18 @@
 @{
     Layout = "~/Views/Admin/_AdminLayout.cshtml";
     ViewBag.Title = "Books & stock";
+    ViewBag.Wide = true;
+    var cat = ViewBag.Cat as string;
     var canEdit = (bool)ViewBag.CanEdit;
     var stocked = (HashSet<Guid>)ViewBag.Stocked;
 }
 <div class="admin-page-head"><h1>Books &amp; stock</h1>@if (canEdit) { <a class="admin-button" href="/admin/books/items/new">Add book</a> }</div>
 @Html.Partial("~/Views/Admin/Books/_Tabs.cshtml", "items")
+<nav class="admin-status-buttons admin-cat-filter" aria-label="Category">
+    <a class="admin-button@(cat == null ? "" : " admin-button--secondary")" href="/admin/books/items" @(cat == null ? "aria-current=page" : null)>All</a>
+    <a class="admin-button@(cat == "books" ? "" : " admin-button--secondary")" href="/admin/books/items?cat=books" @(cat == "books" ? "aria-current=page" : null)>Books</a>
+    <a class="admin-button@(cat == "stationery" ? "" : " admin-button--secondary")" href="/admin/books/items?cat=stationery" @(cat == "stationery" ? "aria-current=page" : null)>Stationery</a>
+</nav>
 @if (Model.Count == 0)
 {
     <section class="admin-card"><p>No books yet. Add the first book with its class and prices.</p></section>
@@ -14,12 +21,13 @@
 else
 {
     <div class="admin-table-wrap">
-        <table class="admin-table">
-            <thead><tr><th scope="col">Class</th><th scope="col">Book</th><th scope="col">Vendor</th><th scope="col" class="num">Stock</th><th scope="col" class="num">Purchase</th><th scope="col" class="num">Retail</th><th scope="col" class="num">Discount</th><th scope="col" class="num">Sale</th><th scope="col">Shown</th></tr></thead>
+        <table class="admin-table admin-table--oneline">
+            <thead><tr><th scope="col">Category</th><th scope="col">Class</th><th scope="col">Book</th><th scope="col">Vendor</th><th scope="col" class="num">Stock</th><th scope="col" class="num">Purchase</th><th scope="col" class="num">Retail</th><th scope="col" class="num">Discount</th><th scope="col" class="num">Sale</th><th scope="col">Shown</th></tr></thead>
             <tbody>
                 @foreach (var b in Model)
                 {
                     <tr class="@(b.IsActive ? null : "is-muted")">
+                        <td>@BookFormat.CategoryLabel(b.Category)</td>
                         <td>@b.ClassName</td>
                         <td><a href="/admin/books/items/@b.Id.ToString("D")">@b.Name</a></td>
                         <td>@b.Vendor</td>

@@ -34,18 +34,21 @@ namespace TheArqamSchools.Web.Controllers
         // ---- Books and stock ------------------------------------------------------------
 
         [HttpGet]
-        public ActionResult Items()
+        public ActionResult Items(string cat)
         {
+            cat = cat == "books" || cat == "stationery" ? cat : null;
+            ViewBag.Cat = cat;
             ViewBag.CanEdit = AdminAuth.Current(HttpContext).Can("books.stock");
             ViewBag.Stocked = BookRepository.StockedItemIds();
-            return View("~/Views/Admin/Books/Items.cshtml", BookRepository.Items(true));
+            var items = BookRepository.Items(true);
+            return View("~/Views/Admin/Books/Items.cshtml", cat == null ? items : items.Where(i => i.Category == cat).ToList());
         }
 
         [HttpGet]
         [AdminAuthorize("books.stock")]
         public ActionResult NewItem()
         {
-            return ItemView(new BookItemForm { IsActive = true }, true, 0, null);
+            return ItemView(new BookItemForm { IsActive = true, Category = "books" }, true, 0, null);
         }
 
         [HttpPost]
@@ -83,6 +86,7 @@ namespace TheArqamSchools.Web.Controllers
             f.ClassName = Trim(f.ClassName);
             f.Name = Trim(f.Name);
             f.Vendor = Trim(f.Vendor);
+            f.Category = f.Category == "stationery" ? "stationery" : "books";
             f.RetailPrice = LooseNumber(Request.Form["RetailPrice"]);
             f.DiscountPercent = LooseNumber(Request.Form["DiscountPercent"]);
             if (f.RetailPrice > 0) f.RetailPrice = Math.Round(f.RetailPrice.Value, 2, MidpointRounding.AwayFromZero);
@@ -161,7 +165,7 @@ namespace TheArqamSchools.Web.Controllers
             return new BookItemForm
             {
                 Id = it.Id, ClassName = it.ClassName, Name = it.Name, PurchasePrice = it.PurchasePrice, SalePrice = it.SalePrice,
-                SortOrder = it.SortOrder, IsActive = it.IsActive, Vendor = it.Vendor, RetailPrice = it.RetailPrice, DiscountPercent = it.DiscountPercent
+                SortOrder = it.SortOrder, IsActive = it.IsActive, Vendor = it.Vendor, Category = it.Category, RetailPrice = it.RetailPrice, DiscountPercent = it.DiscountPercent
             };
         }
 

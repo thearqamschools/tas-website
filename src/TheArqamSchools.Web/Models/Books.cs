@@ -16,6 +16,8 @@ namespace TheArqamSchools.Web.Models
         public bool IsActive { get; set; }
         public int SortOrder { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
+        /// <summary>"books" or "stationery" (Database/24).</summary>
+        public string Category { get; set; }
         /// <summary>Office only (Database/23): never shown to customers.</summary>
         public string Vendor { get; set; }
         public decimal? RetailPrice { get; set; }
@@ -131,6 +133,8 @@ namespace TheArqamSchools.Web.Models
     {
         public const int DefaultReorderLevel = 10;
 
+        public static string CategoryLabel(string c) { return c == "stationery" ? "Stationery" : "Books"; }
+
         /// <summary>The classes offered in the admin drop-down, in the owner's order.</summary>
         public static readonly string[] Classes =
         {
@@ -198,6 +202,8 @@ namespace TheArqamSchools.Web.Models
 
         [Range(typeof(decimal), "0", "9999999", ErrorMessage = "Please enter the sale price in rupees.")]
         public decimal SalePrice { get; set; }
+
+        public string Category { get; set; }
 
         [StringLength(150, ErrorMessage = "The vendor can be at most 150 characters.")]
         public string Vendor { get; set; }

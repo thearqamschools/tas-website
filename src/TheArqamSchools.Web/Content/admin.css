@@ -272,3 +272,4 @@ body.invoice-page { display: block; background: var(--grey); font-family: var(--
 .admin-field input[readonly] { background: var(--grey); }
 .admin-main--wide { max-width: 90rem; }
 .admin-table--oneline th, .admin-table--oneline td { white-space: nowrap; }
+.admin-cat-filter { margin-bottom: 1rem; }

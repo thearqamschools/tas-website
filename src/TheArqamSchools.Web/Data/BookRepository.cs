@@ -54,7 +54,7 @@ namespace TheArqamSchools.Web.Data
         {
             using (var db = Db.Open())
                 return Sort(db.Query<BookItem>(
-                    "SELECT id, class_name, name, stock, purchase_price, sale_price, is_active, sort_order, updated_at, vendor, retail_price, discount_percent, reorder_level FROM dbo.book_items " +
+                    "SELECT id, class_name, name, stock, purchase_price, sale_price, is_active, sort_order, updated_at, vendor, retail_price, discount_percent, reorder_level, category FROM dbo.book_items " +
                     "WHERE archived_at IS NULL" + (includeHidden ? "" : " AND is_active = 1")));
         }
 
@@ -115,23 +115,23 @@ namespace TheArqamSchools.Web.Data
                 object before = null;
                 if (isNew)
                     f.Id = db.ExecuteScalar<Guid>(@"
-                        INSERT INTO dbo.book_items (class_name, name, purchase_price, sale_price, is_active, sort_order, vendor, retail_price, discount_percent, created_by, updated_by)
+                        INSERT INTO dbo.book_items (class_name, name, purchase_price, sale_price, is_active, sort_order, vendor, retail_price, discount_percent, category, created_by, updated_by)
                         OUTPUT inserted.id
-                        VALUES (@ClassName, @Name, @PurchasePrice, @SalePrice, @IsActive, @SortOrder, @Vendor, @RetailPrice, @DiscountPercent, @actorId, @actorId)",
-                        new { f.ClassName, f.Name, f.PurchasePrice, f.SalePrice, f.IsActive, f.SortOrder, f.Vendor, f.RetailPrice, f.DiscountPercent, actorId }, tx);
+                        VALUES (@ClassName, @Name, @PurchasePrice, @SalePrice, @IsActive, @SortOrder, @Vendor, @RetailPrice, @DiscountPercent, @Category, @actorId, @actorId)",
+                        new { f.ClassName, f.Name, f.PurchasePrice, f.SalePrice, f.IsActive, f.SortOrder, f.Vendor, f.RetailPrice, f.DiscountPercent, f.Category, actorId }, tx);
                 else
                 {
                     before = db.QuerySingleOrDefault(
-                        "SELECT class_name, name, purchase_price, sale_price, is_active, sort_order, vendor, retail_price, discount_percent FROM dbo.book_items WITH (UPDLOCK) WHERE id = @Id", new { f.Id }, tx);
+                        "SELECT class_name, name, purchase_price, sale_price, is_active, sort_order, vendor, retail_price, discount_percent, category FROM dbo.book_items WITH (UPDLOCK) WHERE id = @Id", new { f.Id }, tx);
                     db.Execute(@"
                         UPDATE dbo.book_items SET class_name = @ClassName, name = @Name, purchase_price = @PurchasePrice, sale_price = @SalePrice,
-                               is_active = @IsActive, sort_order = @SortOrder, vendor = @Vendor, retail_price = @RetailPrice, discount_percent = @DiscountPercent,
+                               is_active = @IsActive, sort_order = @SortOrder, vendor = @Vendor, retail_price = @RetailPrice, discount_percent = @DiscountPercent, category = @Category,
                                updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId
                         WHERE id = @Id AND archived_at IS NULL",
-                        new { f.Id, f.ClassName, f.Name, f.PurchasePrice, f.SalePrice, f.IsActive, f.SortOrder, f.Vendor, f.RetailPrice, f.DiscountPercent, actorId }, tx);
+                        new { f.Id, f.ClassName, f.Name, f.PurchasePrice, f.SalePrice, f.IsActive, f.SortOrder, f.Vendor, f.RetailPrice, f.DiscountPercent, f.Category, actorId }, tx);
                 }
                 AuditLog.Write(db, tx, actorId, isNew ? "insert" : "update", "book_items", f.Id.ToString(),
-                    new { before, after = new { f.ClassName, f.Name, f.PurchasePrice, f.SalePrice, f.IsActive, f.SortOrder, f.Vendor, f.RetailPrice, f.DiscountPercent } });
+                    new { before, after = new { f.ClassName, f.Name, f.PurchasePrice, f.SalePrice, f.IsActive, f.SortOrder, f.Vendor, f.RetailPrice, f.DiscountPercent, f.Category } });
                 tx.Commit();
                 return f.Id;
             }

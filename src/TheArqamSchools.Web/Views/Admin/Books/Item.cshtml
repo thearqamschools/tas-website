@@ -15,8 +15,15 @@
 <form method="post" action="@action" class="admin-form" novalidate>
     @Html.AntiForgeryToken()
     <section class="admin-card">
-        <h2 class="admin-card-title">Book</h2>
-        <div class="admin-grid-3">
+        <h2 class="admin-card-title">Item</h2>
+        <div class="admin-grid-4">
+            <div class="admin-field">
+                <label for="Category">Category</label>
+                <select id="Category" name="Category" @(Model.CanEdit ? null : "disabled")>
+                    <option value="books" @(f.Category != "stationery" ? "selected" : null)>Books</option>
+                    <option value="stationery" @(f.Category == "stationery" ? "selected" : null)>Stationery</option>
+                </select>
+            </div>
             <div class="admin-field">
                 <label for="ClassName">Class</label>
                 <select id="ClassName" name="ClassName" required aria-describedby="ClassName-error" @(Model.CanEdit ? null : "disabled")>
