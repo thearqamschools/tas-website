@@ -37,7 +37,7 @@
         <dt>Customer</dt><dd><a href="/admin/books/customers/@o.CustomerId.ToString("D")">@o.CustomerName</a> · @Mobile.Format(o.CustomerMobile)@if (!string.IsNullOrEmpty(o.CampusName)) { <text> · @o.CampusName</text> }</dd>
         <dt>Placed</dt><dd>@o.CreatedAt.ToOffset(pk).ToString("dddd, d MMMM yyyy, h:mm tt", inv) · @(o.Source == "office" ? "by the office" : "on the website")</dd>
         <dt>@BookFormat.FulfilmentLabel(o.Fulfilment)</dt><dd>@(o.Fulfilment == "delivery" ? o.DeliveryAddress : "The customer collects the books.")</dd>
-        <dt>Stock</dt><dd>@(o.StockTakenAt.HasValue ? "Taken off at the first payment, " + o.StockTakenAt.Value.ToOffset(pk).ToString("d MMM yyyy", inv) + "." : "Not taken yet (taken at the first payment).")</dd>
+        <dt>Stock</dt><dd>@(o.StockTakenAt.HasValue ? "Taken off on " + o.StockTakenAt.Value.ToOffset(pk).ToString("d MMM yyyy", inv) + "." : "Not taken yet (taken at the first payment, or when the books are delivered or collected).")</dd>
     </dl>
     @if (Model.CanOrders && next.Count > 0)
     {
