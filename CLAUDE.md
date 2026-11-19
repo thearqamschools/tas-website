@@ -232,7 +232,7 @@ tools/compile-check/      Mono C# compile check with stub MVC/Dapper types (does
   once; customer credit is applied automatically on the next order; customers never see purchase prices, discounts,
   payments or other customers' data. Book invoices use the Faisalabad office contacts only.
 - Invoices: printable page and PDF from `Infrastructure/SimplePdf.cs` + `Code128.cs` (no outside library).
-- Returns and reports (part 3): `Data/BookReturnRepository.cs` (return note RN-101…, books back into stock, refund at once =
-  what was paid beyond the new total), `Data/BookReports.cs` + `Infrastructure/ReportTable.cs` (screen, Print, PDF, Excel .xlsx
+- Returns and reports (part 3): `Data/BookReturnRepository.cs` (return note RN-101…, books back into stock; a return is valued after its share of the
+  discount; cash paid back at once up to what was received, any part that was the customer's credit goes back to credit), `Data/BookReports.cs` + `Infrastructure/ReportTable.cs` (screen, Print, PDF, Excel .xlsx
   written with System.IO.Compression), `Controllers/AdminBooksReportsController.cs`, permission `books.reports`.
 - Tests: `tools/books-tests/books-e2e.js` (Playwright, synthetic data only, local site only).

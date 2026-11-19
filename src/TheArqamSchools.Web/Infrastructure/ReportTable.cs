@@ -128,7 +128,7 @@ namespace TheArqamSchools.Web.Infrastructure
                              .Append("><v>").Append(Convert.ToString(v, CultureInfo.InvariantCulture)).Append("</v></c>");
                     else
                         sheet.Append("<c r=\"").Append(refName).Append("\" t=\"inlineStr\"").Append(style > 0 ? " s=\"1\"" : "")
-                             .Append("><is><t xml:space=\"preserve\">").Append(SecurityElement.Escape(Format(v, kind))).Append("</t></is></c>");
+                             .Append("><is><t xml:space=\"preserve\">").Append(SecurityElement.Escape(XmlSafe(Format(v, kind)))).Append("</t></is></c>");
                     c++;
                 }
                 sheet.Append("</row>");
@@ -152,7 +152,7 @@ namespace TheArqamSchools.Web.Infrastructure
                 { "xl/workbook.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><sheets><sheet name=\"" + (sheetName.Length == 0 ? "Report" : sheetName) + "\" sheetId=\"1\" r:id=\"rId1\"/></sheets></workbook>" },
                 { "xl/_rels/workbook.xml.rels", "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet1.xml\"/><Relationship Id=\"rId2\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/></Relationships>" },
                 // Styles: 0 normal, 1 bold text, 2 number #,##0.##, 3 bold number.
-                { "xl/styles.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><styleSheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><numFmts count=\"1\"><numFmt numFmtId=\"164\" formatCode=\"#,##0.##\"/></numFmts><fonts count=\"2\"><font><sz val=\"11\"/><name val=\"Calibri\"/></font><font><b/><sz val=\"11\"/><name val=\"Calibri\"/></font></fonts><fills count=\"2\"><fill><patternFill patternType=\"none\"/></fill><fill><patternFill patternType=\"gray125\"/></fill></fills><borders count=\"1\"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/></cellStyleXfs><cellXfs count=\"4\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\"/><xf numFmtId=\"0\" fontId=\"1\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyFont=\"1\"/><xf numFmtId=\"164\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyNumberFormat=\"1\"/><xf numFmtId=\"164\" fontId=\"1\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyNumberFormat=\"1\" applyFont=\"1\"/></cellXfs></styleSheet>" },
+                { "xl/styles.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><styleSheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><numFmts count=\"1\"><numFmt numFmtId=\"164\" formatCode=\"#,##0.00\"/></numFmts><fonts count=\"2\"><font><sz val=\"11\"/><name val=\"Calibri\"/></font><font><b/><sz val=\"11\"/><name val=\"Calibri\"/></font></fonts><fills count=\"2\"><fill><patternFill patternType=\"none\"/></fill><fill><patternFill patternType=\"gray125\"/></fill></fills><borders count=\"1\"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/></cellStyleXfs><cellXfs count=\"4\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\"/><xf numFmtId=\"0\" fontId=\"1\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyFont=\"1\"/><xf numFmtId=\"164\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyNumberFormat=\"1\"/><xf numFmtId=\"164\" fontId=\"1\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyNumberFormat=\"1\" applyFont=\"1\"/></cellXfs></styleSheet>" },
                 { "xl/worksheets/sheet1.xml", sheet.ToString() }
             };
             using (var ms = new MemoryStream())
@@ -167,6 +167,12 @@ namespace TheArqamSchools.Web.Infrastructure
                 }
                 return ms.ToArray();
             }
+        }
+
+        /// <summary>XML 1.0 does not allow most control characters; one in a name or note would make the file unreadable.</summary>
+        private static string XmlSafe(string s)
+        {
+            return new string((s ?? "").Where(ch => ch == '\t' || ch == '\n' || ch == '\r' || ch >= ' ').ToArray());
         }
 
         private static string ColumnName(int index)

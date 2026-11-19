@@ -1,5 +1,6 @@
 @model BookReturn
 @using System.Globalization
+@using System.Linq
 @using TheArqamSchools.Web.Helpers
 @using TheArqamSchools.Web.Infrastructure
 @{
@@ -49,7 +50,13 @@
             </tbody>
         </table>
         <table class="invoice-totals">
-            <tr><th scope="row">Value of books returned</th><td>@BookFormat.Money(Model.Amount)</td></tr>
+            @{ var gross = Model.Lines.Sum(l => l.LineTotal); }
+            <tr><th scope="row">Value of books returned</th><td>@BookFormat.Money(gross)</td></tr>
+            @if (gross > Model.Amount)
+            {
+                <tr><th scope="row">Less discount on these books</th><td>− @BookFormat.Money(gross - Model.Amount)</td></tr>
+                <tr><th scope="row">Value after discount</th><td>@BookFormat.Money(Model.Amount)</td></tr>
+            }
             <tr class="is-total"><th scope="row">Paid back</th><td>@BookFormat.Money(Model.RefundAmount)@if (Model.RefundAmount > 0) { <text> (@(Model.RefundMethod == "bank" ? "bank" : "cash"))</text> }</td></tr>
         </table>
         <p class="invoice-foot">Signature: ______________________ &nbsp; &nbsp; Customer: ______________________</p>

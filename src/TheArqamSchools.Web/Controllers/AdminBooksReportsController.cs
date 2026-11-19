@@ -37,7 +37,7 @@ namespace TheArqamSchools.Web.Controllers
             var accountId = Guid.TryParse(form["ReturnAccountId"], out account) ? account : (Guid?)null;
             var on = ParseDate(form["ReturnedOn"]) ?? DateTime.UtcNow.Add(PakistanTime).Date;
             var note = Trim(form["ReturnNote"]);
-            if (note != null && note.Length > 500) return OrderView(o, null, null, "The note can be at most 500 characters.");
+            if (note != null && note.Length > 400) return OrderView(o, null, null, "The note can be at most 400 characters.");
             try
             {
                 var no = BookReturnRepository.RecordReturn(orderNo, qty, form["ReturnMethod"] == "bank" ? "bank" : "cash", accountId, on, note, AdminAuth.Current(HttpContext).Id);

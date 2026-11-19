@@ -66,7 +66,7 @@ namespace TheArqamSchools.Web.Data
             return db.Query<SoldRow>(@"
                 SELECT l.item_id, l.class_name, l.item_name, SUM(l.quantity) AS qty, SUM(l.quantity * l.unit_price) AS sales, SUM(l.quantity * l.purchase_price) AS cost
                 FROM dbo.book_order_lines l JOIN dbo.book_orders o ON o.id = l.order_id
-                WHERE o.stock_taken_at >= @fromUtc AND o.stock_taken_at < @toUtc AND l.quantity > 0
+                WHERE o.stock_taken_at >= @fromUtc AND o.stock_taken_at < @toUtc AND o.status <> N'cancelled' AND l.quantity > 0
                 GROUP BY l.item_id, l.class_name, l.item_name", new { fromUtc, toUtc }).ToList();
         }
 
@@ -107,9 +107,9 @@ namespace TheArqamSchools.Web.Data
                 .Col("Sales value", "money", 1.1).Col("Returned value", "money", 1.1).Col("Net sales", "money", 1.1);
             var rows = db.Query(@"
                 SELECT c.id, c.name, c.mobile, c.campus_name,
-                       (SELECT COUNT(*) FROM dbo.book_orders o WHERE o.customer_id = c.id AND o.stock_taken_at >= @fromUtc AND o.stock_taken_at < @toUtc) AS orders,
-                       (SELECT COALESCE(SUM(o.subtotal), 0) FROM dbo.book_orders o WHERE o.customer_id = c.id AND o.stock_taken_at >= @fromUtc AND o.stock_taken_at < @toUtc) AS sales,
-                       (SELECT COALESCE(SUM(r.amount), 0) FROM dbo.book_returns r JOIN dbo.book_orders o ON o.id = r.order_id
+                       (SELECT COUNT(*) FROM dbo.book_orders o WHERE o.customer_id = c.id AND o.status <> N'cancelled' AND o.stock_taken_at >= @fromUtc AND o.stock_taken_at < @toUtc) AS orders,
+                       (SELECT COALESCE(SUM(o.subtotal), 0) FROM dbo.book_orders o WHERE o.customer_id = c.id AND o.status <> N'cancelled' AND o.stock_taken_at >= @fromUtc AND o.stock_taken_at < @toUtc) AS sales,
+                       (SELECT COALESCE(SUM(rl.quantity * rl.unit_price), 0) FROM dbo.book_return_lines rl JOIN dbo.book_returns r ON r.id = rl.return_id JOIN dbo.book_orders o ON o.id = r.order_id
                         WHERE o.customer_id = c.id AND r.refunded_on >= @from AND r.refunded_on <= @to) AS returned
                 FROM dbo.book_customers c", new { fromUtc, toUtc, from = from.Date, to = to.Date }).ToList()
                 .Where(r => (int)r.orders > 0 || (decimal)r.returned > 0).OrderByDescending(r => (decimal)r.sales).ToList();
@@ -132,7 +132,17 @@ namespace TheArqamSchools.Web.Data
             foreach (var r in rows)
                 t.Rows.Add(new object[] { (DateTime)r.received_on, BookFormat.OrderLabel((long)r.order_no), (string)r.name, (string)r.method == "bank" ? "Bank" : "Cash", (string)r.account, (string)r.by_name, (decimal)r.amount });
             t.Totals = new object[] { "Total", null, null, null, null, null, rows.Sum(r => (decimal)r.amount) };
-            foreach (var g in rows.GroupBy(r => (string)r.account)) t.Notes.Add("Account " + g.Key + ": Rs. " + g.Sum(r => (decimal)r.amount).ToString("#,##0.##", CultureInfo.InvariantCulture));
+            var paidBack = db.Query(@"SELECT a.name AS account, SUM(r.refund_amount) AS refunded FROM dbo.book_returns r JOIN dbo.book_accounts a ON a.id = r.refund_account_id
+                                      WHERE r.refund_amount > 0 AND r.refunded_on >= @from AND r.refunded_on <= @to GROUP BY a.name", new { from = from.Date, to = to.Date })
+                              .ToDictionary(r => (string)r.account, r => (decimal)r.refunded);
+            foreach (var name in rows.Select(r => (string)r.account).Union(paidBack.Keys).Distinct())
+            {
+                var received = rows.Where(r => (string)r.account == name).Sum(r => (decimal)r.amount);
+                decimal back;
+                paidBack.TryGetValue(name, out back);
+                t.Notes.Add("Account " + name + ": received Rs. " + received.ToString("#,##0.##", CultureInfo.InvariantCulture)
+                    + (back > 0 ? ", paid back for returns Rs. " + back.ToString("#,##0.##", CultureInfo.InvariantCulture) + ", net Rs. " + (received - back).ToString("#,##0.##", CultureInfo.InvariantCulture) : ""));
+            }
             foreach (var g in rows.GroupBy(r => (string)r.by_name)) t.Notes.Add("Received by " + g.Key + ": Rs. " + g.Sum(r => (decimal)r.amount).ToString("#,##0.##", CultureInfo.InvariantCulture));
             return t;
         }
@@ -141,7 +151,7 @@ namespace TheArqamSchools.Web.Data
         {
             var t = new ReportTable { Title = "Unpaid and part-paid orders", Subtitle = "On " + DateTime.UtcNow.AddHours(5).ToString("d MMMM yyyy", CultureInfo.InvariantCulture) }
                 .Col("Order", "text", 0.8).Col("Date", "text", 0.9).Col("Customer", "text", 1.6).Col("Mobile", "text", 1).Col("Status", "text", 0.8)
-                .Col("Total", "money").Col("Paid", "money").Col("Balance", "money");
+                .Col("To pay", "money").Col("Paid", "money").Col("Balance", "money");
             var rows = db.Query<BookOrder>(@"
                 SELECT o.order_no, o.created_at, c.name AS customer_name, c.mobile AS customer_mobile, o.status, o.subtotal, o.discount_total, o.credit_applied,
                        o.paid_total, o.returned_total, o.refunded_total
@@ -149,10 +159,13 @@ namespace TheArqamSchools.Web.Data
                 WHERE o.status <> N'cancelled' AND (o.subtotal - o.returned_total - o.discount_total - o.credit_applied - o.paid_total + o.refunded_total) > 0
                 ORDER BY o.created_at").ToList();
             foreach (var o in rows)
-                t.Rows.Add(new object[] { o.OrderLabel, o.CreatedAt.ToOffset(TimeSpan.FromHours(5)).DateTime, o.CustomerName, Helpers.Mobile.Format(o.CustomerMobile), BookFormat.StatusLabel(o.Status) + (o.PaidTotal > 0 ? " · part paid" : ""), o.Subtotal, o.PaidTotal, o.Balance });
-            t.Totals = new object[] { "Total", null, null, null, null, rows.Sum(o => o.Subtotal), rows.Sum(o => o.PaidTotal), rows.Sum(o => o.Balance) };
+                t.Rows.Add(new object[] { o.OrderLabel, o.CreatedAt.ToOffset(TimeSpan.FromHours(5)).DateTime, o.CustomerName, Helpers.Mobile.Format(o.CustomerMobile), BookFormat.StatusLabel(o.Status) + (o.PaidTotal > 0 ? " · part paid" : ""), Net(o), o.PaidTotal - o.RefundedTotal, o.Balance });
+            t.Totals = new object[] { "Total", null, null, null, null, rows.Sum(o => Net(o)), rows.Sum(o => o.PaidTotal - o.RefundedTotal), rows.Sum(o => o.Balance) };
+            t.Notes.Add("To pay = order total less returns, discounts and credit. Paid = money received less money paid back.");
             return t;
         }
+
+        private static decimal Net(BookOrder o) { return o.Subtotal - o.ReturnedTotal - o.DiscountTotal - o.CreditApplied; }
 
         private static ReportTable Discounts(System.Data.IDbConnection db, DateTime from, DateTime to, string period)
         {
@@ -195,6 +208,10 @@ namespace TheArqamSchools.Web.Data
             var cost = sold.Sum(s => s.Cost);
             var retSales = ret.Sum(r => r.Sales);
             var retCost = ret.Sum(r => r.Cost);
+            // Returns are valued after their share of the discount; that share is no longer a discount given.
+            var discountBack = db.ExecuteScalar<decimal>(@"SELECT COALESCE(SUM(g.gross - r.amount), 0) FROM dbo.book_returns r
+                CROSS APPLY (SELECT SUM(rl.quantity * rl.unit_price) AS gross FROM dbo.book_return_lines rl WHERE rl.return_id = r.id) g
+                WHERE r.refunded_on >= @from AND r.refunded_on <= @to", new { from = from.Date, to = to.Date });
             var t = new ReportTable { Title = "Profit", Subtitle = period }.Col("", "text", 3).Col("Amount (Rs.)", "money", 1);
             t.Rows.Add(new object[] { "Sale value of books sold", sales });
             t.Rows.Add(new object[] { "Less: sale value of books returned", -retSales });
@@ -202,7 +219,8 @@ namespace TheArqamSchools.Web.Data
             t.Rows.Add(new object[] { "Less: purchase value of books sold", -cost });
             t.Rows.Add(new object[] { "Add: purchase value of books returned", retCost });
             t.Rows.Add(new object[] { "Less: discounts given", -discounts });
-            t.Totals = new object[] { "Profit", sales - retSales - (cost - retCost) - discounts };
+            if (discountBack != 0) t.Rows.Add(new object[] { "Add: discount on books returned", discountBack });
+            t.Totals = new object[] { "Profit", sales - retSales - (cost - retCost) - discounts + discountBack };
             t.Notes.Add("Sale and purchase values are the prices stored on each order line. A sale counts on the day its books came off stock.");
             return t;
         }

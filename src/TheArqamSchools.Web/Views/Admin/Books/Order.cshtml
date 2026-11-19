@@ -220,7 +220,7 @@
                     <select id="ReturnAccountId" name="ReturnAccountId"><option value="">Choose…</option>@foreach (var a in Model.Accounts) { <option value="@a.Id.ToString("D")" data-kind="@a.Kind">@(a.Kind == "bank" ? "Bank" : "Cash"): @a.Name</option> }</select>
                 </div>
                 <div class="admin-field"><label for="ReturnedOn">Date</label><input type="date" id="ReturnedOn" name="ReturnedOn" value="@DateTime.UtcNow.AddHours(5).ToString("yyyy-MM-dd", inv)" /></div>
-                <div class="admin-field"><label for="ReturnNote">Note (optional)</label><input type="text" id="ReturnNote" name="ReturnNote" maxlength="500" /></div>
+                <div class="admin-field"><label for="ReturnNote">Note (optional)</label><input type="text" id="ReturnNote" name="ReturnNote" maxlength="400" /></div>
             </div>
             <div><button type="submit" class="admin-button" data-confirm="Record this return? The books go back into stock.">Record return</button></div>
         </form>

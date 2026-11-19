@@ -11,7 +11,8 @@ system (owner's specification, November 2026):
 - stock is taken off at the **first** payment only, never below zero, and a payment is refused when stock is short;
 - statuses (pick up → Collected, delivery → Delivered; no cancelling after a payment);
 - invoice page with barcode, PDF download, barcode search, receipts visible to the admin only;
-- returns: never more than was taken, books go back into stock, the money is paid back at once, printable return note;
+- returns: never more than was taken, books go back into stock, valued after their share of any discount, the money is paid back at once
+  (never more than was received; a return date in the future is refused), printable return note;
 - reports (stock, sales by book and by customer, payments, unpaid, discounts, returns, profit) on screen, as PDF and as Excel, admin only.
 
 It uses **synthetic data only** (books and customers named "DEMO …", numbers 0300-1234567 / 0311-7654321)

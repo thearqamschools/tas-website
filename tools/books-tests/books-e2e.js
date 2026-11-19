@@ -181,6 +181,30 @@ const BOOKS = [
   ok('return note page', (await admin.content()).includes('RETURN NOTE') && (await admin.content()).includes('WhatsApp: 0339-2406479'));
   await admin.screenshot({ path: OUT + '/return-note.png', fullPage: true });
 
+  // Discount and part payment: a discount is never paid out as cash; two returns in a row end at balance 0.
+  await admin.goto(B + '/admin/books/orders/new?q=0311'); await admin.click('a:has-text("DEMO Pickup Only")'); await admin.waitForLoadState();
+  await admin.fill('#' + await admin.locator('tr', { hasText: 'DEMO Alphabet Book' }).locator('input').getAttribute('id'), '4');
+  await admin.click('button:has-text("Place order")'); await admin.waitForLoadState();
+  const fourthNo = Number((admin.url().match(/orders\/(\d+)/) || [])[1]);   // 4 × 260 = 1,040
+  await admin.fill('#Amount', '500'); await admin.fill('#Discount', '40'); await admin.selectOption('#Method', 'cash'); await pickCash('AccountId');
+  await admin.click('button:has-text("Save payment")'); await admin.waitForLoadState();
+  const balanceOf = async () => money(await admin.locator('tr', { hasText: 'Balance' }).last().locator('td').innerText());
+  ok('discount order balance 500', (await balanceOf()) === 500);
+  const tooEarly = new Date(Date.now() + 5 * 3600e3 + 3 * 86400e3).toISOString().slice(0, 10);
+  await admin.locator('#returns tr', { hasText: 'DEMO Alphabet Book' }).locator('input').fill('2'); await admin.fill('#ReturnedOn', tooEarly);
+  await admin.click('button:has-text("Record return")'); await admin.waitForLoadState();
+  ok('return date in the future refused', (await admin.content()).includes('cannot be in the future'));
+  await admin.goto(B + '/admin/books/orders/' + fourthNo);
+  await admin.locator('#returns tr', { hasText: 'DEMO Alphabet Book' }).locator('input').fill('2');
+  await admin.click('button:has-text("Record return")'); await admin.waitForLoadState();
+  ok('first return: value after discount 500, nothing paid back, balance 0', (await balanceOf()) === 0 && /Rs\. 500\s+–/.test(await admin.locator('#returns table').first().innerText()));
+  await admin.locator('#returns tr', { hasText: 'DEMO Alphabet Book' }).locator('input').fill('2'); await admin.selectOption('#ReturnMethod', 'cash'); await pickCash('ReturnAccountId');
+  await admin.click('button:has-text("Record return")'); await admin.waitForLoadState();
+  const retText = await admin.locator('#returns table').first().innerText();
+  const backs = [...retText.matchAll(/RN-\d+[^\n]*/g)].map(m => m[0]);
+  ok('second return pays back 500 = cash received (not 520)', (await balanceOf()) === 0 && backs.length === 2 && /Rs\. 500\s+Rs\. 500 \(cash\)/.test(backs[1]));
+  ok('all four books back in stock (25)', (await stockOf('DEMO Alphabet Book')) === 25);
+
   // --- Reports ----------------------------------------------------------------------------------
   const today = new Date(Date.now() + 5 * 3600e3).toISOString().slice(0, 10);
   for (const kind of ['stock', 'sales-books', 'sales-customers', 'payments', 'unpaid', 'discounts', 'returns', 'profit']) {
