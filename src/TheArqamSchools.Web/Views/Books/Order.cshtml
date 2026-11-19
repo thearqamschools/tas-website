@@ -45,12 +45,12 @@
                             @if (credit > 0)
                             {
                                 <tr><th scope="row" colspan="3">Books</th><td class="num">@BookFormat.Money(total)</td></tr>
-                                <tr><th scope="row" colspan="3">Your credit</th><td class="num">− @BookFormat.Money(credit)</td></tr>
+                                <tr><th scope="row" colspan="3">Your credit</th><td class="num">&minus; @BookFormat.Money(credit)</td></tr>
                             }
                             <tr class="books-total-row"><th scope="row" colspan="3">Total</th><td class="num">@BookFormat.Money(total - credit)</td></tr>
                         </tfoot>
                     </table>
-                    <p class="books-fulfil">@Icons.Svg(Model.Fulfilment == "delivery" ? "map-pin" : "graduation-cap", 18) <span><strong>@BookFormat.FulfilmentLabel(Model.Fulfilment):</strong> @(Model.Fulfilment == "delivery" ? BookFormat.PartAddress(Model.Customer.Address) : "you collect the books from the office.")</span></p>
+                    <p class="books-fulfil">@Icons.Svg(Model.Fulfilment == "delivery" ? "map-pin" : "graduation-cap", 18) <span><strong>@BookFormat.FulfilmentLabel(Model.Fulfilment):</strong> @(Model.Fulfilment == "delivery" ? Model.Customer.Address : "you collect the books from the office.")</span></p>
                 </div>
                 <div class="books-actions">
                     <button type="submit" name="step" value="back" class="btn btn-outline">Change order</button>
@@ -67,12 +67,14 @@
                 {
                     <fieldset class="books-class-group">
                         <legend>@g.Key</legend>
+                        <div class="books-row books-row--head" aria-hidden="true"><span>Book</span><span class="num">Price</span><span class="num-c">Quantity</span><span class="num">Total</span></div>
                         <ul class="books-rows">
                             @foreach (var i in g)
                             {
                                 var id = "q_" + i.Id.ToString("N");
                                 <li class="books-row">
-                                    <label for="@id" class="books-row-name">@i.Name<span class="books-row-price">@BookFormat.Money(i.SalePrice)</span></label>
+                                    <label for="@id" class="books-row-name">@i.Name</label>
+                                    <span class="books-row-price">@BookFormat.Money(i.SalePrice)</span>
                                     <input type="number" id="@id" name="@id" value="@(qty(i.Id) > 0 ? qty(i.Id).ToString(CultureInfo.InvariantCulture) : "")" min="0" max="@BookRepositoryMax()" inputmode="numeric" placeholder="0" data-price="@i.SalePrice.ToString(CultureInfo.InvariantCulture)" aria-label="Quantity of @i.Name, @g.Key" />
                                     <output class="books-row-total" for="@id" data-line-total>@(qty(i.Id) > 0 ? BookFormat.Money(i.SalePrice * qty(i.Id)) : "")</output>
                                 </li>
@@ -85,7 +87,7 @@
                     <fieldset class="books-card books-fulfil-choice">
                         <legend>How will you get the books?</legend>
                         <label class="books-radio"><input type="radio" name="fulfilment" value="pickup" @(Model.Fulfilment != "delivery" ? "checked" : null) /> <span><strong>Pick up</strong> I will collect them</span></label>
-                        <label class="books-radio"><input type="radio" name="fulfilment" value="delivery" @(Model.Fulfilment == "delivery" ? "checked" : null) @(canDeliver ? null : "disabled") /> <span><strong>Delivery</strong> @(canDeliver ? "to " + BookFormat.PartAddress(Model.Customer.Address) : "(no address registered; please contact the office)")</span></label>
+                        <label class="books-radio"><input type="radio" name="fulfilment" value="delivery" @(Model.Fulfilment == "delivery" ? "checked" : null) @(canDeliver ? null : "disabled") /> <span><strong>Delivery</strong> @(canDeliver ? "to " + Model.Customer.Address : "(no address registered; please contact the office)")</span></label>
                     </fieldset>
                     <div class="books-sticky" data-books-sticky>
                         <div class="books-sticky-inner">
@@ -98,7 +100,7 @@
         </form>
     </div>
 </section>
-<script src="~/Scripts/books.js?v=20261119b" defer></script>
+<script src="~/Scripts/books.js?v=20261120a" defer></script>
 @functions {
     static int BookRepositoryMax() { return TheArqamSchools.Web.Data.BookRepository.MaxQuantityPerBook; }
 }

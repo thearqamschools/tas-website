@@ -32,7 +32,7 @@ namespace TheArqamSchools.Web.Data
         private static readonly string[] ClassOrder =
         {
             "play group", "nursery", "prep", "kg", "class 1", "class 2", "class 3", "class 4", "class 5", "class 6",
-            "class 7", "class 8", "class 9", "class 10", "matric", "hifz"
+            "class 7", "class 8", "class 9", "class 10", "matric", "hifz", "hifz class", "all classes"
         };
 
         /// <summary>Sort key so classes appear Play Group, Nursery, Prep, Class 1 … Class 10, Matric, then others A–Z.</summary>
@@ -54,11 +54,32 @@ namespace TheArqamSchools.Web.Data
         {
             using (var db = Db.Open())
                 return Sort(db.Query<BookItem>(
-                    "SELECT id, class_name, name, stock, purchase_price, sale_price, is_active, sort_order, updated_at FROM dbo.book_items " +
+                    "SELECT id, class_name, name, stock, purchase_price, sale_price, is_active, sort_order, updated_at, vendor, retail_price, discount_percent, reorder_level FROM dbo.book_items " +
                     "WHERE archived_at IS NULL" + (includeHidden ? "" : " AND is_active = 1")));
         }
 
         /// <summary>What a customer may order: active books with stock.</summary>
+        /// <summary>Sets one book's minimum stock level (null = the default).</summary>
+        public static void SetReorderLevel(Guid id, int? level, Guid actorId)
+        {
+            using (var db = Db.Open())
+            using (var tx = db.BeginTransaction())
+            {
+                var before = db.ExecuteScalar<int?>("SELECT reorder_level FROM dbo.book_items WITH (UPDLOCK) WHERE id = @id", new { id }, tx);
+                db.Execute("UPDATE dbo.book_items SET reorder_level = @level, updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId WHERE id = @id AND archived_at IS NULL",
+                    new { id, level, actorId }, tx);
+                AuditLog.Write(db, tx, actorId, "update", "book_items", id.ToString(), new { reorder_level = new { before, after = level } });
+                tx.Commit();
+            }
+        }
+
+        /// <summary>Books that have had at least one stock entry; a book never stocked is not "running low".</summary>
+        public static HashSet<Guid> StockedItemIds()
+        {
+            using (var db = Db.Open())
+                return new HashSet<Guid>(db.Query<Guid>("SELECT DISTINCT item_id FROM dbo.book_stock_moves"));
+        }
+
         public static IList<BookItem> OrderableItems()
         {
             return Items(false).Where(i => i.Stock > 0).ToList();
@@ -68,7 +89,7 @@ namespace TheArqamSchools.Web.Data
         {
             using (var db = Db.Open())
                 return db.QuerySingleOrDefault<BookItem>(
-                    "SELECT id, class_name, name, stock, purchase_price, sale_price, is_active, sort_order, updated_at FROM dbo.book_items WHERE id = @id AND archived_at IS NULL", new { id });
+                    "SELECT id, class_name, name, stock, purchase_price, sale_price, is_active, sort_order, updated_at, vendor, retail_price, discount_percent, reorder_level FROM dbo.book_items WHERE id = @id AND archived_at IS NULL", new { id });
         }
 
         public static IList<string> Classes()
@@ -94,22 +115,23 @@ namespace TheArqamSchools.Web.Data
                 object before = null;
                 if (isNew)
                     f.Id = db.ExecuteScalar<Guid>(@"
-                        INSERT INTO dbo.book_items (class_name, name, purchase_price, sale_price, is_active, sort_order, created_by, updated_by)
+                        INSERT INTO dbo.book_items (class_name, name, purchase_price, sale_price, is_active, sort_order, vendor, retail_price, discount_percent, created_by, updated_by)
                         OUTPUT inserted.id
-                        VALUES (@ClassName, @Name, @PurchasePrice, @SalePrice, @IsActive, @SortOrder, @actorId, @actorId)",
-                        new { f.ClassName, f.Name, f.PurchasePrice, f.SalePrice, f.IsActive, f.SortOrder, actorId }, tx);
+                        VALUES (@ClassName, @Name, @PurchasePrice, @SalePrice, @IsActive, @SortOrder, @Vendor, @RetailPrice, @DiscountPercent, @actorId, @actorId)",
+                        new { f.ClassName, f.Name, f.PurchasePrice, f.SalePrice, f.IsActive, f.SortOrder, f.Vendor, f.RetailPrice, f.DiscountPercent, actorId }, tx);
                 else
                 {
                     before = db.QuerySingleOrDefault(
-                        "SELECT class_name, name, purchase_price, sale_price, is_active, sort_order FROM dbo.book_items WITH (UPDLOCK) WHERE id = @Id", new { f.Id }, tx);
+                        "SELECT class_name, name, purchase_price, sale_price, is_active, sort_order, vendor, retail_price, discount_percent FROM dbo.book_items WITH (UPDLOCK) WHERE id = @Id", new { f.Id }, tx);
                     db.Execute(@"
                         UPDATE dbo.book_items SET class_name = @ClassName, name = @Name, purchase_price = @PurchasePrice, sale_price = @SalePrice,
-                               is_active = @IsActive, sort_order = @SortOrder, updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId
+                               is_active = @IsActive, sort_order = @SortOrder, vendor = @Vendor, retail_price = @RetailPrice, discount_percent = @DiscountPercent,
+                               updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId
                         WHERE id = @Id AND archived_at IS NULL",
-                        new { f.Id, f.ClassName, f.Name, f.PurchasePrice, f.SalePrice, f.IsActive, f.SortOrder, actorId }, tx);
+                        new { f.Id, f.ClassName, f.Name, f.PurchasePrice, f.SalePrice, f.IsActive, f.SortOrder, f.Vendor, f.RetailPrice, f.DiscountPercent, actorId }, tx);
                 }
                 AuditLog.Write(db, tx, actorId, isNew ? "insert" : "update", "book_items", f.Id.ToString(),
-                    new { before, after = new { f.ClassName, f.Name, f.PurchasePrice, f.SalePrice, f.IsActive, f.SortOrder } });
+                    new { before, after = new { f.ClassName, f.Name, f.PurchasePrice, f.SalePrice, f.IsActive, f.SortOrder, f.Vendor, f.RetailPrice, f.DiscountPercent } });
                 tx.Commit();
                 return f.Id;
             }
@@ -315,13 +337,39 @@ namespace TheArqamSchools.Web.Data
         }
 
         /// <summary>
+        /// The customer cancels their own order while it is still New (owner's rule). The order is kept with status
+        /// Cancelled (never deleted), any credit it used goes back to the customer, and the cancellation is kept in
+        /// book_order_edits like any other change. No stock was taken yet, so none is given back.
+        /// </summary>
+        public static void CancelByCustomer(long orderNo, Guid customerId)
+        {
+            using (var db = Db.Open())
+            using (var tx = db.BeginTransaction())
+            {
+                var o = db.QuerySingleOrDefault<BookOrder>(@"SELECT id, order_no, customer_id, status, subtotal, discount_total, credit_applied, paid_total, stock_taken_at
+                                                             FROM dbo.book_orders WITH (UPDLOCK, HOLDLOCK) WHERE order_no = @orderNo", new { orderNo }, tx);
+                if (o == null || o.CustomerId != customerId) throw new BookOrderException("The order was not found.");
+                if (!o.CustomerCanEdit) throw new BookOrderException("This order can no longer be cancelled online, because the office has already checked it. Please contact the office.");
+                db.Execute("SELECT id FROM dbo.book_customers WITH (UPDLOCK, HOLDLOCK) WHERE id = @CustomerId", new { o.CustomerId }, tx);
+                db.Execute("UPDATE dbo.book_orders SET status = N'cancelled', credit_applied = 0, updated_at = SYSDATETIMEOFFSET(), updated_by = NULL WHERE id = @Id", new { o.Id }, tx);
+                if (o.CreditApplied > 0)
+                    db.Execute("UPDATE dbo.book_customers SET credit = credit + @CreditApplied, updated_at = SYSDATETIMEOFFSET() WHERE id = @CustomerId", new { o.CreditApplied, o.CustomerId }, tx);
+                var changes = JsonConvert.SerializeObject(new object[] { new { cancelled = true, credit_returned = o.CreditApplied } });
+                db.Execute(@"INSERT INTO dbo.book_order_edits (order_id, changes, old_subtotal, new_subtotal, by_customer, by_user)
+                             VALUES (@Id, @changes, @Subtotal, @Subtotal, 1, NULL)", new { o.Id, changes, o.Subtotal }, tx);
+                AuditLog.Write(db, tx, null, "update", "book_orders", o.Id.ToString(), new { order_no = orderNo, status_from = o.Status, status_to = "cancelled", by_customer = true, credit_returned = o.CreditApplied });
+                tx.Commit();
+            }
+        }
+
+        /// <summary>
         /// Changes the books of an order that is not paid yet. Every change is recorded in book_order_edits.
         /// <paramref name="customerId"/> (when the customer edits) must own the order.
         /// </summary>
         public static void EditOrder(long orderNo, Guid? customerId, IDictionary<Guid, int> quantities, string fulfilment, Guid? actorId)
         {
             var wanted = Clean(quantities);
-            if (wanted.Count == 0) throw new BookOrderException("Please keep at least one book in the order. To cancel the whole order, please contact the office.");
+            if (wanted.Count == 0) throw new BookOrderException("Please keep at least one book in the order. To cancel the whole order, use Cancel this order on the order page.");
             fulfilment = fulfilment == "delivery" ? "delivery" : "pickup";
             using (var db = Db.Open())
             using (var tx = db.BeginTransaction(IsolationLevel.ReadCommitted))
@@ -329,7 +377,8 @@ namespace TheArqamSchools.Web.Data
                 var o = db.QuerySingleOrDefault<BookOrder>(@"SELECT id, order_no, customer_id, fulfilment, status, subtotal, discount_total, credit_applied, paid_total, stock_taken_at
                                                              FROM dbo.book_orders WITH (UPDLOCK, HOLDLOCK) WHERE order_no = @orderNo", new { orderNo }, tx);
                 if (o == null || (customerId.HasValue && o.CustomerId != customerId.Value)) throw new BookOrderException("The order was not found.");
-                if (!o.CustomerCanEdit) throw new BookOrderException("This order can no longer be changed, because a payment has been recorded or it is already being prepared. Please contact the office.");
+                if (customerId.HasValue ? !o.CustomerCanEdit : !o.OfficeCanEdit)
+                    throw new BookOrderException("This order can no longer be changed, because the office has already checked it or a payment has been recorded. Please contact the office.");
                 var customer = db.QuerySingle<BookCustomer>("SELECT id, address, credit FROM dbo.book_customers WITH (UPDLOCK, HOLDLOCK) WHERE id = @CustomerId", new { o.CustomerId }, tx);
                 if (fulfilment == "delivery" && string.IsNullOrWhiteSpace(customer.Address))
                     throw new BookOrderException("There is no delivery address for this number. Please choose Pick up, or ask the office to add your address.");
@@ -349,7 +398,7 @@ namespace TheArqamSchools.Web.Data
                     if (was == now) continue;
                     var it = items.ContainsKey(id) ? items[id] : null;
                     var line = oldLines.FirstOrDefault(l => l.ItemId == id);
-                    changes.Add(new { book = (it != null ? it.ClassName + " – " + it.Name : line.ClassName + " – " + line.ItemName), from = was, to = now });
+                    changes.Add(new { book = (it != null ? it.ClassName + " \u2013 " + it.Name : line.ClassName + " \u2013 " + line.ItemName), from = was, to = now });
                     if (line == null)
                         db.Execute(@"INSERT INTO dbo.book_order_lines (order_id, item_id, class_name, item_name, unit_price, purchase_price, quantity)
                                      VALUES (@orderId, @ItemId, @ClassName, @Name, @SalePrice, @PurchasePrice, @now)",

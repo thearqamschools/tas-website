@@ -43,7 +43,7 @@ namespace TheArqamSchools.Web.Controllers
         {
             var code = Request.Unvalidated.QueryString["code"];
             var c = (Trim(code) ?? "").ToUpperInvariant();
-            if (c.StartsWith("BK-")) c = c.Substring(3);
+            if (c.StartsWith("BK")) c = c.Substring(2).TrimStart('-', ' ');
             long no;
             if (long.TryParse(c, NumberStyles.None, CultureInfo.InvariantCulture, out no) && BookRepository.Order(no) != null)
                 return Redirect("/admin/books/orders/" + no.ToString(CultureInfo.InvariantCulture) + "#payment");
@@ -218,7 +218,7 @@ namespace TheArqamSchools.Web.Controllers
         {
             var o = BookRepository.Order(orderNo);
             if (o == null) return HttpNotFound();
-            if (!o.CustomerCanEdit) return Redirect("/admin/books/orders/" + orderNo.ToString(CultureInfo.InvariantCulture));
+            if (!o.OfficeCanEdit) return Redirect("/admin/books/orders/" + orderNo.ToString(CultureInfo.InvariantCulture));
             return OfficeFormView(BookRepository.Customer(o.CustomerId), o, o.Lines.ToDictionary(l => l.ItemId, l => l.Quantity), o.Fulfilment, null);
         }
 

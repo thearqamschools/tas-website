@@ -16,6 +16,13 @@ namespace TheArqamSchools.Web.Models
         public bool IsActive { get; set; }
         public int SortOrder { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
+        /// <summary>Office only (Database/23): never shown to customers.</summary>
+        public string Vendor { get; set; }
+        public decimal? RetailPrice { get; set; }
+        public decimal? DiscountPercent { get; set; }
+        /// <summary>Low-stock warning when stock is at or below this; null = the default (<see cref="BookFormat.DefaultReorderLevel"/>).</summary>
+        public int? ReorderLevel { get; set; }
+        public int WarnAt { get { return ReorderLevel ?? BookFormat.DefaultReorderLevel; } }
     }
 
     /// <summary>One stock change of a book (dbo.book_stock_moves).</summary>
@@ -103,8 +110,16 @@ namespace TheArqamSchools.Web.Models
                 return Balance <= 0 ? "Paid" : "Part paid";
             }
         }
-        /// <summary>A customer may change an order until any payment or discount is recorded, and while it is not finished.</summary>
+        /// <summary>
+        /// Owner's rule (20 November 2026): the customer may change or cancel an order only while it is New,
+        /// that is before the office marks it as Checked (and before any payment or discount).
+        /// </summary>
         public bool CustomerCanEdit
+        {
+            get { return PaidTotal == 0 && DiscountTotal == 0 && StockTakenAt == null && Status == "new"; }
+        }
+        /// <summary>The office may change the books until any payment is recorded, while the order is New or Checked.</summary>
+        public bool OfficeCanEdit
         {
             get { return PaidTotal == 0 && DiscountTotal == 0 && StockTakenAt == null && (Status == "new" || Status == "checked"); }
         }
@@ -114,6 +129,21 @@ namespace TheArqamSchools.Web.Models
     /// <summary>Shared wording and number formats for the books pages.</summary>
     public static class BookFormat
     {
+        public const int DefaultReorderLevel = 10;
+
+        /// <summary>The classes offered in the admin drop-down, in the owner's order.</summary>
+        public static readonly string[] Classes =
+        {
+            "Play Group", "Nursery", "Prep", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7",
+            "Class 8", "Class 9", "Class 10", "Hifz Class", "All Classes"
+        };
+
+        /// <summary>Sale price = retail price less the discount percentage, rounded to paisa.</summary>
+        public static decimal SaleFromRetail(decimal retail, decimal discountPercent)
+        {
+            return Math.Round(retail * (100m - discountPercent) / 100m, 2, MidpointRounding.AwayFromZero);
+        }
+
         public static string OrderLabel(long orderNo) { return "BK-" + orderNo.ToString(System.Globalization.CultureInfo.InvariantCulture); }
 
         public static string Money(decimal amount)
@@ -169,6 +199,15 @@ namespace TheArqamSchools.Web.Models
         [Range(typeof(decimal), "0", "9999999", ErrorMessage = "Please enter the sale price in rupees.")]
         public decimal SalePrice { get; set; }
 
+        [StringLength(150, ErrorMessage = "The vendor can be at most 150 characters.")]
+        public string Vendor { get; set; }
+
+        [Range(typeof(decimal), "0", "9999999", ErrorMessage = "Please enter the retail price in rupees.")]
+        public decimal? RetailPrice { get; set; }
+
+        [Range(typeof(decimal), "0", "100", ErrorMessage = "Please enter a discount from 0 to 100 per cent.")]
+        public decimal? DiscountPercent { get; set; }
+
         [Range(0, 9999, ErrorMessage = "Please enter a number from 0 to 9999.")]
         public int SortOrder { get; set; }
 
@@ -202,6 +241,7 @@ namespace TheArqamSchools.Web.Models
         public int Stock { get; set; }
         public IList<BookStockMove> Moves { get; set; }
         public IList<string> Classes { get; set; }
+        public int? ReorderLevel { get; set; }
         public string Notice { get; set; }
         public bool CanEdit { get; set; }
     }

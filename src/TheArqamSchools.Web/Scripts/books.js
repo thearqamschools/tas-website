@@ -23,3 +23,13 @@
   form.addEventListener("input", update);
   update();
 })();
+
+/* Cancel order: ask once before sending (the server checks again that the order is still New). */
+(function () {
+  "use strict";
+  Array.prototype.forEach.call(document.querySelectorAll("form[data-confirm-submit]"), function (form) {
+    form.addEventListener("submit", function (e) {
+      if (!window.confirm(form.getAttribute("data-confirm-submit"))) e.preventDefault();
+    });
+  });
+})();

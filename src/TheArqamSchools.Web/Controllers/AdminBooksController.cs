@@ -24,7 +24,9 @@ namespace TheArqamSchools.Web.Controllers
         {
             var items = BookRepository.Items(true);
             ViewBag.ItemCount = items.Count(i => i.IsActive);
-            ViewBag.LowStock = items.Where(i => i.IsActive && i.Stock <= 5).ToList();
+            var stocked = BookRepository.StockedItemIds();
+            ViewBag.LowStock = items.Where(i => i.IsActive && stocked.Contains(i.Id) && i.Stock <= i.WarnAt).OrderBy(i => i.Stock).ToList();
+            ViewBag.NeverStocked = items.Count(i => i.IsActive && !stocked.Contains(i.Id));
             ViewBag.CustomerCount = BookRepository.CustomerCount();
             return View("~/Views/Admin/Books/Index.cshtml");
         }
@@ -60,8 +62,8 @@ namespace TheArqamSchools.Web.Controllers
         {
             var it = BookRepository.Item(id);
             if (it == null) return HttpNotFound();
-            var f = new BookItemForm { Id = it.Id, ClassName = it.ClassName, Name = it.Name, PurchasePrice = it.PurchasePrice, SalePrice = it.SalePrice, SortOrder = it.SortOrder, IsActive = it.IsActive };
-            return ItemView(f, false, it.Stock, notice == "saved" ? "Saved." : notice == "stock" ? "Stock updated." : null);
+            var f = FormFor(it);
+            return ItemView(f, false, it.Stock, notice == "saved" ? "Saved." : notice == "stock" ? "Stock updated." : notice == "level" ? "Minimum stock level saved." : null);
         }
 
         [HttpPost]
@@ -79,9 +81,29 @@ namespace TheArqamSchools.Web.Controllers
         {
             f.ClassName = Trim(f.ClassName);
             f.Name = Trim(f.Name);
+            f.Vendor = Trim(f.Vendor);
+            f.RetailPrice = LooseNumber(Request.Form["RetailPrice"]);
+            f.DiscountPercent = LooseNumber(Request.Form["DiscountPercent"]);
+            var existing = isNew ? null : BookRepository.Item(f.Id);
+            if (!string.IsNullOrEmpty(f.ClassName) && !BookFormat.Classes.Contains(f.ClassName)
+                && (existing == null || existing.ClassName != f.ClassName))
+                ModelState.AddModelError("ClassName", "Please choose the class from the list.");
+            // The sale price is worked out from the retail price and discount when a retail price is given.
+            if (f.RetailPrice.HasValue)
+            {
+                if (!f.DiscountPercent.HasValue) f.DiscountPercent = 0;
+                if (f.DiscountPercent >= 0 && f.DiscountPercent <= 100 && f.RetailPrice >= 0)
+                    f.SalePrice = BookFormat.SaleFromRetail(f.RetailPrice.Value, f.DiscountPercent.Value);
+            }
+            else if (f.DiscountPercent.HasValue && f.DiscountPercent != 0)
+                ModelState.AddModelError("RetailPrice", "Please enter the retail price printed on the book, so the discount can be worked out.");
             f.IsActive = (Request.Form["IsActive"] ?? "").Split(',').Contains("true");
+            var classError = ModelState["ClassName"] != null && ModelState["ClassName"].Errors.Count > 0;
+            var retailError = ModelState["RetailPrice"] != null && ModelState["RetailPrice"].Errors.Count > 0;
             ModelState.Clear();
             TryValidateModel(f);
+            if (classError) ModelState.AddModelError("ClassName", "Please choose the class from the list.");
+            if (retailError) ModelState.AddModelError("RetailPrice", "Please enter the retail price printed on the book, so the discount can be worked out.");
             if (ModelState.IsValid && BookRepository.ItemNameTaken(f.ClassName, f.Name, f.Id))
                 ModelState.AddModelError("Name", "This class already has a book with this name.");
             if (!ModelState.IsValid)
@@ -104,7 +126,7 @@ namespace TheArqamSchools.Web.Controllers
             int qty;
             DateTime on;
             note = Trim(note);
-            if (!int.TryParse((quantity ?? "").Trim(), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out qty))
+            if (!int.TryParse((quantity ?? "").Trim().Replace('\u2212', '-').Replace('\u2013', '-'), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out qty))
                 ModelState.AddModelError("quantity", "Please enter a whole number of books.");
             if (!DateTime.TryParseExact((date ?? "").Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out on))
                 ModelState.AddModelError("date", "Please enter the date.");
@@ -119,15 +141,55 @@ namespace TheArqamSchools.Web.Controllers
                 }
                 catch (BookOrderException ex) { ModelState.AddModelError("quantity", ex.Message); }
             }
-            var f = new BookItemForm { Id = it.Id, ClassName = it.ClassName, Name = it.Name, PurchasePrice = it.PurchasePrice, SalePrice = it.SalePrice, SortOrder = it.SortOrder, IsActive = it.IsActive };
+            var f = FormFor(it);
             return ItemView(f, false, it.Stock, null);
+        }
+
+        /// <summary>"1,200", "25%" or "" (null). A value that is not a number gives -1, which fails validation with a clear message.</summary>
+        private static decimal? LooseNumber(string raw)
+        {
+            var v = (raw ?? "").Replace(",", "").Replace("%", "").Trim();
+            if (v.Length == 0) return null;
+            decimal d;
+            return decimal.TryParse(v, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out d) ? d : -1m;
+        }
+
+        private static BookItemForm FormFor(BookItem it)
+        {
+            return new BookItemForm
+            {
+                Id = it.Id, ClassName = it.ClassName, Name = it.Name, PurchasePrice = it.PurchasePrice, SalePrice = it.SalePrice,
+                SortOrder = it.SortOrder, IsActive = it.IsActive, Vendor = it.Vendor, RetailPrice = it.RetailPrice, DiscountPercent = it.DiscountPercent
+            };
+        }
+
+        /// <summary>POST /admin/books/items/{id}/reorder: the book's own minimum stock level (empty = the default).</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AdminAuthorize("books.stock")]
+        public ActionResult Reorder(Guid id, string level)
+        {
+            var it = BookRepository.Item(id);
+            if (it == null) return HttpNotFound();
+            int n;
+            level = Trim(level);
+            if (level != null && (!int.TryParse(level, NumberStyles.None, CultureInfo.InvariantCulture, out n) || n > 99999))
+            {
+                ModelState.AddModelError("level", "Please enter a whole number from 0 to 99999, or leave it empty for the default.");
+                return ItemView(FormFor(it), false, it.Stock, null);
+            }
+            BookRepository.SetReorderLevel(id, level == null ? (int?)null : int.Parse(level, CultureInfo.InvariantCulture), AdminAuth.Current(HttpContext).Id);
+            return Redirect("/admin/books/items/" + id.ToString("D") + "?notice=level#stock");
         }
 
         private ActionResult ItemView(BookItemForm f, bool isNew, int stock, string notice)
         {
+            var it = isNew ? null : BookRepository.Item(f.Id);
+            var classes = BookFormat.Classes.ToList();
+            if (!string.IsNullOrEmpty(f.ClassName) && !classes.Contains(f.ClassName) && it != null && it.ClassName == f.ClassName) classes.Add(f.ClassName);
             return View("~/Views/Admin/Books/Item.cshtml", new BookItemEditViewModel
             {
-                Form = f, IsNew = isNew, Stock = stock, Notice = notice, Classes = BookRepository.Classes(),
+                Form = f, IsNew = isNew, Stock = stock, Notice = notice, Classes = classes, ReorderLevel = it == null ? null : it.ReorderLevel,
                 Moves = isNew ? new System.Collections.Generic.List<BookStockMove>() : BookRepository.Moves(f.Id),
                 CanEdit = AdminAuth.Current(HttpContext).Can("books.stock")
             });
@@ -191,8 +253,12 @@ namespace TheArqamSchools.Web.Controllers
             f.Address = Trim(posted["Address"]);
             f.Mobile = Trim(posted["Mobile"]);
             f.IsActive = (posted["IsActive"] ?? "").Split(',').Contains("true");
+            var classError = ModelState["ClassName"] != null && ModelState["ClassName"].Errors.Count > 0;
+            var retailError = ModelState["RetailPrice"] != null && ModelState["RetailPrice"].Errors.Count > 0;
             ModelState.Clear();
             TryValidateModel(f);
+            if (classError) ModelState.AddModelError("ClassName", "Please choose the class from the list.");
+            if (retailError) ModelState.AddModelError("RetailPrice", "Please enter the retail price printed on the book, so the discount can be worked out.");
             var mobile = Mobile.Normalize(f.Mobile);
             if (f.Mobile != null && mobile == null) ModelState.AddModelError("Mobile", "Please enter a Pakistani mobile number like 0300-1234567.");
             if (mobile != null && BookRepository.MobileTaken(mobile, f.Id)) ModelState.AddModelError("Mobile", "Another customer already has this mobile number.");

@@ -3,6 +3,7 @@
 @{
     Layout = "~/Views/Admin/_AdminLayout.cshtml";
     ViewBag.Title = "Book orders";
+    ViewBag.Wide = true;
     var f = ViewBag.Filter as BookOrderFilter;
     var pk = TimeSpan.FromHours(5);
     Func<DateTime?, string> d = x => x.HasValue ? x.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) : "";
@@ -11,7 +12,7 @@
 @Html.Partial("~/Views/Admin/Books/_Tabs.cshtml", "orders")
 <form method="get" action="/admin/books/find" class="admin-search admin-scan" role="search">
     <label for="code">Scan the barcode or type the order ID</label>
-    <input type="search" id="code" name="code" placeholder="BK-1001" maxlength="30" autocomplete="off" autofocus />
+    <input type="search" id="code" name="code" placeholder="1001" maxlength="30" autocomplete="off" autofocus />
     <button type="submit" class="admin-button">Open order</button>
 </form>
 <form method="get" action="/admin/books/orders" class="admin-filters">
@@ -38,7 +39,7 @@ else
 {
     <p class="admin-muted">@Model.Count.ToString("N0") orders@(Model.Count == 500 ? " (the newest 500; narrow the filters to see others)" : "")</p>
     <div class="admin-table-wrap">
-        <table class="admin-table">
+        <table class="admin-table admin-table--oneline">
             <thead><tr><th scope="col">Order</th><th scope="col">Date</th><th scope="col">Customer</th><th scope="col">Get</th><th scope="col" class="num">Total</th><th scope="col" class="num">Discount</th><th scope="col" class="num">Paid</th><th scope="col" class="num">Balance</th><th scope="col">Status</th><th scope="col">Payment</th></tr></thead>
             <tbody>
                 @foreach (var o in Model)
@@ -46,7 +47,7 @@ else
                     <tr class="@(o.Status == "cancelled" ? "is-muted" : null)">
                         <td><a href="/admin/books/orders/@o.OrderNo"><strong>@o.OrderLabel</strong></a>@if (o.EditCount > 0) { <span class="admin-tag">edited</span> }@if (o.Source == "office") { <span class="admin-tag">office</span> }</td>
                         <td>@o.CreatedAt.ToOffset(pk).ToString("d MMM yyyy, h:mm tt", System.Globalization.CultureInfo.InvariantCulture)</td>
-                        <td>@o.CustomerName<br /><span class="admin-muted">@Mobile.Format(o.CustomerMobile)</span></td>
+                        <td>@o.CustomerName <span class="admin-muted">&middot; @Mobile.Format(o.CustomerMobile)</span></td>
                         <td>@BookFormat.FulfilmentLabel(o.Fulfilment)</td>
                         <td class="num">@BookFormat.Money(o.Subtotal)</td>
                         <td class="num">@(o.DiscountTotal > 0 ? BookFormat.Money(o.DiscountTotal) : "")</td>

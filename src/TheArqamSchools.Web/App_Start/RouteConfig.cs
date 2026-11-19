@@ -48,6 +48,7 @@ namespace TheArqamSchools.Web
             routes.MapRoute("BooksOrder", "books/order", new { controller = "Books", action = "Order" }, new { httpMethod = get });
             routes.MapRoute("BooksOrders", "books/orders", new { controller = "Books", action = "Orders" }, new { httpMethod = get });
             routes.MapRoute("BooksEditPost", "books/orders/{orderNo}/edit", new { controller = "Books", action = "Submit" }, new { orderNo = @"\d{1,12}", httpMethod = post });
+            routes.MapRoute("BooksCancel", "books/orders/{orderNo}/cancel", new { controller = "Books", action = "Cancel" }, new { orderNo = @"\d{1,12}", httpMethod = post });
             routes.MapRoute("BooksEdit", "books/orders/{orderNo}/edit", new { controller = "Books", action = "Edit" }, new { orderNo = @"\d{1,12}", httpMethod = get });
             routes.MapRoute("BooksDetail", "books/orders/{orderNo}", new { controller = "Books", action = "Detail" }, new { orderNo = @"\d{1,12}", httpMethod = get });
 
@@ -103,6 +104,8 @@ namespace TheArqamSchools.Web
             routes.MapRoute("AdminBooks", "admin/books", new { controller = "AdminBooks", action = "Index" });
             routes.MapRoute("AdminBookItems", "admin/books/items", new { controller = "AdminBooks", action = "Items" });
             routes.MapRoute("AdminBookItemNew", "admin/books/items/new", new { controller = "AdminBooks", action = "NewItem" });
+            routes.MapRoute("AdminBookItemReorder", "admin/books/items/{id}/reorder", new { controller = "AdminBooks", action = "Reorder" },
+                new { id = new GuidRouteConstraint(), httpMethod = new HttpMethodConstraint("POST") });
             routes.MapRoute("AdminBookItemStock", "admin/books/items/{id}/stock", new { controller = "AdminBooks", action = "Stock" },
                 new { id = new GuidRouteConstraint(), httpMethod = new HttpMethodConstraint("POST") });
             routes.MapRoute("AdminBookItem", "admin/books/items/{id}", new { controller = "AdminBooks", action = "Item" }, new { id = new GuidRouteConstraint() });

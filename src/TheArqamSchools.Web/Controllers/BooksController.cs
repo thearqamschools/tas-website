@@ -141,16 +141,40 @@ namespace TheArqamSchools.Web.Controllers
             return View("~/Views/Books/Orders.cshtml", BookRepository.CustomerOrders(customer.Id));
         }
 
+        /// <summary>POST /books/orders/{no}/cancel: the customer cancels their own order while it is still New.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Cancel(long orderNo, string website)
+        {
+            var customer = CurrentCustomer();
+            if (customer == null) return Redirect("/books");
+            if (!string.IsNullOrEmpty(website)) return Redirect("/books");
+            var order = OwnOrder(customer, orderNo);
+            if (order == null) return HttpNotFound();
+            if (!RateLimiter.Allow("books-cancel", PageBuilder.ClientKey(Request), 20, TimeSpan.FromHours(1)))
+                return DetailView(customer, order, false, false, false, "Too many requests from this network. Please wait and try again, or call the office.");
+            try { BookRepository.CancelByCustomer(orderNo, customer.Id); }
+            catch (BookOrderException ex) { return DetailView(customer, OwnOrder(customer, orderNo), false, false, false, ex.Message); }
+            return Redirect("/books/orders/" + orderNo.ToString(CultureInfo.InvariantCulture) + "?cancelled=true");
+        }
+
         [HttpGet]
-        public ActionResult Detail(long orderNo, bool placed = false, bool changed = false)
+        public ActionResult Detail(long orderNo, bool placed = false, bool changed = false, bool cancelled = false)
         {
             var customer = CurrentCustomer();
             if (customer == null) return Redirect("/books");
             var order = OwnOrder(customer, orderNo);
             if (order == null) return HttpNotFound();
+            return DetailView(customer, order, placed, changed, cancelled, null);
+        }
+
+        private ActionResult DetailView(BookCustomer customer, BookOrder order, bool placed, bool changed, bool cancelled, string error)
+        {
             ViewBag.Customer = customer;
             ViewBag.Placed = placed;
             ViewBag.Changed = changed;
+            ViewBag.Cancelled = cancelled;
+            ViewBag.Error = error;
             ViewBag.Meta = Meta();
             return View("~/Views/Books/Detail.cshtml", order);
         }

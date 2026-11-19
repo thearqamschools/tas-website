@@ -25,9 +25,13 @@
                     <label for="bk-mobile">Mobile number</label>
                     <input id="bk-mobile" name="mobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="0300-1234567" value="@(ViewBag.Mobile as string)" maxlength="20" required />
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">Continue @Icons.Svg("arrow-right", 18)</button>
+                <button type="submit" class="btn btn-primary btn-block">Continue</button>
             </form>
-            <p class="form-note books-help">Not registered yet? Please contact the office: <a href="tel:0412660265">041-2660265</a>, <a href="tel:0412406479">041-2406479</a>, WhatsApp <a href="https://wa.me/923392406479" target="_blank" rel="noopener">0339-2406479</a>.</p>
+            <div class="form-note books-help">
+                <p><strong>Not registered yet?</strong></p>
+                <p>Please contact the office: <a href="tel:0412660265">041-2660265</a>, <a href="tel:0412406479">041-2406479</a></p>
+                <p>WhatsApp: <a href="https://wa.me/923392406479" target="_blank" rel="noopener">0339-2406479</a></p>
+            </div>
         </div>
     </div>
 </section>

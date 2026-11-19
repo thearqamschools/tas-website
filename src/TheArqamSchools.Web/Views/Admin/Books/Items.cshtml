@@ -14,15 +14,18 @@ else
 {
     <div class="admin-table-wrap">
         <table class="admin-table">
-            <thead><tr><th scope="col">Class</th><th scope="col">Book</th><th scope="col" class="num">Stock</th><th scope="col" class="num">Purchase</th><th scope="col" class="num">Sale</th><th scope="col">Shown</th></tr></thead>
+            <thead><tr><th scope="col">Class</th><th scope="col">Book</th><th scope="col">Vendor</th><th scope="col" class="num">Stock</th><th scope="col" class="num">Purchase</th><th scope="col" class="num">Retail</th><th scope="col" class="num">Discount</th><th scope="col" class="num">Sale</th><th scope="col">Shown</th></tr></thead>
             <tbody>
                 @foreach (var b in Model)
                 {
                     <tr class="@(b.IsActive ? null : "is-muted")">
                         <td>@b.ClassName</td>
                         <td><a href="/admin/books/items/@b.Id.ToString("D")">@b.Name</a></td>
-                        <td class="num@(b.Stock <= 5 ? " is-low" : "")">@b.Stock</td>
+                        <td>@b.Vendor</td>
+                        <td class="num@(b.Stock <= b.WarnAt ? " is-low" : "")">@b.Stock</td>
                         <td class="num">@BookFormat.Money(b.PurchasePrice)</td>
+                        <td class="num">@(b.RetailPrice.HasValue ? BookFormat.Money(b.RetailPrice.Value) : "")</td>
+                        <td class="num">@(b.DiscountPercent.HasValue ? b.DiscountPercent.Value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "%" : "")</td>
                         <td class="num">@BookFormat.Money(b.SalePrice)</td>
                         <td>@(b.IsActive ? "Yes" : "Hidden")</td>
                     </tr>

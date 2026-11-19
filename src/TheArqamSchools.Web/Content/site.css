@@ -1345,17 +1345,21 @@ ul.news-detail-facts { list-style: none; padding: 14px 18px; display: flex; flex
 .books-class-group > legend { float: left; width: 100%; padding: 10px 16px; background: var(--blue-50); color: var(--blue); font-weight: 700; }
 .books-class-group > legend + * { clear: both; }
 .books-rows { list-style: none; margin: 0; padding: 0; }
-.books-row { display: grid; grid-template-columns: 1fr 5.5rem; grid-template-areas: "name qty" "name total"; align-items: center; gap: 2px 12px; padding: 10px 16px; border-top: 1px solid var(--line); }
+.books-row { display: grid; grid-template-columns: minmax(0, 1fr) 4.75rem 4.5rem 5.25rem; grid-template-areas: "name price qty total"; align-items: center; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); }
+.books-row--head { clear: both; border-top: 0; border-bottom: 1px solid var(--line); padding-top: 8px; padding-bottom: 8px; font-size: .8125rem; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; color: var(--muted); }
+.books-row--head .num { text-align: right; }
+.books-row--head .num-c { text-align: center; }
 .books-row:first-child { border-top: 0; }
 .books-row.is-chosen { background: #f7fbf8; }
-.books-row-name { grid-area: name; display: grid; gap: 2px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
-.books-row-price { font-weight: 400; color: var(--muted); font-size: .9375rem; }
+.books-row-name { grid-area: name; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.books-row-price { grid-area: price; text-align: right; font-weight: 400; color: var(--muted); font-size: .9375rem; white-space: nowrap; }
 .books-row input { grid-area: qty; width: 100%; min-height: 44px; padding: 6px 8px; font: inherit; text-align: center; border: 1px solid #94a3b8; border-radius: var(--r-sm); background: #fff; }
 .books-row input:focus { outline: 3px solid var(--blue); outline-offset: 1px; border-color: var(--blue); }
-.books-row-total { grid-area: total; text-align: center; font-size: .875rem; font-weight: 600; color: var(--success); min-height: 1.2em; }
+.books-row-total { grid-area: total; text-align: right; font-size: .9375rem; font-weight: 600; color: var(--success); min-height: 1.2em; white-space: nowrap; }
+.books-help p { margin: 0 0 4px; }
 @media (min-width: 40rem) {
-  .books-row { grid-template-columns: 1fr 6rem 7.5rem; grid-template-areas: "name qty total"; }
-  .books-row-total { text-align: right; font-size: 1rem; }
+  .books-row { grid-template-columns: minmax(0, 1fr) 7rem 6rem 8rem; gap: 12px; padding: 10px 16px; }
+  .books-row-total { font-size: 1rem; }
 }
 .books-fulfil-choice { display: grid; gap: 10px; }
 .books-fulfil-choice legend { font-weight: 700; margin-bottom: 4px; padding: 0; }
@@ -1390,3 +1394,6 @@ ul.news-detail-facts { list-style: none; padding: 14px 18px; display: flex; flex
 .books-detail-status { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 12px; color: var(--muted); }
 /* The floating WhatsApp button would cover the order total and buttons on the books pages. */
 body:has(.books) .wa-float { display: none; }
+.books-cancel { margin-top: 16px; }
+.books-cancel .form-note { margin-top: 8px; }
+.btn-danger { border-color: var(--red, #d62839); color: var(--red, #d62839); }

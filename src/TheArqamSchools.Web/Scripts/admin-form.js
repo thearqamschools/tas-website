@@ -90,3 +90,23 @@
     sync();
   });
 })();
+
+/* Book form: sale price = retail price less the discount %, worked out as the office types. */
+(function () {
+  "use strict";
+  var box = document.querySelector("[data-sale-calc]");
+  if (!box) return;
+  var retail = document.getElementById("RetailPrice"), pct = document.getElementById("DiscountPercent"), sale = document.getElementById("SalePrice");
+  if (!retail || !pct || !sale) return;
+  function num(el) { var v = (el.value || "").replace(/[,%\s]/g, ""); return v === "" ? null : Number(v); }
+  function sync() {
+    var r = num(retail), d = num(pct);
+    if (r === null || isNaN(r)) { sale.readOnly = false; return; }
+    if (d === null || isNaN(d)) d = 0;
+    sale.readOnly = true;
+    if (r >= 0 && d >= 0 && d <= 100) sale.value = String(Math.round(r * (100 - d)) / 100);
+  }
+  retail.addEventListener("input", sync);
+  pct.addEventListener("input", sync);
+  sync();
+})();

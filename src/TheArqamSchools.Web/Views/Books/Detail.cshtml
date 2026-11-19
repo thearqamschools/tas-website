@@ -21,8 +21,16 @@
         {
             <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p>Your changes to order @Model.OrderLabel have been saved.</p></div>
         }
+        @if (ViewBag.Cancelled == true)
+        {
+            <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p>Order @Model.OrderLabel has been cancelled.</p></div>
+        }
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-error" role="alert" tabindex="-1" data-focus><p>@ViewBag.Error</p></div>
+        }
         <div class="books-card">
-            <p class="books-detail-status"><span class="books-status books-status-@Model.Status">@BookFormat.StatusLabel(Model.Status)</span> <span>@BookFormat.FulfilmentLabel(Model.Fulfilment)@if (Model.Fulfilment == "delivery") { <text>: @BookFormat.PartAddress(Model.DeliveryAddress)</text> }</span></p>
+            <p class="books-detail-status"><span class="books-status books-status-@Model.Status">@BookFormat.StatusLabel(Model.Status)</span> <span>@BookFormat.FulfilmentLabel(Model.Fulfilment)@if (Model.Fulfilment == "delivery") { <text>: @Model.DeliveryAddress</text> }</span></p>
             <table class="books-table">
                 <thead><tr><th scope="col">Book</th><th scope="col" class="num">Qty</th><th scope="col" class="num">Price</th><th scope="col" class="num">Total</th></tr></thead>
                 <tbody>
@@ -46,6 +54,16 @@
             <a class="btn btn-outline" href="/books/orders">All my orders</a>
             @if (Model.CustomerCanEdit) { <a class="btn btn-primary" href="/books/orders/@Model.OrderNo/edit">Change this order</a> }
         </div>
+        @if (Model.CustomerCanEdit)
+        {
+            <form method="post" action="/books/orders/@Model.OrderNo/cancel" class="books-cancel" data-confirm-submit="Cancel order @Model.OrderLabel? This cannot be undone.">
+                @Html.AntiForgeryToken()
+                <div class="hp" aria-hidden="true"><label for="bc-website">Website</label><input id="bc-website" name="website" type="text" tabindex="-1" autocomplete="off" /></div>
+                <button type="submit" class="btn btn-outline btn-danger">Cancel this order</button>
+                <p class="form-note">You can change or cancel this order until our office checks it.</p>
+            </form>
+        }
         @if (!Model.CustomerCanEdit && Model.Status != "cancelled") { <p class="form-note">This order can no longer be changed online. For any change, please contact the office.</p> }
     </div>
 </section>
+<script src="~/Scripts/books.js?v=20261120a" defer></script>

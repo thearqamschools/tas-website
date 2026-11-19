@@ -24,7 +24,7 @@ const BOOKS = [
   // --- Books, stock and customers -----------------------------------------------------------
   const itemUrl = {};
   for (const [cls, name, pp, sp, st] of BOOKS) {
-    await admin.goto(B + '/admin/books/items/new'); await admin.fill('#ClassName', cls); await admin.fill('#Name', name);
+    await admin.goto(B + '/admin/books/items/new'); await admin.selectOption('#ClassName', cls); await admin.fill('#Name', name);
     await admin.fill('#PurchasePrice', String(pp)); await admin.fill('#SalePrice', String(sp)); await admin.click('button:has-text("Add book")'); await admin.waitForLoadState();
     itemUrl[name] = admin.url().split('?')[0];
     await admin.selectOption('#kind', 'purchase'); await admin.fill('#quantity', String(st)); await admin.fill('#note', 'DEMO opening stock'); await admin.click('button:has-text("Save stock")'); await admin.waitForLoadState();
@@ -33,6 +33,23 @@ const BOOKS = [
   ok('stock entered', (await stockOf('DEMO English Reader 1')) === 40);
   await admin.selectOption('#kind', 'correction'); await admin.fill('#quantity', '-999'); await admin.fill('#note', 'DEMO'); await admin.click('button:has-text("Save stock")'); await admin.waitForLoadState();
   ok('stock never below zero', (await admin.content()).includes('Stock cannot go below zero'));
+  // Retail price less discount gives the sale price; vendor and retail are office-only.
+  await admin.goto(B + '/admin/books/items/new'); await admin.selectOption('#ClassName', 'Class 3'); await admin.fill('#Name', 'DEMO Retail Book');
+  await admin.fill('#Vendor', 'DEMO Vendor Ltd'); await admin.fill('#PurchasePrice', '400'); await admin.fill('#RetailPrice', '600'); await admin.fill('#DiscountPercent', '25%');
+  ok('sale price worked out as you type (450)', (await admin.inputValue('#SalePrice')) === '450');
+  await admin.click('button:has-text("Add book")'); await admin.waitForLoadState();
+  itemUrl['DEMO Retail Book'] = admin.url().split('?')[0];
+  ok('sale price saved as retail less discount', (await admin.inputValue('#SalePrice')) === '450' && (await admin.inputValue('#Vendor')) === 'DEMO Vendor Ltd');
+  await admin.fill('#quantity', '4'); await admin.fill('#note', 'DEMO'); await admin.click('button:has-text("Save stock")'); await admin.waitForLoadState();
+  await admin.fill('#level', '5'); await admin.click('button:has-text("Save level")'); await admin.waitForLoadState();
+  ok('minimum level saved and warning shown', (await admin.content()).includes('Minimum stock level saved') && (await admin.content()).includes('Low stock: 4 in hand, minimum level 5'));
+  await admin.screenshot({ path: OUT + '/admin-item-form.png', fullPage: true });
+  await admin.goto(B + '/admin/books');
+  const lowText = await admin.locator('.admin-card', { hasText: 'Low stock' }).innerText();
+  ok('overview lists the low book by its own level', lowText.includes('DEMO Retail Book') && lowText.includes('minimum 5') && !lowText.includes('DEMO English Reader 1'));
+  await admin.goto(B + '/admin/books/items/new'); await admin.fill('#Name', 'DEMO Bad Class'); await admin.evaluate(() => { const s = document.getElementById('ClassName'); const o = document.createElement('option'); o.value = 'Class 99'; s.appendChild(o); s.value = 'Class 99'; });
+  await admin.fill('#SalePrice', '10'); await admin.click('button:has-text("Add book")'); await admin.waitForLoadState();
+  ok('class must come from the list', (await admin.content()).includes('Please choose the class from the list'));
   for (const [mobile, name, campus, address] of [['0300 1234567', 'DEMO Customer (test)', 'DEMO Campus', 'House 1, Street 2, Example Town, Faisalabad'], ['0311-7654321', 'DEMO Pickup Only', '', '']]) {
     await admin.goto(B + '/admin/books/customers/new'); await admin.fill('#Mobile', mobile); await admin.fill('#Name', name);
     if (campus) await admin.fill('#CampusName', campus); if (address) await admin.fill('#Address', address);
@@ -64,6 +81,33 @@ const BOOKS = [
   await cust.goto(B + '/books/orders/' + orderNo + '/edit'); await q('DEMO English Reader 1', 12); await q('DEMO Alphabet Book', 0);
   await cust.click('button:has-text("Preview order")'); await cust.waitForLoadState(); await cust.click('button:has-text("Save changes")'); await cust.waitForLoadState();
   ok('customer edit saved and recorded', (await cust.content()).includes('changed 1 time'));
+  ok('full delivery address shown to the customer', (await cust.content()).includes('House 1, Street 2, Example Town, Faisalabad'));
+  // Customer sees only the sale price: no vendor, retail price or discount.
+  await cust.goto(B + '/books/order');
+  const pub = await cust.content();
+  ok('customer sees sale price only', pub.includes('Rs. 450') && !pub.includes('DEMO Vendor') && !pub.includes('Rs. 600') && !pub.includes('25%'));
+  ok('order form has Price / Quantity / Total headings', (await cust.locator('.books-row--head').first().innerText()).replace(/\s+/g, ' ').toUpperCase().includes('BOOK PRICE QUANTITY TOTAL'));
+  await cust.screenshot({ path: OUT + '/m-order-form.png', fullPage: true });
+  // Customer cancels a New order; after the office checks an order, the customer can no longer change or cancel it.
+  await q('DEMO Rhymes Book', 1); await cust.click('button:has-text("Preview order")'); await cust.waitForLoadState(); await cust.click('button:has-text("Place order")'); await cust.waitForLoadState();
+  const cancelNo = Number((cust.url().match(/orders\/(\d+)/) || [])[1]);
+  cust.once('dialog', d => d.accept());
+  await cust.click('button:has-text("Cancel this order")'); await cust.waitForLoadState();
+  ok('customer cancelled a new order', (await cust.content()).includes('has been cancelled') && (await cust.locator('.books-detail-status').innerText()).includes('Cancelled'));
+  await cust.goto(B + '/books/order'); await q('DEMO Rhymes Book', 1); await cust.click('button:has-text("Preview order")'); await cust.waitForLoadState(); await cust.click('button:has-text("Place order")'); await cust.waitForLoadState();
+  const checkedNo = Number((cust.url().match(/orders\/(\d+)/) || [])[1]);
+  await admin.goto(B + '/admin/books/orders/' + checkedNo); await admin.click('button:has-text("Mark as checked")'); await admin.waitForLoadState();
+  await cust.goto(B + '/books/orders/' + checkedNo);
+  ok('no change or cancel after the office checks', (await cust.locator('button:has-text("Cancel this order")').count()) === 0 && !(await cust.content()).includes('Change this order'));
+  await cust.goto(B + '/books/orders/' + checkedNo + '/edit'); ok('edit page closed after checked', cust.url().endsWith('/books/orders/' + checkedNo));
+  const forced = await cust.evaluate(async (no) => {
+    const r = await fetch('/books/orders/' + no); const html = await r.text();
+    const t = (html.match(/name="__RequestVerificationToken" type="hidden" value="([^"]+)"/) || [])[1] || document.querySelector('input[name=__RequestVerificationToken]').value;
+    const p = await fetch('/books/orders/' + no + '/cancel', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: '__RequestVerificationToken=' + encodeURIComponent(t) });
+    return p.text();
+  }, checkedNo);
+  ok('cancel refused by the server after checked', forced.includes('can no longer be cancelled'));
+  await admin.goto(B + '/admin/books/orders/' + checkedNo); await admin.click('button:has-text("Cancel order")'); await admin.waitForLoadState();
   // total now 12×350 + 3×320 = 5,160
 
   // --- Office: order page, payments, stock -----------------------------------------------------

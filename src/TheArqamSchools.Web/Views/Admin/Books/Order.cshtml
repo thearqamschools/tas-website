@@ -50,7 +50,7 @@
                     <button type="submit" class="admin-button@(n.Key == "cancelled" ? " admin-button--secondary admin-danger" : n.Key == "checked" || n.Key == "packed" ? "" : " admin-button--secondary")" data-confirm="@(n.Key == "cancelled" ? "Cancel order " + o.OrderLabel + "?" : null)">@n.Value</button>
                 </form>
             }
-            @if (o.CustomerCanEdit) { <a class="admin-button admin-button--secondary" href="/admin/books/orders/@o.OrderNo/edit">Change books</a> }
+            @if (o.OfficeCanEdit) { <a class="admin-button admin-button--secondary" href="/admin/books/orders/@o.OrderNo/edit">Change books</a> }
         </div>
     }
 </section>
@@ -242,7 +242,7 @@
         </ul>
     </section>
 }
-<script src="/Scripts/admin-form.js?v=20261119b" defer></script>
+<script src="/Scripts/admin-form.js?v=20261120a" defer></script>
 @functions {
     static IEnumerable<string> EditLines(string json)
     {
@@ -252,6 +252,7 @@
             foreach (var t in Newtonsoft.Json.Linq.JArray.Parse(json))
             {
                 if (t["book"] != null) list.Add((string)t["book"] + ": " + (int)t["from"] + " → " + (int)t["to"]);
+                else if (t["cancelled"] != null) list.Add("Order cancelled by the customer");
                 else if (t["fulfilment"] != null) list.Add("Pick up / delivery: " + (string)t["fulfilment"]["from"] + " → " + (string)t["fulfilment"]["to"]);
             }
         }

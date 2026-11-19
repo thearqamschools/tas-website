@@ -255,3 +255,20 @@ body.invoice-page { display: block; background: var(--grey); font-family: var(--
   .admin-table-wrap { border: 0; overflow: visible; }
   .admin-table { font-size: 9pt; }
 }
+/* Book form (owner's notes, 20 November 2026): clear sections, fields in line, space above the buttons. */
+.admin-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1rem; align-items: start; }
+.admin-grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 1rem; align-items: start; }
+.admin-card .admin-grid-3 > .admin-field, .admin-card .admin-grid-4 > .admin-field { margin-top: 0; }
+.admin-card-title { font-size: 1rem; margin: 0 0 .75rem; color: var(--ink); }
+.admin-card-title--gap { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
+.admin-inline-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1rem 1.5rem; }
+.admin-inline-row .admin-check { padding-bottom: .625rem; }
+.admin-inline-row > .admin-hint { flex-basis: 100%; margin: 0; }
+.admin-field--narrow { width: 12rem; max-width: 100%; margin: 0; }
+.admin-card .admin-inline-row + .admin-hint { margin-top: .5rem; }
+.admin-form-actions { margin-top: 1.5rem; }
+.admin-alert--warn { color: #92400e; background: #fffbeb; border-color: #fcd34d; }
+.admin-reorder { margin-bottom: .5rem; }
+.admin-field input[readonly] { background: var(--grey); }
+.admin-main--wide { max-width: 90rem; }
+.admin-table--oneline th, .admin-table--oneline td { white-space: nowrap; }
