@@ -58,7 +58,6 @@ namespace TheArqamSchools.Web.Data
                     "WHERE archived_at IS NULL" + (includeHidden ? "" : " AND is_active = 1")));
         }
 
-        /// <summary>What a customer may order: active books with stock.</summary>
         /// <summary>Sets one book's minimum stock level (null = the default).</summary>
         public static void SetReorderLevel(Guid id, int? level, Guid actorId)
         {
@@ -80,6 +79,7 @@ namespace TheArqamSchools.Web.Data
                 return new HashSet<Guid>(db.Query<Guid>("SELECT DISTINCT item_id FROM dbo.book_stock_moves"));
         }
 
+        /// <summary>What a customer may order: active books with stock.</summary>
         public static IList<BookItem> OrderableItems()
         {
             return Items(false).Where(i => i.Stock > 0).ToList();
@@ -351,7 +351,7 @@ namespace TheArqamSchools.Web.Data
                 if (o == null || o.CustomerId != customerId) throw new BookOrderException("The order was not found.");
                 if (!o.CustomerCanEdit) throw new BookOrderException("This order can no longer be cancelled online, because the office has already checked it. Please contact the office.");
                 db.Execute("SELECT id FROM dbo.book_customers WITH (UPDLOCK, HOLDLOCK) WHERE id = @CustomerId", new { o.CustomerId }, tx);
-                db.Execute("UPDATE dbo.book_orders SET status = N'cancelled', credit_applied = 0, updated_at = SYSDATETIMEOFFSET(), updated_by = NULL WHERE id = @Id", new { o.Id }, tx);
+                db.Execute("UPDATE dbo.book_orders SET status = N'cancelled', credit_applied = 0, edit_count = edit_count + 1, updated_at = SYSDATETIMEOFFSET(), updated_by = NULL WHERE id = @Id", new { o.Id }, tx);
                 if (o.CreditApplied > 0)
                     db.Execute("UPDATE dbo.book_customers SET credit = credit + @CreditApplied, updated_at = SYSDATETIMEOFFSET() WHERE id = @CustomerId", new { o.CreditApplied, o.CustomerId }, tx);
                 var changes = JsonConvert.SerializeObject(new object[] { new { cancelled = true, credit_returned = o.CreditApplied } });

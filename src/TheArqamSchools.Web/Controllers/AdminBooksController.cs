@@ -37,6 +37,7 @@ namespace TheArqamSchools.Web.Controllers
         public ActionResult Items()
         {
             ViewBag.CanEdit = AdminAuth.Current(HttpContext).Can("books.stock");
+            ViewBag.Stocked = BookRepository.StockedItemIds();
             return View("~/Views/Admin/Books/Items.cshtml", BookRepository.Items(true));
         }
 
@@ -84,10 +85,13 @@ namespace TheArqamSchools.Web.Controllers
             f.Vendor = Trim(f.Vendor);
             f.RetailPrice = LooseNumber(Request.Form["RetailPrice"]);
             f.DiscountPercent = LooseNumber(Request.Form["DiscountPercent"]);
+            if (f.RetailPrice > 0) f.RetailPrice = Math.Round(f.RetailPrice.Value, 2, MidpointRounding.AwayFromZero);
+            if (f.DiscountPercent > 0) f.DiscountPercent = Math.Round(f.DiscountPercent.Value, 2, MidpointRounding.AwayFromZero);
             var existing = isNew ? null : BookRepository.Item(f.Id);
+            bool classError = false, retailError = false;
             if (!string.IsNullOrEmpty(f.ClassName) && !BookFormat.Classes.Contains(f.ClassName)
                 && (existing == null || existing.ClassName != f.ClassName))
-                ModelState.AddModelError("ClassName", "Please choose the class from the list.");
+                classError = true;
             // The sale price is worked out from the retail price and discount when a retail price is given.
             if (f.RetailPrice.HasValue)
             {
@@ -96,10 +100,8 @@ namespace TheArqamSchools.Web.Controllers
                     f.SalePrice = BookFormat.SaleFromRetail(f.RetailPrice.Value, f.DiscountPercent.Value);
             }
             else if (f.DiscountPercent.HasValue && f.DiscountPercent != 0)
-                ModelState.AddModelError("RetailPrice", "Please enter the retail price printed on the book, so the discount can be worked out.");
+                retailError = true;
             f.IsActive = (Request.Form["IsActive"] ?? "").Split(',').Contains("true");
-            var classError = ModelState["ClassName"] != null && ModelState["ClassName"].Errors.Count > 0;
-            var retailError = ModelState["RetailPrice"] != null && ModelState["RetailPrice"].Errors.Count > 0;
             ModelState.Clear();
             TryValidateModel(f);
             if (classError) ModelState.AddModelError("ClassName", "Please choose the class from the list.");
@@ -253,12 +255,8 @@ namespace TheArqamSchools.Web.Controllers
             f.Address = Trim(posted["Address"]);
             f.Mobile = Trim(posted["Mobile"]);
             f.IsActive = (posted["IsActive"] ?? "").Split(',').Contains("true");
-            var classError = ModelState["ClassName"] != null && ModelState["ClassName"].Errors.Count > 0;
-            var retailError = ModelState["RetailPrice"] != null && ModelState["RetailPrice"].Errors.Count > 0;
             ModelState.Clear();
             TryValidateModel(f);
-            if (classError) ModelState.AddModelError("ClassName", "Please choose the class from the list.");
-            if (retailError) ModelState.AddModelError("RetailPrice", "Please enter the retail price printed on the book, so the discount can be worked out.");
             var mobile = Mobile.Normalize(f.Mobile);
             if (f.Mobile != null && mobile == null) ModelState.AddModelError("Mobile", "Please enter a Pakistani mobile number like 0300-1234567.");
             if (mobile != null && BookRepository.MobileTaken(mobile, f.Id)) ModelState.AddModelError("Mobile", "Another customer already has this mobile number.");

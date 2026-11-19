@@ -3,6 +3,7 @@
     Layout = "~/Views/Admin/_AdminLayout.cshtml";
     ViewBag.Title = "Books & stock";
     var canEdit = (bool)ViewBag.CanEdit;
+    var stocked = (HashSet<Guid>)ViewBag.Stocked;
 }
 <div class="admin-page-head"><h1>Books &amp; stock</h1>@if (canEdit) { <a class="admin-button" href="/admin/books/items/new">Add book</a> }</div>
 @Html.Partial("~/Views/Admin/Books/_Tabs.cshtml", "items")
@@ -22,7 +23,7 @@ else
                         <td>@b.ClassName</td>
                         <td><a href="/admin/books/items/@b.Id.ToString("D")">@b.Name</a></td>
                         <td>@b.Vendor</td>
-                        <td class="num@(b.Stock <= b.WarnAt ? " is-low" : "")">@b.Stock</td>
+                        <td class="num@(stocked.Contains(b.Id) && b.Stock <= b.WarnAt ? " is-low" : "")">@b.Stock</td>
                         <td class="num">@BookFormat.Money(b.PurchasePrice)</td>
                         <td class="num">@(b.RetailPrice.HasValue ? BookFormat.Money(b.RetailPrice.Value) : "")</td>
                         <td class="num">@(b.DiscountPercent.HasValue ? b.DiscountPercent.Value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "%" : "")</td>

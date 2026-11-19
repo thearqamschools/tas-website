@@ -19,7 +19,7 @@
         <div class="admin-grid-3">
             <div class="admin-field">
                 <label for="ClassName">Class</label>
-                <select id="ClassName" name="ClassName" required aria-describedby="ClassName-error" @ro>
+                <select id="ClassName" name="ClassName" required aria-describedby="ClassName-error" @(Model.CanEdit ? null : "disabled")>
                     <option value="">Choose the class</option>
                     @foreach (var c in Model.Classes) { <option value="@c" @(c == f.ClassName ? "selected" : null)>@c</option> }
                 </select>
