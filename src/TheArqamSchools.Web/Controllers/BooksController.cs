@@ -44,6 +44,9 @@ namespace TheArqamSchools.Web.Controllers
                 return StartError("Too many tries from this network. Please wait a few minutes and try again.", mobile);
             var normal = Mobile.Normalize(mobile);
             if (normal == null) return StartError("Please enter a mobile number like 0300-1234567.", mobile);
+            // Also limited per number and for the whole site, so numbers cannot be tried from many networks.
+            if (!RateLimiter.Allow("books-number", normal, 8, TimeSpan.FromMinutes(30)) || !RateLimiter.Allow("books-all", "site", 300, TimeSpan.FromMinutes(10)))
+                return StartError("Too many tries. Please wait a few minutes and try again, or call the office.", mobile);
             var customer = BookRepository.CustomerByMobile(normal);
             if (customer == null)
                 return StartError("This number is not registered for book orders. Please contact the office to register: 041-2660265, 041-2406479, WhatsApp 0339-2406479.", mobile);
@@ -156,10 +159,13 @@ namespace TheArqamSchools.Web.Controllers
 
         private ActionResult FormView(BookCustomer customer, BookOrder editing, IDictionary<Guid, int> quantities, string fulfilment, IList<string> errors, bool preview)
         {
-            var items = BookRepository.Items(false);
-            // Books already in the order being edited stay on the form even when their stock has run out.
-            var keep = editing == null ? new HashSet<Guid>() : new HashSet<Guid>(editing.Lines.Select(l => l.ItemId));
-            items = items.Where(i => i.Stock > 0 || keep.Contains(i.Id)).ToList();
+            // Books already in the order being edited stay on the form even when their stock has run out or the
+            // office has hidden them, and they keep the price stored on the order (the saved total uses it too).
+            var keep = editing == null ? new Dictionary<Guid, decimal>() : editing.Lines.ToDictionary(l => l.ItemId, l => l.UnitPrice);
+            var items = BookRepository.Items(true)
+                .Where(i => keep.ContainsKey(i.Id) || (i.IsActive && i.Stock > 0))
+                .Select(i => { if (keep.ContainsKey(i.Id)) i.SalePrice = keep[i.Id]; return i; })
+                .ToList();
             ViewBag.Meta = Meta();
             return View("~/Views/Books/Order.cshtml", new BookOrderFormViewModel
             {

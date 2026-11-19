@@ -230,6 +230,7 @@ BEGIN
         CONSTRAINT PK_book_returns PRIMARY KEY CLUSTERED (id),
         CONSTRAINT CK_book_returns_money CHECK (amount >= 0 AND refund_amount >= 0),
         CONSTRAINT CK_book_returns_method CHECK (refund_method IS NULL OR refund_method IN (N'cash', N'bank')),
+        CONSTRAINT CK_book_returns_method_needed CHECK (refund_amount = 0 OR (refund_method IS NOT NULL AND refund_account_id IS NOT NULL)),
         CONSTRAINT FK_book_returns_order FOREIGN KEY (order_id) REFERENCES dbo.book_orders (id),
         CONSTRAINT FK_book_returns_account FOREIGN KEY (refund_account_id) REFERENCES dbo.book_accounts (id),
         CONSTRAINT FK_book_returns_user FOREIGN KEY (created_by) REFERENCES dbo.users (id)

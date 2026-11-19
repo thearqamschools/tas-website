@@ -25,7 +25,7 @@ namespace TheArqamSchools.Web.Controllers
             var items = BookRepository.Items(true);
             ViewBag.ItemCount = items.Count(i => i.IsActive);
             ViewBag.LowStock = items.Where(i => i.IsActive && i.Stock <= 5).ToList();
-            ViewBag.CustomerCount = BookRepository.Customers(null).Count;
+            ViewBag.CustomerCount = BookRepository.CustomerCount();
             return View("~/Views/Admin/Books/Index.cshtml");
         }
 
@@ -158,10 +158,9 @@ namespace TheArqamSchools.Web.Controllers
         [ValidateAntiForgeryToken]
         [AdminAuthorize("books.customers")]
         [ActionName("NewCustomer")]
-        public ActionResult NewCustomerPost(BookCustomerForm form)
+        public ActionResult NewCustomerPost()
         {
-            form.Id = Guid.Empty;
-            return SaveCustomer(form, true);
+            return SaveCustomer(new BookCustomerForm { Id = Guid.Empty }, true);
         }
 
         [HttpGet]
@@ -177,11 +176,10 @@ namespace TheArqamSchools.Web.Controllers
         [ValidateAntiForgeryToken]
         [AdminAuthorize("books.customers")]
         [ActionName("Customer")]
-        public ActionResult CustomerPost(Guid id, BookCustomerForm form)
+        public ActionResult CustomerPost(Guid id)
         {
             if (BookRepository.Customer(id) == null) return HttpNotFound();
-            form.Id = id;
-            return SaveCustomer(form, false);
+            return SaveCustomer(new BookCustomerForm { Id = id }, false);
         }
 
         private ActionResult SaveCustomer(BookCustomerForm f, bool isNew)

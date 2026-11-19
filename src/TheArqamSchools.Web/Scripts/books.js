@@ -5,7 +5,7 @@
   var form = document.querySelector("[data-books-form]");
   if (!form) return;
   var totalEl = form.querySelector("[data-books-total]");
-  var fmt = function (n) { return "Rs. " + Math.round(n).toLocaleString("en-US"); };
+  var fmt = function (n) { return "Rs. " + (Math.round(n * 100) / 100).toLocaleString("en-US", { maximumFractionDigits: 2 }); };
   function update() {
     var total = 0;
     Array.prototype.forEach.call(form.querySelectorAll("input[data-price]"), function (inp) {

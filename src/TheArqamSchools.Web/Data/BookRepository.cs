@@ -175,6 +175,12 @@ namespace TheArqamSchools.Web.Data
                     new { like = "%" + CampusRepository.EscapeLike(q ?? "") + "%" }).ToList();
         }
 
+        public static int CustomerCount()
+        {
+            using (var db = Db.Open())
+                return db.ExecuteScalar<int>("SELECT COUNT(*) FROM dbo.book_customers WHERE archived_at IS NULL");
+        }
+
         public static BookCustomer Customer(Guid id)
         {
             using (var db = Db.Open())

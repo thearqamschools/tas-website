@@ -118,7 +118,7 @@ namespace TheArqamSchools.Web.Models
 
         public static string Money(decimal amount)
         {
-            return "Rs. " + amount.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture);
+            return "Rs. " + amount.ToString("#,##0.##", System.Globalization.CultureInfo.InvariantCulture);
         }
 
         public static string StatusLabel(string status)

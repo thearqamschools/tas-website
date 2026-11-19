@@ -29,7 +29,7 @@
             <div class="hp" aria-hidden="true"><label for="bo-website">Website</label><input id="bo-website" name="website" type="text" tabindex="-1" autocomplete="off" /></div>
             @if (Model.Preview)
             {
-                foreach (var i in Model.Items) { if (qty(i.Id) > 0) { <input type="hidden" name="q_@i.Id.ToString("N")" value="@qty(i.Id)" /> } }
+                foreach (var i in Model.Items) { if (qty(i.Id) > 0) { <input type="hidden" name="@("q_" + i.Id.ToString("N"))" value="@qty(i.Id)" /> } }
                 <input type="hidden" name="fulfilment" value="@Model.Fulfilment" />
                 <div class="books-card">
                     <h2 class="h3">Your books</h2>
