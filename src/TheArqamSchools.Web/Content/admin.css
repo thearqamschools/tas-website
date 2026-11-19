@@ -273,3 +273,12 @@ body.invoice-page { display: block; background: var(--grey); font-family: var(--
 .admin-main--wide { max-width: 90rem; }
 .admin-table--oneline th, .admin-table--oneline td { white-space: nowrap; }
 .admin-cat-filter { margin-bottom: 1rem; }
+/* Book form: "Order in the list" and "Shown to customers" side by side, each with a small note right under it. */
+.admin-order-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, max-content)); gap: 1rem 4rem; align-items: start; }
+.admin-order-row .admin-field { margin: 0; }
+.admin-check--stacked { padding-top: 2.1rem; }
+.admin-check--stacked label { gap: .125rem; }
+.admin-hint--small { font-size: .8125rem; line-height: 1.4; margin: .25rem 0 0; }
+.admin-reorder { align-items: flex-start; }
+.admin-reorder > .admin-button { margin-top: 1.95rem; }
+.admin-reorder .admin-field--narrow { width: 17rem; }

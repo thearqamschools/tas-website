@@ -72,25 +72,25 @@
             </div>
         </div>
         <h2 class="admin-card-title admin-card-title--gap">On the order page</h2>
-        <div class="admin-inline-row">
+        <div class="admin-order-row">
             <div class="admin-field admin-field--narrow">
                 <label for="SortOrder">Order in the list</label>
                 <input type="text" inputmode="numeric" id="SortOrder" name="SortOrder" value="@f.SortOrder" aria-describedby="SortOrder-hint" @ro />
+                <p class="admin-hint admin-hint--small" id="SortOrder-hint">Smaller numbers come first within the class.</p>
             </div>
-            <div class="admin-check">
-                <input type="checkbox" id="IsActive" name="IsActive" value="true" @(f.IsActive ? "checked" : null) @ro />
+            <div class="admin-check admin-check--stacked">
+                <input type="checkbox" id="IsActive" name="IsActive" value="true" aria-describedby="IsActive-hint" @(f.IsActive ? "checked" : null) @ro />
                 <input type="hidden" name="IsActive" value="false" />
-                <label for="IsActive"><strong>Shown to customers</strong></label>
+                <label for="IsActive"><strong>Shown to customers</strong><span class="admin-hint admin-hint--small" id="IsActive-hint">Untick to hide the book from the order page.</span></label>
             </div>
         </div>
-        <p class="admin-hint" id="SortOrder-hint">Smaller numbers come first within the class. Untick "Shown to customers" to hide the book from the order page.</p>
         @if (Model.CanEdit) { <div class="admin-form-actions"><button type="submit" class="admin-button">@(Model.IsNew ? "Add book" : "Save changes")</button></div> }
     </section>
 </form>
 @if (!Model.IsNew)
 {
     <section class="admin-card" id="stock" aria-labelledby="stock-h">
-        <h2 id="stock-h">Stock: <strong>@Model.Stock</strong> in hand</h2>
+        <h2 id="stock-h" class="admin-card-title">Stock: <strong>@Model.Stock</strong> in hand</h2>
         @{ var warnAt = Model.ReorderLevel ?? BookFormat.DefaultReorderLevel; }
         @if (Model.Stock <= warnAt) { <p class="admin-alert admin-alert--warn" role="status">Low stock: @Model.Stock in hand, minimum level @warnAt.</p> }
         @if (Model.CanEdit)
@@ -100,13 +100,16 @@
                 <div class="admin-field admin-field--narrow">
                     <label for="level">Minimum stock level</label>
                     <input type="text" inputmode="numeric" id="level" name="level" value="@Model.ReorderLevel" placeholder="@BookFormat.DefaultReorderLevel" aria-describedby="level-hint level-error" />
+                    <p class="admin-hint admin-hint--small" id="level-hint">Warn on the Books overview at or below this number. Empty = @BookFormat.DefaultReorderLevel.</p>
                     @Html.ValidationMessage("level", null, new { id = "level-error", @class = "admin-field-error" })
                 </div>
                 <button type="submit" class="admin-button admin-button--secondary">Save level</button>
-                <p class="admin-hint" id="level-hint">A warning shows on the Books overview when the stock is at or below this number. Leave empty for the default (@BookFormat.DefaultReorderLevel).</p>
             </form>
-            <h3 class="admin-subhead">Add or correct stock</h3>
         }
+    </section>
+    <section class="admin-card" aria-labelledby="addstock-h">
+        <h2 id="addstock-h" class="admin-card-title">Add or correct stock</h2>
+        @if (!Model.CanEdit) { <p class="admin-muted">You can view the stock but not change it.</p> }
         @if (Model.CanEdit)
         {
             <form method="post" action="/admin/books/items/@f.Id.ToString("D")/stock" class="admin-form" novalidate>
@@ -140,7 +143,9 @@
                 <div class="admin-form-actions"><button type="submit" class="admin-button">Save stock</button></div>
             </form>
         }
-        <h3 class="admin-subhead">Stock history</h3>
+    </section>
+    <section class="admin-card" aria-labelledby="history-h">
+        <h2 id="history-h" class="admin-card-title">Stock history</h2>
         @if (Model.Moves.Count == 0)
         {
             <p class="admin-muted">No stock changes yet.</p>
