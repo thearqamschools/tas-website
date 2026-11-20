@@ -43,6 +43,7 @@ namespace TheArqamSchools.Web.Infrastructure
             if (v == null) return "";
             if (kind == "money" && v is decimal) return ((decimal)v).ToString("#,##0.##", CultureInfo.InvariantCulture);
             if (kind == "number" && v is int) return ((int)v).ToString("#,##0", CultureInfo.InvariantCulture);
+            if (kind == "number" && v is decimal) return ((decimal)v).ToString("0.##", CultureInfo.InvariantCulture);
             if (v is decimal) return ((decimal)v).ToString("#,##0.##", CultureInfo.InvariantCulture);
             if (v is DateTime) return ((DateTime)v).ToString("d MMM yyyy", CultureInfo.InvariantCulture);
             return Convert.ToString(v, CultureInfo.InvariantCulture);
@@ -63,7 +64,7 @@ namespace TheArqamSchools.Web.Infrastructure
                 pdf.NewPage();
                 page++;
                 top = 30;
-                pdf.Text(left, top, 14, "The Arqam Schools – " + Title, true, "left", 0.15);
+                pdf.Text(left, top, 14, "The Arqam Schools \u2013 " + Title, true, "left", 0.15);
                 if (!string.IsNullOrEmpty(Subtitle)) pdf.Text(left, top + 18, 9, Subtitle, false, "left", 0.35);
                 pdf.Text(right, top + 2, 8, "Page " + page, false, "right", 0.45);
                 top += 36;
@@ -135,7 +136,7 @@ namespace TheArqamSchools.Web.Infrastructure
                 r++;
             };
             var kindsArr = Columns.Select(x => x.Kind).ToArray();
-            write(new object[] { "The Arqam Schools – " + Title }, 1, null);
+            write(new object[] { "The Arqam Schools \u2013 " + Title }, 1, null);
             if (!string.IsNullOrEmpty(Subtitle)) write(new object[] { Subtitle }, 0, null);
             r++;
             write(Columns.Select(x => (object)x.Name), 1, null);

@@ -47,15 +47,43 @@ namespace TheArqamSchools.Web.Data
             }
         }
 
+        private class StockRow
+        {
+            public Guid Id { get; set; } public string ClassName { get; set; } public string Name { get; set; } public string Vendor { get; set; }
+            public bool IsActive { get; set; } public int SortOrder { get; set; } public int Stock { get; set; }
+            public decimal? RetailPrice { get; set; } public decimal? DiscountPercent { get; set; } public decimal SalePrice { get; set; }
+            public int StockIn { get; set; } public int StockOut { get; set; } public int SoldQty { get; set; } public decimal SoldValue { get; set; }
+        }
+
+        /// <summary>
+        /// Owner's layout (20 November 2026), like the old system's "Product Stock": class, book, vendor, shown, retail price,
+        /// discount %, discounted (sale) price, then stock in, stock out and stock left (in - out = left, all movements),
+        /// books sold (net of returns) and their value. No purchase prices.
+        /// </summary>
         private static ReportTable Stock(System.Data.IDbConnection db)
         {
-            var t = new ReportTable { Title = "Stock", Subtitle = "Stock in hand on " + DateTime.UtcNow.AddHours(5).ToString("d MMMM yyyy", CultureInfo.InvariantCulture) }
-                .Col("Class", "text", 1).Col("Book", "text", 2.2).Col("Shown", "text", 0.6).Col("In stock", "number", 0.8)
-                .Col("Purchase price", "money").Col("Sale price", "money").Col("Value at purchase", "money", 1.2).Col("Value at sale", "money", 1.2);
-            var items = BookRepository.Sort(db.Query<BookItem>("SELECT id, class_name, name, stock, purchase_price, sale_price, is_active, sort_order FROM dbo.book_items WHERE archived_at IS NULL"));
-            foreach (var i in items)
-                t.Rows.Add(new object[] { i.ClassName, i.Name, i.IsActive ? "Yes" : "Hidden", i.Stock, i.PurchasePrice, i.SalePrice, i.PurchasePrice * i.Stock, i.SalePrice * i.Stock });
-            t.Totals = new object[] { "Total", null, null, items.Sum(i => i.Stock), null, null, items.Sum(i => i.PurchasePrice * i.Stock), items.Sum(i => i.SalePrice * i.Stock) };
+            var t = new ReportTable { Title = "Stock", Subtitle = "Stock on " + DateTime.UtcNow.AddHours(5).ToString("d MMMM yyyy", CultureInfo.InvariantCulture) }
+                .Col("Class", "text", 0.9).Col("Book", "text", 2).Col("Vendor", "text", 1.3).Col("Shown", "text", 0.6)
+                .Col("Retail price", "money", 0.8).Col("Disc. %", "number", 0.55).Col("Disc. price", "money", 0.8)
+                .Col("Stock in", "number", 0.7).Col("Stock out", "number", 0.7).Col("Stock left", "number", 0.7)
+                .Col("Sold", "number", 0.6).Col("Sold value", "money", 0.95);
+            var rows = db.Query<StockRow>(@"
+                SELECT i.id, i.class_name, i.name, i.vendor, i.is_active, i.sort_order, i.stock, i.retail_price, i.discount_percent, i.sale_price,
+                       COALESCE((SELECT SUM(m.change) FROM dbo.book_stock_moves m WHERE m.item_id = i.id AND m.change > 0), 0) AS stock_in,
+                       COALESCE((SELECT -SUM(m.change) FROM dbo.book_stock_moves m WHERE m.item_id = i.id AND m.change < 0), 0) AS stock_out,
+                       COALESCE((SELECT SUM(l.quantity - l.returned_qty) FROM dbo.book_order_lines l JOIN dbo.book_orders o ON o.id = l.order_id
+                                 WHERE l.item_id = i.id AND o.stock_taken_at IS NOT NULL AND o.status <> N'cancelled'), 0) AS sold_qty,
+                       COALESCE((SELECT SUM((l.quantity - l.returned_qty) * l.unit_price) FROM dbo.book_order_lines l JOIN dbo.book_orders o ON o.id = l.order_id
+                                 WHERE l.item_id = i.id AND o.stock_taken_at IS NOT NULL AND o.status <> N'cancelled'), 0) AS sold_value
+                FROM dbo.book_items i WHERE i.archived_at IS NULL").ToList()
+                .OrderBy(r => BookRepository.ClassRank(r.ClassName)).ThenBy(r => r.ClassName).ThenBy(r => r.SortOrder).ThenBy(r => r.Name).ToList();
+            foreach (var r in rows)
+                t.Rows.Add(new object[] { r.ClassName, r.Name, r.Vendor, r.IsActive ? "Yes" : "Hidden", r.RetailPrice, r.DiscountPercent, r.SalePrice,
+                                          r.StockIn, r.StockOut, r.Stock, r.SoldQty, r.SoldValue });
+            t.Totals = new object[] { "Total", null, null, null, null, null, null, rows.Sum(r => r.StockIn), rows.Sum(r => r.StockOut), rows.Sum(r => r.Stock),
+                                      rows.Sum(r => r.SoldQty), rows.Sum(r => r.SoldValue) };
+            t.Notes.Add("Stock in = books received, returned and added by correction. Stock out = books handed over and taken off by correction. Stock in - Stock out = Stock left.");
+            t.Notes.Add("Sold = books handed over to customers less books returned. Disc. price is the price customers pay.");
             return t;
         }
 

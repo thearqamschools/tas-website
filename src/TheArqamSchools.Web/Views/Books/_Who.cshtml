@@ -6,9 +6,14 @@
         <p class="books-who-name">@Model.Name</p>
         <p class="books-who-meta">@Mobile.Format(Model.Mobile)@if (!string.IsNullOrEmpty(Model.CampusName)) { <text> · @Model.CampusName</text> }</p>
     </div>
-    <div class="books-who-links">
-        <a href="/books/order">New order</a>
-        <a href="/books/orders">My orders</a>
-        <form method="post" action="/books/signout">@Html.AntiForgeryToken()<button type="submit" class="books-link-button">Sign out</button></form>
-    </div>
+    @{
+        var path = (Request.Path ?? "").TrimEnd('/').ToLowerInvariant();
+        var onNew = path == "/books/order";
+        var onList = path == "/books/orders";
+    }
+    <nav class="books-who-links" aria-label="Book orders">
+        <a class="books-nav-btn@(onNew ? " is-current" : "")" href="/books/order" @(onNew ? "aria-current=page" : null)>New order</a>
+        <a class="books-nav-btn@(onList ? " is-current" : "")" href="/books/orders" @(onList ? "aria-current=page" : null)>My orders</a>
+        <form method="post" action="/books/signout">@Html.AntiForgeryToken()<button type="submit" class="books-nav-btn books-nav-btn--out">Sign out</button></form>
+    </nav>
 </div>

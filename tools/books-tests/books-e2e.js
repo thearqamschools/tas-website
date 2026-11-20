@@ -70,6 +70,7 @@ const BOOKS = [
   const cust = await (await browser.newContext({ ...devices['iPhone 13'] })).newPage(); cust.on('pageerror', e => errors.push(e.message));
   await cust.goto(B + '/books'); await cust.fill('#bk-mobile', '0300-9999999'); await cust.click('button:has-text("Continue")'); await cust.waitForLoadState();
   ok('unregistered number refused', (await cust.content()).includes('not registered'));
+  ok('contact lines: Phone and Mobile/WhatsApp', (await cust.locator('.alert-error').innerText()).includes('Mobile/WhatsApp: 0339-2406479') && (await cust.locator('.alert-error').innerText()).includes('Phone: 041-2660265, 041-2406479'));
   await cust.fill('#bk-mobile', '0300-1234567'); await cust.click('button:has-text("Continue")'); await cust.waitForLoadState();
   const q = async (name, v) => cust.fill('#' + await cust.locator('.books-row', { hasText: name }).locator('input').getAttribute('id'), String(v));
   await q('DEMO English Reader 1', 10); await q('DEMO Alphabet Book', 5); await cust.waitForTimeout(150);
@@ -320,11 +321,18 @@ const BOOKS = [
   await admin.goto(B + '/admin/books/reports?kind=returns&from=' + today + '&to=' + today);
   ok('returns report lists RN-' + rn, (await admin.locator('.admin-report').innerText()).includes('RN-' + rn));
   await admin.goto(B + '/admin/books/reports?kind=stock');
+  ok('stock report has the old system columns', /STOCK IN[\s\S]*STOCK OUT[\s\S]*STOCK LEFT/.test((await admin.locator('.admin-report thead').innerText()).toUpperCase()));
   ok('stock report shows Colours 29', /DEMO Colours and Shapes[^\n]*29/.test(await admin.locator('.admin-report').innerText()));
   const anon = await cust.context().request.get(B + '/admin/books/reports?kind=stock&format=xlsx', { maxRedirects: 0 });
   ok('reports not visible to others', anon.status() !== 200);
 
   await admin.goto(B + '/admin/books/orders'); await admin.screenshot({ path: OUT + '/admin-orders.png', fullPage: true });
+  ok('orders table fits without sideways scrolling', await admin.evaluate(() => { const w = document.querySelector('.admin-table-wrap'); return w.scrollWidth <= w.clientWidth + 1; }));
+  await admin.locator('tr.admin-row-link').first().locator('td').nth(3).click(); await admin.waitForLoadState();
+  ok('clicking anywhere on a row opens the order', /\/admin\/books\/orders\/\d+$/.test(admin.url()));
+  await cust.goto(B + '/books/orders'); await cust.locator('.books-history-item').first().click({ position: { x: 30, y: 60 } }); await cust.waitForLoadState();
+  ok('clicking anywhere on a card opens the order', /\/books\/orders\/\d+$/.test(cust.url()));
+  await cust.goto(B + '/books/orders'); await cust.screenshot({ path: OUT + '/m-my-orders.png', fullPage: true });
   ok('no script errors ' + errors.join(' | '), errors.length === 0);
   console.log(results.join('\n'));
   console.log((results.filter(r => r.startsWith('FAIL')).length === 0 ? 'ALL PASSED' : 'SOME FAILED') + ' (' + results.length + ' checks)');

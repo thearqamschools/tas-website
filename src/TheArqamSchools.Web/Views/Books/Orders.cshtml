@@ -24,11 +24,11 @@
                 {
                     <li class="books-card books-history-item">
                         <div class="books-history-head">
-                            <a class="books-order-link" href="/books/orders/@o.OrderNo">@o.OrderLabel</a>
+                            <a class="books-order-link books-card-link" href="/books/orders/@o.OrderNo">@o.OrderLabel</a>
                             <span class="books-status books-status-@o.Status">@o.CustomerStatusLabel</span>
                         </div>
                         <p class="books-history-meta">@o.CreatedAt.ToOffset(pk).ToString("d MMMM yyyy", System.Globalization.CultureInfo.InvariantCulture) · @o.Lines.Sum(l => l.Quantity) books · <strong>@BookFormat.Money(o.CustomerTotal)</strong></p>
-                        @if (o.CustomerCanEdit) { <p><a href="/books/orders/@o.OrderNo">Change or cancel this order</a></p> }
+                        @if (o.CustomerCanEdit) { <p class="books-history-hint">You can still change or cancel this order.</p> }
                     </li>
                 }
             </ul>

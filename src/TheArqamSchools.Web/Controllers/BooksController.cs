@@ -49,7 +49,10 @@ namespace TheArqamSchools.Web.Controllers
                 return StartError("Too many tries. Please wait a few minutes and try again, or call the office.", mobile);
             var customer = BookRepository.CustomerByMobile(normal);
             if (customer == null)
-                return StartError("This number is not registered for book orders. Please contact the office to register: 041-2660265, 041-2406479, WhatsApp 0339-2406479.", mobile);
+            {
+                ViewBag.NotRegistered = true;
+                return StartError("This number is not registered for book orders. Please contact the office to register.", mobile);
+            }
             SetCookie(customer.Id);
             return Redirect("/books/order");
         }

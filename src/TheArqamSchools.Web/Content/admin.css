@@ -287,3 +287,20 @@ body.invoice-page { display: block; background: var(--grey); font-family: var(--
 .admin-sent-item.is-pending { border-color: #fcd34d; background: #fffdf5; }
 .admin-sent-actions { display: flex; flex-wrap: wrap; gap: .75rem; align-items: flex-end; margin-top: .75rem; }
 .admin-sent-actions form { margin: 0; display: flex; gap: .5rem; align-items: flex-end; flex-wrap: wrap; }
+/* Book orders list (owner's notes, 20 November 2026): fits the page without a sidebar scroll, whole row clickable. */
+.admin-table--orders { font-size: .9375rem; }
+.admin-table--orders th, .admin-table--orders td { padding: .625rem .625rem; vertical-align: top; }
+.admin-table--orders th { white-space: nowrap; }
+.admin-table--orders td.num { white-space: nowrap; }
+.admin-cell-sub { display: block; font-size: .8125rem; color: var(--muted); margin-top: .125rem; }
+.admin-cell-sub .admin-tag:first-child { margin-left: 0; }
+.admin-row-link { cursor: pointer; transition: background-color .12s ease-out; }
+.admin-row-link:hover td { background: var(--blue-50, #eef2fb); }
+.admin-row-link.is-muted:hover td { background: var(--grey); }
+@media (min-width: 64rem) {
+  .admin-filters--orders { grid-template-columns: 1fr 1.25fr 1fr 1fr 1.4fr auto; }
+}
+/* Reports on screen and in print: centred columns; class and book names stay on one line. */
+.admin-report-table th, .admin-report-table td, .admin-report-table .num { text-align: center; }
+.admin-report-table td:first-child, .admin-report-table th:first-child { white-space: nowrap; }
+.admin-report-table td { vertical-align: middle; }

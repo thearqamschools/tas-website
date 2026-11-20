@@ -110,3 +110,16 @@
   pct.addEventListener("input", sync);
   sync();
 })();
+
+/* Order lists: the whole row opens the order (the order number stays a normal link for the keyboard). */
+(function () {
+  "use strict";
+  Array.prototype.forEach.call(document.querySelectorAll("tr[data-href]"), function (row) {
+    row.addEventListener("click", function (e) {
+      if (e.target.closest("a, button, input, select, label")) return;
+      if (window.getSelection && String(window.getSelection())) return;   // selecting text does not navigate
+      if (e.ctrlKey || e.metaKey) window.open(row.getAttribute("data-href"), "_blank");
+      else window.location.href = row.getAttribute("data-href");
+    });
+  });
+})();

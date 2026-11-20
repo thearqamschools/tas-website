@@ -5,6 +5,7 @@
 @{
     Layout = "~/Views/Admin/_AdminLayout.cshtml";
     ViewBag.Title = Model == null ? "Book reports" : Model.Title;
+    ViewBag.Wide = true;
     var kind = ViewBag.Kind as string;
     var from = ((DateTime)ViewBag.From).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
     var to = ((DateTime)ViewBag.To).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
@@ -31,10 +32,10 @@ else
         <a class="admin-button admin-button--secondary" href="/admin/books/reports?@query&amp;format=xlsx">Download Excel</a>
     </div>
     <section class="admin-report">
-        <h2>The Arqam Schools – @Model.Title</h2>
+        <h2>The Arqam Schools &ndash; @Model.Title</h2>
         @if (!string.IsNullOrEmpty(Model.Subtitle)) { <p class="admin-muted">@Model.Subtitle</p> }
         <div class="admin-table-wrap">
-            <table class="admin-table">
+            <table class="admin-table admin-report-table">
                 <thead><tr>@foreach (var c in Model.Columns) { <th scope="col" class="@(c.Kind != "text" ? "num" : null)">@c.Name</th> }</tr></thead>
                 <tbody>
                     @if (Model.Rows.Count == 0) { <tr><td colspan="@Model.Columns.Count">Nothing to show for this period.</td></tr> }

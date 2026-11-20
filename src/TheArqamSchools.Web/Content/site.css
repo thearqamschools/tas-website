@@ -1417,3 +1417,25 @@ body:has(.books) .wa-float { display: none; }
 .books-sent-confirmed .books-sent-status { color: var(--success); }
 .books-sent-rejected .books-sent-status { color: var(--red, #d62839); }
 .books-sent-reason { flex-basis: 100%; color: var(--muted); font-size: .9375rem; }
+/* Owner's notes (20 November 2026): contact lines, navigation buttons, whole card clickable, tidy order table. */
+.books-narrow { max-width: 34rem; }
+.nowrap { white-space: nowrap; }
+.books-contact p { margin: 0 0 4px; }
+.books-contact p:last-child { margin-bottom: 0; }
+.books-who-links { gap: 8px; }
+.books-nav-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 8px 16px; border-radius: var(--r-sm); border: 1px solid var(--blue); background: var(--blue); color: #fff; font: inherit; font-size: .9375rem; font-weight: 600; text-decoration: none; cursor: pointer; transition: background-color .15s ease-out, box-shadow .15s ease-out; }
+.books-nav-btn:hover { background: var(--blue-700); color: #fff; }
+.books-nav-btn.is-current { background: var(--blue-700); box-shadow: inset 0 2px 4px rgba(15,23,42,.25); }
+.books-nav-btn--out { background: var(--red); border-color: var(--red); }
+.books-nav-btn--out:hover { background: var(--red-700); }
+.books-nav-btn:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+.books-history-item { position: relative; transition: border-color .15s ease-out, box-shadow .15s ease-out, transform .15s ease-out; }
+.books-card-link::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.books-history-item:hover { border-color: var(--blue); box-shadow: 0 4px 14px rgba(43,57,144,.12); }
+.books-history-item:focus-within { outline: 3px solid var(--blue); outline-offset: 2px; }
+.books-card-link:focus-visible { outline: none; }
+.books-history-hint { margin: 6px 0 0; font-size: .9375rem; color: var(--blue); }
+@media (prefers-reduced-motion: no-preference) { .books-history-item:hover { transform: translateY(-1px); } }
+@media (min-width: 40rem) {
+  .books-row { grid-template-columns: minmax(0, 1fr) 6.5rem 5.5rem 6.5rem; }
+}

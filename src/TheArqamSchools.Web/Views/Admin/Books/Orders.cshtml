@@ -15,7 +15,7 @@
     <input type="search" id="code" name="code" placeholder="1001" maxlength="30" autocomplete="off" autofocus />
     <button type="submit" class="admin-button">Open order</button>
 </form>
-<form method="get" action="/admin/books/orders" class="admin-filters">
+<form method="get" action="/admin/books/orders" class="admin-filters admin-filters--orders">
     <div class="admin-field"><label for="status">Status</label>
         <select id="status" name="status"><option value="">All</option>@foreach (var s in BookOrderRepositoryStatuses()) { <option value="@s" @(f.Status == s ? "selected" : null)>@BookFormat.StatusLabel(s)</option> }</select></div>
     <div class="admin-field"><label for="payment">Payment</label>
@@ -39,24 +39,26 @@
 else
 {
     <p class="admin-muted">@Model.Count.ToString("N0") orders@(Model.Count == 500 ? " (the newest 500; narrow the filters to see others)" : "")</p>
-    <div class="admin-table-wrap">
-        <table class="admin-table admin-table--oneline">
-            <thead><tr><th scope="col">Order</th><th scope="col">Date &amp; time</th><th scope="col">Customer</th><th scope="col">Campus</th><th scope="col">Get</th><th scope="col" class="num">Total</th><th scope="col" class="num">Discount</th><th scope="col" class="num">Paid</th><th scope="col" class="num">Balance</th><th scope="col">Status</th><th scope="col">Payment</th></tr></thead>
+    <div class="admin-table-wrap admin-table-wrap--fit">
+        <table class="admin-table admin-table--orders">
+            <thead><tr><th scope="col">Order</th><th scope="col">Date &amp; time</th><th scope="col">Customer</th><th scope="col">Campus</th><th scope="col">Get</th><th scope="col" class="num">Total</th><th scope="col" class="num">Paid</th><th scope="col" class="num">Balance</th><th scope="col">Status</th></tr></thead>
             <tbody>
                 @foreach (var o in Model)
                 {
-                    <tr class="@(o.Status == "cancelled" ? "is-muted" : null)">
-                        <td><a href="/admin/books/orders/@o.OrderNo"><strong>@o.OrderLabel</strong></a>@if (o.EditCount > 0) { <span class="admin-tag">edited</span> }@if (o.Source == "office") { <span class="admin-tag">office</span> }@if (o.PendingPayments > 0) { <span class="admin-tag admin-tag--warn">payment to check</span> }</td>
-                        <td>@o.CreatedAt.ToOffset(pk).ToString("d MMM yyyy, h:mm tt", System.Globalization.CultureInfo.InvariantCulture)</td>
-                        <td>@o.CustomerName <span class="admin-muted">&middot; @Mobile.Format(o.CustomerMobile)</span></td>
+                    <tr class="admin-row-link@(o.Status == "cancelled" ? " is-muted" : null)" data-href="/admin/books/orders/@o.OrderNo">
+                        <td><a href="/admin/books/orders/@o.OrderNo"><strong>@o.OrderLabel</strong></a>
+                            @if (o.EditCount > 0 || o.Source == "office" || o.PendingPayments > 0)
+                            {
+                                <span class="admin-cell-sub">@if (o.PendingPayments > 0) { <span class="admin-tag admin-tag--warn">payment to check</span> }@if (o.EditCount > 0) { <span class="admin-tag">edited</span> }@if (o.Source == "office") { <span class="admin-tag">office</span> }</span>
+                            }</td>
+                        <td>@o.CreatedAt.ToOffset(pk).ToString("d MMM yyyy", System.Globalization.CultureInfo.InvariantCulture)<span class="admin-cell-sub">@o.CreatedAt.ToOffset(pk).ToString("h:mm tt", System.Globalization.CultureInfo.InvariantCulture)</span></td>
+                        <td>@o.CustomerName<span class="admin-cell-sub">@Mobile.Format(o.CustomerMobile)</span></td>
                         <td>@o.CampusName</td>
                         <td>@BookFormat.FulfilmentLabel(o.Fulfilment)</td>
-                        <td class="num">@BookFormat.Money(o.Subtotal)</td>
-                        <td class="num">@(o.DiscountTotal > 0 ? BookFormat.Money(o.DiscountTotal) : "")</td>
+                        <td class="num">@BookFormat.Money(o.Subtotal)@if (o.DiscountTotal > 0) { <span class="admin-cell-sub">discount @BookFormat.Money(o.DiscountTotal)</span> }</td>
                         <td class="num">@BookFormat.Money(o.PaidTotal)</td>
                         <td class="num@(o.Balance > 0 && o.Status != "cancelled" ? " is-low" : "")">@BookFormat.Money(o.Balance)</td>
-                        <td><span class="admin-status admin-status--@StatusClass(o.Status)">@BookFormat.StatusLabel(o.Status)</span></td>
-                        <td>@o.PaymentStatus</td>
+                        <td><span class="admin-status admin-status--@StatusClass(o.Status)">@BookFormat.StatusLabel(o.Status)</span><span class="admin-cell-sub">@o.PaymentStatus</span></td>
                     </tr>
                 }
             </tbody>
@@ -67,3 +69,5 @@ else
     static string[] BookOrderRepositoryStatuses() { return TheArqamSchools.Web.Data.BookOrderRepository.Statuses; }
     public static string StatusClass(string s) { return s == "new" ? "new" : s == "cancelled" ? "spam" : (s == "delivered" || s == "collected") ? "closed" : "in_progress"; }
 }
+
+<script src="/Scripts/admin-form.js?v=20261120b" defer></script>
