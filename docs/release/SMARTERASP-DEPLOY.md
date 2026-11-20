@@ -196,3 +196,8 @@ admin inbox, campus and page editing, on a phone and a computer.
 - 20 November 2026 (later): site only (commit 116f217, no database change): stock report like the old system, admin
   orders list fits the page and whole rows open the order, Books page contact lines (Phone, Mobile/WhatsApp), customer
   buttons, whole order cards clickable. `/`, `/books`, `/about`, `/campuses`, `/admin/login` answered 200.
+- 20 November 2026 (later): `27_customer_accounts` ran through `deploy/smarterasp-db` (customer numbers, credit limit
+  and days, returns per customer, return requests, messages; archives *_20261120). The site (commit 1269d68: Customer
+  Accounts with ledger and reports, customer-wise returns and refunds, Payment Accounts, messages, work-to-do list,
+  aging and campus reports, customer dashboard / My payments / Returns on the website) went up straight after it.
+  `/`, `/books`, `/about`, `/campuses`, `/admin/login` answered 200; `/books/dashboard` sends a signed-out visitor to `/books`.
