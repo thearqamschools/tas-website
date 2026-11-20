@@ -57,7 +57,7 @@
             @if (Model.DiscountTotal > 0) { <tr><th scope="row">Discount</th><td>− @BookFormat.Money(Model.DiscountTotal)</td></tr> }
             @if (Model.CreditApplied > 0) { <tr><th scope="row">Credit</th><td>− @BookFormat.Money(Model.CreditApplied)</td></tr> }
             <tr><th scope="row">Paid</th><td>@BookFormat.Money(Model.PaidTotal)</td></tr>
-            @if (Model.RefundedTotal > 0) { <tr><th scope="row">Refunded</th><td>@BookFormat.Money(Model.RefundedTotal)</td></tr> }
+            @if (Model.RefundedTotal > 0) { <tr><th scope="row">Returned to you (credit or refund)</th><td>@BookFormat.Money(Model.RefundedTotal)</td></tr> }
             <tr class="is-total"><th scope="row">Balance</th><td>@BookFormat.Money(Model.Balance)</td></tr>
         </table>
         <p class="invoice-foot">Thank you for your order. Amounts are in Pakistani rupees.</p>

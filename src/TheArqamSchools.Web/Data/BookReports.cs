@@ -164,7 +164,8 @@ namespace TheArqamSchools.Web.Data
                 t.Rows.Add(new object[] { (DateTime)r.received_on, BookFormat.OrderLabel((long)r.order_no), (string)r.name, (string)r.method == "bank" ? "Bank" : "Cash", (string)r.account, (string)r.by_name, (decimal)r.amount });
             t.Totals = new object[] { "Total", null, null, null, null, null, rows.Sum(r => (decimal)r.amount) };
             var paidBack = db.Query(@"SELECT a.name AS account, SUM(r.refund_amount) AS refunded FROM dbo.book_returns r JOIN dbo.book_accounts a ON a.id = r.refund_account_id
-                                      WHERE r.refund_amount > 0 AND r.refunded_on >= @from AND r.refunded_on <= @to GROUP BY a.name", new { from = from.Date, to = to.Date })
+                                      WHERE r.refund_amount > 0 AND r.refund_paid_at IS NOT NULL AND CAST(SWITCHOFFSET(r.refund_paid_at, '+05:00') AS DATE) >= @from
+                                        AND CAST(SWITCHOFFSET(r.refund_paid_at, '+05:00') AS DATE) <= @to GROUP BY a.name", new { from = from.Date, to = to.Date })
                               .ToDictionary(r => (string)r.account, r => (decimal)r.refunded);
             foreach (var name in rows.Select(r => (string)r.account).Union(paidBack.Keys).Distinct())
             {

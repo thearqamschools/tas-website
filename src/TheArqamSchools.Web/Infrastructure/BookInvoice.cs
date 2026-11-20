@@ -116,7 +116,7 @@ namespace TheArqamSchools.Web.Infrastructure
             if (o.DiscountTotal > 0) row("Discount", -o.DiscountTotal, false);
             if (o.CreditApplied > 0) row("Credit", -o.CreditApplied, false);
             row("Paid", o.PaidTotal, false);
-            if (o.RefundedTotal > 0) row("Refunded", o.RefundedTotal, false);
+            if (o.RefundedTotal > 0) row("Returned to you (credit or refund)", o.RefundedTotal, false);
             pdf.Line(cQty - 40, top - 2, right, top - 2, 0.8, 0.6);
             top += 4;
             row("Balance", o.Balance, true);

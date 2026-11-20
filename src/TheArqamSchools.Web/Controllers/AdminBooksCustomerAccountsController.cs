@@ -44,6 +44,7 @@ namespace TheArqamSchools.Web.Controllers
             var table = view == "messages" ? null : BuildCustomerReport(c, view, f, t);
             if (table != null && (format == "pdf" || format == "xlsx"))
             {
+                if (!AdminAuth.Current(HttpContext).Can("books.reports")) return new HttpStatusCodeResult(403);
                 Response.Headers["Cache-Control"] = "private, no-store";
                 var name = "customer-" + c.CustomerLabel + "-" + view;
                 return format == "pdf" ? (ActionResult)File(table.ToPdf(), "application/pdf", name + ".pdf")

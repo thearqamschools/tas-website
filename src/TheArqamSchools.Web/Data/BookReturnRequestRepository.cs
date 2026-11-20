@@ -58,7 +58,7 @@ namespace TheArqamSchools.Web.Data
                 db.Execute("SELECT id FROM dbo.book_customers WITH (UPDLOCK, HOLDLOCK) WHERE id = @customerId", new { customerId }, tx);
                 var have = db.Query<Line>(@"SELECT l.item_id, MAX(l.class_name) AS class_name, MAX(l.item_name) AS item_name, SUM(l.quantity - l.returned_qty) AS quantity
                                             FROM dbo.book_order_lines l JOIN dbo.book_orders o ON o.id = l.order_id
-                                            WHERE o.customer_id = @customerId AND o.stock_taken_at IS NOT NULL AND o.status <> N'cancelled' GROUP BY l.item_id", new { customerId }, tx)
+                                            WHERE o.customer_id = @customerId AND o.status IN (N'delivered', N'collected') GROUP BY l.item_id", new { customerId }, tx)
                              .ToDictionary(x => x.ItemId);
                 var open = db.Query<Line>(@"SELECT l.item_id, SUM(l.quantity) AS quantity FROM dbo.book_return_request_lines l JOIN dbo.book_return_requests r ON r.id = l.request_id
                                             WHERE r.customer_id = @customerId AND r.status IN (N'requested', N'approved') GROUP BY l.item_id", new { customerId }, tx)

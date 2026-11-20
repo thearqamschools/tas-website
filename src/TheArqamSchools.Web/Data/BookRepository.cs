@@ -304,6 +304,8 @@ namespace TheArqamSchools.Web.Data
             using (var db = Db.Open())
             using (var tx = db.BeginTransaction(IsolationLevel.ReadCommitted))
             {
+                // Same lock order as a return: the customer's handed-over orders first, then the customer.
+                db.Execute("SELECT id FROM dbo.book_orders WITH (UPDLOCK, HOLDLOCK) WHERE customer_id = @customerId AND stock_taken_at IS NOT NULL AND status <> N'cancelled'", new { customerId }, tx);
                 var customer = db.QuerySingleOrDefault<BookCustomer>(
                     "SELECT id, mobile, name, campus_name, address, credit, is_active, customer_no, credit_limit, credit_days FROM dbo.book_customers WITH (UPDLOCK, HOLDLOCK) WHERE id = @customerId AND archived_at IS NULL",
                     new { customerId }, tx);
@@ -315,7 +317,7 @@ namespace TheArqamSchools.Web.Data
                 CheckStock(items, wanted, null);
                 var subtotal = wanted.Sum(w => items[w.Key].SalePrice * w.Value);
                 var credit = Math.Min(customer.Credit, subtotal);
-                CheckCreditLimit(db, tx, customer, subtotal - credit, 0m);
+                CheckCreditLimit(db, tx, customer, subtotal, 0m);
 
                 var orderNo = db.ExecuteScalar<long>("SELECT NEXT VALUE FOR dbo.book_order_no_seq", null, tx);
                 var orderId = db.ExecuteScalar<Guid>(@"
@@ -342,8 +344,9 @@ namespace TheArqamSchools.Web.Data
 
         /// <summary>
         /// Owner's rule (20 November 2026): a customer with a credit limit may not owe more than the limit. What they
-        /// owe = the balance of all their orders that are not cancelled, less their credit; the new amount is added
-        /// (for an edit, the increase). The customer row is already locked by the caller, so two orders cannot race.
+        /// owe = the balance of all their orders that are not cancelled, less their credit; the new order's full value is
+        /// added (for an edit, the change in its value). Credit used on the order cancels out: it lowers both the
+        /// order's balance and the customer's credit by the same amount. The customer row is already locked by the caller, so two orders cannot race.
         /// </summary>
         internal static void CheckCreditLimit(IDbConnection db, IDbTransaction tx, BookCustomer customer, decimal adding, decimal alreadyCounted)
         {
@@ -437,7 +440,7 @@ namespace TheArqamSchools.Web.Data
                 // Credit: give back what this order used, then use it again on the new total.
                 var available = customer.Credit + o.CreditApplied;
                 var credit = Math.Min(available, newSubtotal);
-                CheckCreditLimit(db, tx, customer, (newSubtotal - credit) - (o.Subtotal - o.CreditApplied), 0m);
+                CheckCreditLimit(db, tx, customer, newSubtotal - o.Subtotal, 0m);
                 db.Execute(@"UPDATE dbo.book_orders SET subtotal = @newSubtotal, credit_applied = @credit, fulfilment = @fulfilment,
                                     delivery_address = @address, edit_count = edit_count + 1, updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId
                              WHERE id = @Id",

@@ -293,6 +293,8 @@ const BOOKS = [
   await admin.click('button:has-text("Save payment")'); await admin.waitForLoadState();
   const balanceOf = async () => money(await admin.locator('tr', { hasText: 'Balance' }).last().locator('td').innerText());
   ok('discount order balance 500', (await balanceOf()) === 500);
+  await admin.click('button:has-text("Mark as collected")'); await admin.waitForLoadState();   // only received books can come back
+  // M2: a refund is only paid beyond what the customer still owes on other orders (owes nothing else here).
   const tooEarly = new Date(Date.now() + 5 * 3600e3 + 3 * 86400e3).toISOString().slice(0, 10);
   await admin.goto(returnUrl); await rq('DEMO Alphabet Book', 2); await admin.fill('#ReturnedOn', tooEarly);
   await admin.click('button:has-text("Record return")'); await admin.waitForLoadState();

@@ -74,7 +74,7 @@
         @if (o.DiscountTotal > 0) { <tr><th scope="row">Discount</th><td>− @BookFormat.Money(o.DiscountTotal)</td></tr> }
         @if (o.CreditApplied > 0) { <tr><th scope="row">Customer credit</th><td>− @BookFormat.Money(o.CreditApplied)</td></tr> }
         <tr><th scope="row">Paid</th><td>− @BookFormat.Money(o.PaidTotal)</td></tr>
-        @if (o.RefundedTotal > 0) { <tr><th scope="row">Refunded</th><td>+ @BookFormat.Money(o.RefundedTotal)</td></tr> }
+        @if (o.RefundedTotal > 0) { <tr><th scope="row">Returned to the customer (credit or refund)</th><td>+ @BookFormat.Money(o.RefundedTotal)</td></tr> }
         <tr class="is-total"><th scope="row">Balance</th><td>@BookFormat.Money(o.Balance)</td></tr>
     </table>
 </section>

@@ -15,7 +15,8 @@ namespace TheArqamSchools.Web.Data
     ///   (discount × value ÷ order subtotal); when the last books of an order come back, the order's remainder is used.
     /// - The value first reduces what is still owed on those orders. Anything beyond that ("excess") either becomes
     ///   the customer's credit (used automatically on the next order) or is paid back. A payback never exceeds the
-    ///   money actually received on those orders; the rest becomes credit. A payback can wait ("refund pending")
+    ///   money actually received on those orders, nor what is left after the customer's other unpaid orders; the rest
+    ///   becomes credit. A payback can wait ("refund pending")
     ///   until the office records how it was paid.
     /// - The books go back into stock. Lock order: the customer's orders (by id), then the customer, then books (by id).
     /// </summary>
@@ -35,7 +36,7 @@ namespace TheArqamSchools.Web.Data
                 var rows = db.Query<dynamic>(@"
                     SELECT l.item_id, l.class_name, l.item_name, l.quantity - l.returned_qty AS available, l.unit_price, o.created_at
                     FROM dbo.book_order_lines l JOIN dbo.book_orders o ON o.id = l.order_id
-                    WHERE o.customer_id = @customerId AND o.stock_taken_at IS NOT NULL AND o.status <> N'cancelled' AND l.quantity > l.returned_qty",
+                    WHERE o.customer_id = @customerId AND o.status IN (N'delivered', N'collected') AND l.quantity > l.returned_qty",
                     new { customerId }).ToList();
                 return rows.GroupBy(r => (Guid)r.item_id).Select(g =>
                 {
@@ -69,13 +70,14 @@ namespace TheArqamSchools.Web.Data
             // 1. Lock the customer's handed-over orders (by id), then the customer.
             var orders = db.Query<BookOrder>(@"SELECT id, order_no, customer_id, status, subtotal, discount_total, credit_applied, paid_total, returned_total, refunded_total, stock_taken_at
                                                FROM dbo.book_orders WITH (UPDLOCK, HOLDLOCK)
-                                               WHERE customer_id = @customerId AND stock_taken_at IS NOT NULL AND status <> N'cancelled' ORDER BY id",
+                                               WHERE customer_id = @customerId AND status <> N'cancelled' ORDER BY id",
                 new { customerId }, tx).ToDictionary(o => o.Id);
             var customer = db.QuerySingleOrDefault<BookCustomer>("SELECT id, name FROM dbo.book_customers WITH (UPDLOCK, HOLDLOCK) WHERE id = @customerId", new { customerId }, tx);
             if (customer == null) throw new BookOrderException("The customer was not found.");
             // A request locks its own row only after the orders and the customer (the lock order), and gives its choice and note.
             if (afterLocks != null) { var cn = afterLocks(); choice = cn.Key == "refund" ? "refund" : "credit"; note = cn.Value; }
-            var orderIds = orders.Keys.ToList();
+            // Only books the customer has received (order delivered or collected) can come back.
+            var orderIds = orders.Values.Where(o => o.Status == "delivered" || o.Status == "collected").Select(o => o.Id).ToList();
             var lines = orderIds.Count == 0 ? new List<LineRow>() : db.Query<LineRow>(@"
                 SELECT l.id, l.order_id, o.order_no, l.item_id, l.class_name, l.item_name, l.unit_price, l.quantity, l.returned_qty, o.created_at
                 FROM dbo.book_order_lines l JOIN dbo.book_orders o ON o.id = l.order_id
@@ -126,7 +128,7 @@ namespace TheArqamSchools.Web.Data
                 for (var i = 0; i < parts.Count; i++)
                 {
                     var lg = parts[i].Key.UnitPrice * parts[i].Value;
-                    var net = i == parts.Count - 1 ? value - spread : (gross == 0 ? 0 : Math.Round(value * lg / gross, 2, MidpointRounding.AwayFromZero));
+                    var net = i == parts.Count - 1 ? Math.Max(0m, value - spread) : (gross == 0 ? 0 : Math.Min(value - spread, Math.Round(value * lg / gross, 2, MidpointRounding.AwayFromZero)));
                     lineNet[parts[i].Key.Id] = (lineNet.ContainsKey(parts[i].Key.Id) ? lineNet[parts[i].Key.Id] : 0) + net;
                     spread += net;
                 }
@@ -135,7 +137,9 @@ namespace TheArqamSchools.Web.Data
                 totalExcess += excess;
                 cashCap += Math.Min(excess, Math.Max(0m, o.PaidTotal - o.RefundedTotal));
             }
-            var refund = choice == "refund" ? Math.Min(totalExcess, cashCap) : 0m;
+            // Money is paid back only beyond what the customer still owes on their other orders; the rest stays as credit.
+            var otherOwed = orders.Values.Where(o => !orderValue.ContainsKey(o.Id) && o.StockTakenAt != null).Sum(o => Math.Max(0m, o.Balance));
+            var refund = choice == "refund" ? Math.Max(0m, Math.Min(cashCap, totalExcess - otherOwed)) : 0m;
             var credit = totalExcess - refund;
 
             // 4. Write the return, its lines, the orders, stock and credit.
