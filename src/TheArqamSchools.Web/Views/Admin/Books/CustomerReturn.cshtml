@@ -1,0 +1,49 @@
+@model IList<TheArqamSchools.Web.Data.BookReturnRepository.Returnable>
+@using TheArqamSchools.Web.Helpers
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    var c = ViewBag.Customer as BookCustomer;
+    var form = ViewBag.Form as System.Collections.Specialized.NameValueCollection;
+    ViewBag.Title = "Return - " + c.Name;
+    var today = DateTime.UtcNow.AddHours(5).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+}
+<p><a href="/admin/books/customer-accounts/@c.Id.ToString("D")">&larr; @c.Name (@c.CustomerLabel)</a></p>
+<div class="admin-page-head"><h1>Record a return</h1></div>
+@if (ViewBag.Error != null) { <div class="admin-alert admin-alert--error" role="alert"><p>@ViewBag.Error</p></div> }
+@if (Model.Count == 0)
+{
+    <section class="admin-card"><p>This customer has no books that can come back (only books from orders that were handed over).</p></section>
+}
+else
+{
+    <form method="post" action="/admin/books/customer-accounts/@c.Id.ToString("D")/return" class="admin-form" novalidate>
+        @Html.AntiForgeryToken()
+        <section class="admin-card">
+            <p class="admin-hint">Type how many of each book come back. They go back into stock. Books are taken from the customer's newest order first, at the price of that order (after its discount).</p>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead><tr><th scope="col">Class</th><th scope="col">Book</th><th scope="col" class="num">With the customer</th><th scope="col" class="num">Price</th><th scope="col" class="num">Coming back</th></tr></thead>
+                    <tbody>
+                        @foreach (var b in Model)
+                        {
+                            var rid = "r_" + b.ItemId.ToString("N");
+                            <tr><td>@b.ClassName</td><td><label for="@rid">@b.ItemName</label></td><td class="num">@b.Available</td><td class="num">@BookFormat.Money(b.UnitPrice)</td>
+                                <td class="num"><input type="number" class="admin-qty" id="@rid" name="@rid" min="0" max="@b.Available" inputmode="numeric" placeholder="0" value="@(form != null ? form[rid] : null)" /></td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <fieldset class="admin-field">
+                <legend>If the customer has paid more than they now owe</legend>
+                <div class="admin-check"><input type="radio" id="ch-credit" name="Choice" value="credit" @(form == null || form["Choice"] != "refund" ? "checked" : null) /><label for="ch-credit"><strong>Keep as credit</strong><span class="admin-hint">Used automatically on the next order.</span></label></div>
+                <div class="admin-check"><input type="radio" id="ch-refund" name="Choice" value="refund" @(form != null && form["Choice"] == "refund" ? "checked" : null) /><label for="ch-refund"><strong>Pay the money back</strong><span class="admin-hint">Shown as "Refund to pay back" until you record how it was paid.</span></label></div>
+            </fieldset>
+            <div class="admin-grid-2">
+                <div class="admin-field"><label for="ReturnedOn">Date</label><input type="date" id="ReturnedOn" name="ReturnedOn" value="@(form != null && !string.IsNullOrEmpty(form["ReturnedOn"]) ? form["ReturnedOn"] : today)" /></div>
+                <div class="admin-field"><label for="ReturnNote">Note (optional)</label><input type="text" id="ReturnNote" name="ReturnNote" maxlength="400" value="@(form != null ? form["ReturnNote"] : null)" /></div>
+            </div>
+            <div class="admin-form-actions"><button type="submit" class="admin-button" data-confirm="Record this return? The books go back into stock.">Record return</button></div>
+        </section>
+    </form>
+}
+<script src="/Scripts/admin-form.js?v=20261120c" defer></script>

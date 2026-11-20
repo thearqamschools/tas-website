@@ -19,10 +19,11 @@ namespace TheArqamSchools.Web.Data
         {
             new[] { "stock", "Stock" }, new[] { "sales-books", "Sales by book and class" }, new[] { "sales-customers", "Sales by customer" },
             new[] { "payments", "Payments received" }, new[] { "unpaid", "Unpaid and part-paid orders" }, new[] { "discounts", "Discounts given" },
-            new[] { "returns", "Returns" }, new[] { "profit", "Profit" }
+            new[] { "returns", "Returns" }, new[] { "profit", "Profit" },
+            new[] { "aging", "Money owed by age (aging)" }, new[] { "campus", "Campus-wise summary" }
         };
 
-        public static bool NeedsDates(string kind) { return kind != "stock" && kind != "unpaid"; }
+        public static bool NeedsDates(string kind) { return kind != "stock" && kind != "unpaid" && kind != "aging"; }
 
         public static ReportTable Build(string kind, DateTime from, DateTime to)
         {
@@ -42,6 +43,8 @@ namespace TheArqamSchools.Web.Data
                     case "discounts": return Discounts(db, from, to, period);
                     case "returns": return Returns(db, from, to, period);
                     case "profit": return Profit(db, fromUtc, toUtc, from, to, period);
+                    case "aging": return Aging(db);
+                    case "campus": return Campus(db, fromUtc, toUtc, from, to, period);
                     default: return null;
                 }
             }
@@ -137,8 +140,8 @@ namespace TheArqamSchools.Web.Data
                 SELECT c.id, c.name, c.mobile, c.campus_name,
                        (SELECT COUNT(*) FROM dbo.book_orders o WHERE o.customer_id = c.id AND o.status <> N'cancelled' AND o.stock_taken_at >= @fromUtc AND o.stock_taken_at < @toUtc) AS orders,
                        (SELECT COALESCE(SUM(o.subtotal), 0) FROM dbo.book_orders o WHERE o.customer_id = c.id AND o.status <> N'cancelled' AND o.stock_taken_at >= @fromUtc AND o.stock_taken_at < @toUtc) AS sales,
-                       (SELECT COALESCE(SUM(rl.quantity * rl.unit_price), 0) FROM dbo.book_return_lines rl JOIN dbo.book_returns r ON r.id = rl.return_id JOIN dbo.book_orders o ON o.id = r.order_id
-                        WHERE o.customer_id = c.id AND r.refunded_on >= @from AND r.refunded_on <= @to) AS returned
+                       (SELECT COALESCE(SUM(rl.quantity * rl.unit_price), 0) FROM dbo.book_return_lines rl JOIN dbo.book_returns r ON r.id = rl.return_id
+                        WHERE r.customer_id = c.id AND r.refunded_on >= @from AND r.refunded_on <= @to) AS returned
                 FROM dbo.book_customers c", new { fromUtc, toUtc, from = from.Date, to = to.Date }).ToList()
                 .Where(r => (int)r.orders > 0 || (decimal)r.returned > 0).OrderByDescending(r => (decimal)r.sales).ToList();
             foreach (var r in rows) t.Rows.Add(new object[] { (string)r.name, Helpers.Mobile.Format((string)r.mobile), (string)r.campus_name, (int)r.orders, (decimal)r.sales, (decimal)r.returned, (decimal)r.sales - (decimal)r.returned });
@@ -212,17 +215,70 @@ namespace TheArqamSchools.Web.Data
         private static ReportTable Returns(System.Data.IDbConnection db, DateTime from, DateTime to, string period)
         {
             var t = new ReportTable { Title = "Returns", Subtitle = period }
-                .Col("Date", "text", 0.9).Col("Return", "text", 0.7).Col("Order", "text", 0.8).Col("Customer", "text", 1.5).Col("Books", "number", 0.6)
-                .Col("Value", "money", 0.9).Col("Paid back", "money", 0.9).Col("Account", "text", 1.1).Col("By", "text", 1.1);
+                .Col("Date", "text", 0.8).Col("Return", "text", 0.6).Col("Customer", "text", 1.5).Col("Orders", "text", 1).Col("Books", "number", 0.5)
+                .Col("Value", "money", 0.8).Col("To credit", "money", 0.8).Col("Paid back", "money", 0.8).Col("Refund", "text", 0.8);
             var rows = db.Query(@"
-                SELECT r.refunded_on, r.return_no, o.order_no, c.name, (SELECT SUM(quantity) FROM dbo.book_return_lines WHERE return_id = r.id) AS books,
-                       r.amount, r.refund_amount, a.name AS account, u.full_name AS by_name
-                FROM dbo.book_returns r JOIN dbo.book_orders o ON o.id = r.order_id JOIN dbo.book_customers c ON c.id = o.customer_id
-                LEFT JOIN dbo.book_accounts a ON a.id = r.refund_account_id LEFT JOIN dbo.users u ON u.id = r.created_by
+                SELECT r.refunded_on, r.return_no, c.name, (SELECT SUM(quantity) FROM dbo.book_return_lines WHERE return_id = r.id) AS books,
+                       r.amount, r.credit_amount, r.refund_amount, r.refund_paid_at,
+                       (SELECT STRING_AGG(x.label, N', ') FROM (SELECT DISTINCT N'BK-' + CAST(o2.order_no AS NVARCHAR(20)) AS label FROM dbo.book_return_lines rl2
+                           JOIN dbo.book_order_lines l2 ON l2.id = rl2.order_line_id JOIN dbo.book_orders o2 ON o2.id = l2.order_id WHERE rl2.return_id = r.id) x) AS orders
+                FROM dbo.book_returns r JOIN dbo.book_customers c ON c.id = r.customer_id
                 WHERE r.refunded_on >= @from AND r.refunded_on <= @to ORDER BY r.refunded_on, r.return_no", new { from = from.Date, to = to.Date }).ToList();
             foreach (var r in rows)
-                t.Rows.Add(new object[] { (DateTime)r.refunded_on, "RN-" + ((long)r.return_no).ToString(CultureInfo.InvariantCulture), BookFormat.OrderLabel((long)r.order_no), (string)r.name, (int)r.books, (decimal)r.amount, (decimal)r.refund_amount, (string)r.account, (string)r.by_name });
-            t.Totals = new object[] { "Total", null, null, null, rows.Sum(r => (int)r.books), rows.Sum(r => (decimal)r.amount), rows.Sum(r => (decimal)r.refund_amount), null, null };
+                t.Rows.Add(new object[] { (DateTime)r.refunded_on, BookFormat.ReturnLabel((long)r.return_no), (string)r.name, (string)r.orders, (int)r.books, (decimal)r.amount,
+                                          (decimal)r.credit_amount, (decimal)r.refund_amount, (decimal)r.refund_amount == 0 ? "" : r.refund_paid_at == null ? "Pending" : "Paid" });
+            t.Totals = new object[] { "Total", null, null, null, rows.Sum(r => (int)r.books), rows.Sum(r => (decimal)r.amount), rows.Sum(r => (decimal)r.credit_amount), rows.Sum(r => (decimal)r.refund_amount), null };
+            return t;
+        }
+
+        /// <summary>What each customer owes, split by how long ago the order was placed (unpaid orders that are not cancelled).</summary>
+        private static ReportTable Aging(System.Data.IDbConnection db)
+        {
+            var t = new ReportTable { Title = "Money owed by age", Subtitle = "On " + DateTime.UtcNow.AddHours(5).ToString("d MMMM yyyy", CultureInfo.InvariantCulture) }
+                .Col("Customer", "text", 1.6).Col("No.", "text", 0.6).Col("Campus", "text", 1.3).Col("Mobile", "text", 0.9)
+                .Col("0-30 days", "money", 0.8).Col("31-60 days", "money", 0.8).Col("61-90 days", "money", 0.8).Col("Over 90", "money", 0.8).Col("Total owed", "money", 0.9);
+            var rows = db.Query(@"
+                SELECT c.name, c.customer_no, c.campus_name, c.mobile, DATEDIFF(day, o.created_at, SYSDATETIMEOFFSET()) AS age,
+                       (o.subtotal - o.returned_total - o.discount_total - o.credit_applied - o.paid_total + o.refunded_total) AS owed
+                FROM dbo.book_orders o JOIN dbo.book_customers c ON c.id = o.customer_id
+                WHERE o.status <> N'cancelled' AND (o.subtotal - o.returned_total - o.discount_total - o.credit_applied - o.paid_total + o.refunded_total) > 0").ToList();
+            var groups = rows.GroupBy(r => new { name = (string)r.name, no = (long)r.customer_no, campus = (string)r.campus_name, mobile = (string)r.mobile })
+                .Select(g => new
+                {
+                    g.Key, A = g.Where(r => (int)r.age <= 30).Sum(r => (decimal)r.owed), B = g.Where(r => (int)r.age > 30 && (int)r.age <= 60).Sum(r => (decimal)r.owed),
+                    C = g.Where(r => (int)r.age > 60 && (int)r.age <= 90).Sum(r => (decimal)r.owed), D = g.Where(r => (int)r.age > 90).Sum(r => (decimal)r.owed), T = g.Sum(r => (decimal)r.owed)
+                }).OrderByDescending(x => x.D).ThenByDescending(x => x.T).ToList();
+            foreach (var x in groups)
+                t.Rows.Add(new object[] { x.Key.name, BookFormat.CustomerLabel(x.Key.no), x.Key.campus, Helpers.Mobile.Format(x.Key.mobile), x.A, x.B, x.C, x.D, x.T });
+            t.Totals = new object[] { "Total", null, null, null, groups.Sum(x => x.A), groups.Sum(x => x.B), groups.Sum(x => x.C), groups.Sum(x => x.D), groups.Sum(x => x.T) };
+            t.Notes.Add("Age is counted from the day the order was placed. Credit is not taken off here; see each customer's account for the balance after credit.");
+            return t;
+        }
+
+        /// <summary>Per campus: customers, orders placed in the period, their value, money received in the period, and what is owed now.</summary>
+        private static ReportTable Campus(System.Data.IDbConnection db, DateTimeOffset fromUtc, DateTimeOffset toUtc, DateTime from, DateTime to, string period)
+        {
+            var t = new ReportTable { Title = "Campus-wise summary", Subtitle = period }
+                .Col("Campus", "text", 1.8).Col("Customers", "number", 0.7).Col("Orders", "number", 0.6).Col("Order value", "money", 1)
+                .Col("Received", "money", 1).Col("Returns", "money", 0.9).Col("Owed now", "money", 1);
+            var rows = db.Query(@"
+                SELECT COALESCE(NULLIF(c.campus_name, N''), N'(no campus)') AS campus, COUNT(DISTINCT c.id) AS customers,
+                       COALESCE(SUM(x.orders), 0) AS orders, COALESCE(SUM(x.value), 0) AS value, COALESCE(SUM(y.received), 0) AS received,
+                       COALESCE(SUM(z.returned), 0) AS returned, COALESCE(SUM(w.owed), 0) AS owed
+                FROM dbo.book_customers c
+                OUTER APPLY (SELECT COUNT(*) AS orders, SUM(o.subtotal) AS value FROM dbo.book_orders o WHERE o.customer_id = c.id AND o.status <> N'cancelled'
+                             AND o.created_at >= @fromUtc AND o.created_at < @toUtc) x
+                OUTER APPLY (SELECT SUM(p.amount) AS received FROM dbo.book_payments p JOIN dbo.book_orders o ON o.id = p.order_id
+                             WHERE o.customer_id = c.id AND p.received_on >= @from AND p.received_on <= @to) y
+                OUTER APPLY (SELECT SUM(r.amount) AS returned FROM dbo.book_returns r WHERE r.customer_id = c.id AND r.refunded_on >= @from AND r.refunded_on <= @to) z
+                OUTER APPLY (SELECT SUM(o.subtotal - o.returned_total - o.discount_total - o.credit_applied - o.paid_total + o.refunded_total) AS owed
+                             FROM dbo.book_orders o WHERE o.customer_id = c.id AND o.status <> N'cancelled') w
+                WHERE c.archived_at IS NULL
+                GROUP BY COALESCE(NULLIF(c.campus_name, N''), N'(no campus)') ORDER BY campus", new { fromUtc, toUtc, from = from.Date, to = to.Date }).ToList();
+            foreach (var r in rows)
+                t.Rows.Add(new object[] { (string)r.campus, (int)r.customers, (int)r.orders, (decimal)r.value, (decimal)r.received, (decimal)r.returned, (decimal)r.owed });
+            t.Totals = new object[] { "Total", rows.Sum(r => (int)r.customers), rows.Sum(r => (int)r.orders), rows.Sum(r => (decimal)r.value), rows.Sum(r => (decimal)r.received),
+                                      rows.Sum(r => (decimal)r.returned), rows.Sum(r => (decimal)r.owed) };
             return t;
         }
 

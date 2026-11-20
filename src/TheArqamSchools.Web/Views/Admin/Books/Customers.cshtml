@@ -9,7 +9,7 @@
 @Html.Partial("~/Views/Admin/Books/_Tabs.cshtml", "customers")
 <form method="get" action="/admin/books/customers" class="admin-search" role="search">
     <label for="q" class="admin-visually-hidden">Search customers</label>
-    <input type="search" id="q" name="q" value="@q" placeholder="Search by mobile, name or campus" maxlength="100" />
+    <input type="search" id="q" name="q" value="@q" placeholder="Search by customer no., mobile, name or campus" maxlength="100" />
     <button type="submit" class="admin-button">Search</button>
     @if (q != null) { <a href="/admin/books/customers">Clear</a> }
 </form>
@@ -25,7 +25,7 @@ else
         {
             <li class="admin-list-item">
                 <a class="admin-list-link" href="/admin/books/customers/@c.Id.ToString("D")">
-                    <span class="admin-list-main"><strong>@c.Name</strong>@if (!c.IsActive) { <span class="admin-status admin-status--spam">Cannot order</span> }</span>
+                    <span class="admin-list-main"><span class="admin-tag admin-tag--no">@c.CustomerLabel</span> <strong>@c.Name</strong>@if (!c.IsActive) { <span class="admin-status admin-status--spam">Cannot order</span> }</span>
                     <span class="admin-list-meta">@Mobile.Format(c.Mobile)@if (!string.IsNullOrEmpty(c.CampusName)) { <text> &middot; @c.CampusName</text> }</span>
                     <span class="admin-list-date">@c.OrderCount @(c.OrderCount == 1 ? "order" : "orders")</span>
                 </a>

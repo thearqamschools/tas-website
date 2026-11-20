@@ -14,12 +14,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex, nofollow" />
     <title>Return note @Model.ReturnLabel | The Arqam Schools</title>
-    <link rel="stylesheet" href="/Content/admin.css?v=20261120e" />
+    <link rel="stylesheet" href="/Content/admin.css?v=20261120f" />
 </head>
 <body class="invoice-page">
     <div class="invoice-tools">
         <button type="button" class="admin-button" onclick="window.print()">Print</button>
-        <a href="/admin/books/orders/@Model.OrderNo#returns">Back to the order</a>
+        <a href="/admin/books/customer-accounts/@Model.CustomerId.ToString("D")?view=returns">Back to the customer account</a>
     </div>
     <main class="invoice">
         <header class="invoice-head">
@@ -32,7 +32,7 @@
             </div>
             <div class="invoice-meta">
                 <p class="invoice-title">RETURN NOTE</p>
-                <p><strong>@Model.ReturnLabel</strong> · Order @BookFormat.OrderLabel(Model.OrderNo)</p>
+                <p><strong>@Model.ReturnLabel</strong>@if (!string.IsNullOrEmpty(Model.OrderLabels)) { <text> &middot; Orders @Model.OrderLabels</text> }</p>
                 <p>Date: @Model.RefundedOn.ToString("d MMMM yyyy", inv)</p>
             </div>
         </header>
@@ -41,11 +41,11 @@
             <div><p class="invoice-label">Received by</p><p>@Model.CreatedByName</p>@if (!string.IsNullOrEmpty(Model.Note)) { <p>@Model.Note</p> }</div>
         </section>
         <table class="invoice-table">
-            <thead><tr><th scope="col">Class</th><th scope="col">Book</th><th scope="col" class="num">Qty</th><th scope="col" class="num">Price</th><th scope="col" class="num">Total</th></tr></thead>
+            <thead><tr><th scope="col">Order</th><th scope="col">Class</th><th scope="col">Book</th><th scope="col" class="num">Qty</th><th scope="col" class="num">Price</th><th scope="col" class="num">Total</th></tr></thead>
             <tbody>
                 @foreach (var l in Model.Lines)
                 {
-                    <tr><td>@l.ClassName</td><td>@l.ItemName</td><td class="num">@l.Quantity</td><td class="num">@BookFormat.Money(l.UnitPrice)</td><td class="num">@BookFormat.Money(l.LineTotal)</td></tr>
+                    <tr><td>@BookFormat.OrderLabel(l.OrderNo)</td><td>@l.ClassName</td><td>@l.ItemName</td><td class="num">@l.Quantity</td><td class="num">@BookFormat.Money(l.UnitPrice)</td><td class="num">@BookFormat.Money(l.LineTotal)</td></tr>
                 }
             </tbody>
         </table>
@@ -54,10 +54,11 @@
             <tr><th scope="row">Value of books returned</th><td>@BookFormat.Money(gross)</td></tr>
             @if (gross > Model.Amount)
             {
-                <tr><th scope="row">Less discount on these books</th><td>− @BookFormat.Money(gross - Model.Amount)</td></tr>
+                <tr><th scope="row">Less discount on these books</th><td>&minus; @BookFormat.Money(gross - Model.Amount)</td></tr>
                 <tr><th scope="row">Value after discount</th><td>@BookFormat.Money(Model.Amount)</td></tr>
             }
-            <tr class="is-total"><th scope="row">Paid back</th><td>@BookFormat.Money(Model.RefundAmount)@if (Model.RefundAmount > 0) { <text> (@(Model.RefundMethod == "bank" ? "bank" : "cash"))</text> }</td></tr>
+            @if (Model.CreditAmount > 0) { <tr><th scope="row">Added to credit (next order)</th><td>@BookFormat.Money(Model.CreditAmount)</td></tr> }
+            <tr class="is-total"><th scope="row">@(Model.RefundPending ? "To be paid back" : "Paid back")</th><td>@BookFormat.Money(Model.RefundAmount)@if (Model.RefundAmount > 0 && !Model.RefundPending) { <text> (@(Model.RefundMethod == "bank" ? "bank" : "cash"))</text> }</td></tr>
         </table>
         <p class="invoice-foot">Signature: ______________________ &nbsp; &nbsp; Customer: ______________________</p>
     </main>

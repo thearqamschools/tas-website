@@ -304,3 +304,23 @@ body.invoice-page { display: block; background: var(--grey); font-family: var(--
 .admin-report-table th, .admin-report-table td, .admin-report-table .num { text-align: center; }
 .admin-report-table td:first-child, .admin-report-table th:first-child { white-space: nowrap; }
 .admin-report-table td { vertical-align: middle; }
+/* Customer accounts (owner's notes, 20 November 2026). */
+.admin-tag--no { margin-left: 0; font-weight: 700; color: var(--blue); background: var(--blue-50); }
+.admin-tag--big { font-size: .875rem; padding: .125rem .5rem; vertical-align: middle; }
+.admin-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .75rem; margin-bottom: 1rem; }
+.admin-summary .admin-stat { text-decoration: none; }
+.admin-stat--owed .admin-stat-value { color: var(--red, #dc2626); }
+.admin-stat--ok .admin-stat-value { color: var(--success); }
+.admin-subtabs { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; }
+.admin-subtabs a { padding: .375rem .875rem; border: 1px solid var(--line); border-radius: 999px; background: var(--white); text-decoration: none; color: var(--ink); font-size: .9375rem; }
+.admin-subtabs a[aria-current] { background: var(--blue); border-color: var(--blue); color: #fff; }
+.admin-msg { border: 1px solid var(--line); border-radius: var(--r-md); padding: .875rem 1rem; margin-top: .75rem; background: var(--white); }
+.admin-msg.is-unsent { border-color: #fcd34d; background: #fffdf5; }
+.admin-msg pre { white-space: pre-wrap; font: inherit; margin: .5rem 0; background: var(--grey); padding: .625rem .75rem; border-radius: var(--r-sm); }
+.admin-msg-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.admin-msg-actions form { margin: 0; }
+.admin-todo { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: .75rem; }
+.admin-todo a { display: block; padding: .875rem 1rem; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--white); text-decoration: none; color: var(--ink); }
+.admin-todo a.has-work { border-color: #fcd34d; background: #fffbeb; }
+.admin-todo strong { display: block; font-size: 1.5rem; line-height: 1.2; }
+.admin-ledger td.is-neg { color: var(--success); }

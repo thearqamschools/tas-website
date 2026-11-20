@@ -1,0 +1,24 @@
+@model TheArqamSchools.Web.Data.BookMessageRepository.Message
+@using TheArqamSchools.Web.Helpers
+@{
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var pk = TimeSpan.FromHours(5);
+    var boxId = "msg-" + Model.Id.ToString("N");
+    var back = ViewData["back"] as string;
+}
+<div class="admin-msg@(Model.SentAt == null ? " is-unsent" : "")">
+    <p><strong>@Model.KindLabel</strong>@if (Model.OrderNo.HasValue) { <text> &middot; @BookFormat.OrderLabel(Model.OrderNo.Value)</text> }@if (Model.ReturnNo.HasValue) { <text> &middot; @BookFormat.ReturnLabel(Model.ReturnNo.Value)</text> }
+       &middot; @Model.CreatedAt.ToOffset(pk).ToString("d MMM yyyy, h:mm tt", inv)@if (back == "list") { <text> &middot; @Model.CustomerName (@Mobile.Format(Model.CustomerMobile))</text> }</p>
+    <pre id="@boxId">@Model.Body</pre>
+    <div class="admin-msg-actions">
+        <button type="button" class="admin-button admin-button--secondary" data-copy="@boxId">Copy</button>
+        <a class="admin-button admin-button--secondary" href="@Model.WhatsAppUrl" target="_blank" rel="noopener">Open in WhatsApp</a>
+        <form method="post" action="/admin/books/messages/@Model.Id.ToString("D")/sent">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="sent" value="@(Model.SentAt == null ? "true" : "false")" />
+            @if (back != null) { <input type="hidden" name="back" value="@back" /> }
+            <button type="submit" class="admin-button@(Model.SentAt == null ? "" : " admin-button--secondary")">@(Model.SentAt == null ? "Mark as sent" : "Mark as not sent")</button>
+        </form>
+        @if (Model.SentAt != null) { <span class="admin-muted">Sent @Model.SentAt.Value.ToOffset(pk).ToString("d MMM yyyy, h:mm tt", inv)@(Model.SentByName != null ? " by " + Model.SentByName : "")</span> }
+    </div>
+</div>

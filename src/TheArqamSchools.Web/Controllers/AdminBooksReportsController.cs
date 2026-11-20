@@ -13,39 +13,6 @@ namespace TheArqamSchools.Web.Controllers
     /// <summary>/admin/books part 3: returns (books.payments, because money is paid back) and reports (books.reports).</summary>
     public partial class AdminBooksController
     {
-        /// <summary>POST /admin/books/orders/{no}/returns: a return note; books go back into stock and any overpaid amount is paid back now.</summary>
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [AdminAuthorize("books.payments")]
-        public ActionResult Return(long orderNo)
-        {
-            var o = BookRepository.Order(orderNo);
-            if (o == null) return HttpNotFound();
-            var form = Request.Unvalidated.Form;
-            var qty = new Dictionary<Guid, int>();
-            foreach (var key in form.AllKeys.Where(k => k != null && k.StartsWith("r_", StringComparison.Ordinal)))
-            {
-                Guid id;
-                int n;
-                var raw = (form[key] ?? "").Trim();
-                if (!Guid.TryParse(key.Substring(2), out id) || raw.Length == 0) continue;
-                if (!int.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture, out n))
-                    return OrderView(o, null, null, "Please enter whole numbers in the return boxes.");
-                qty[id] = n;
-            }
-            Guid account;
-            var accountId = Guid.TryParse(form["ReturnAccountId"], out account) ? account : (Guid?)null;
-            var on = ParseDate(form["ReturnedOn"]) ?? DateTime.UtcNow.Add(PakistanTime).Date;
-            var note = Trim(form["ReturnNote"]);
-            if (note != null && note.Length > 400) return OrderView(o, null, null, "The note can be at most 400 characters.");
-            try
-            {
-                var no = BookReturnRepository.RecordReturn(orderNo, qty, form["ReturnMethod"] == "bank" ? "bank" : "cash", accountId, on, note, AdminAuth.Current(HttpContext).Id);
-                return Redirect("/admin/books/orders/" + orderNo.ToString(CultureInfo.InvariantCulture) + "?notice=returned&rn=" + no.ToString(CultureInfo.InvariantCulture) + "#returns");
-            }
-            catch (BookOrderException ex) { return OrderView(BookRepository.Order(orderNo), null, null, ex.Message); }
-        }
-
         /// <summary>GET /admin/books/returns/{no}: the printable return note.</summary>
         [HttpGet]
         public ActionResult ReturnNote(long returnNo)

@@ -96,6 +96,7 @@ namespace TheArqamSchools.Web.Data
                 if (moved > 0)
                     AuditLog.Write(db, tx, actorId, "update", "book_orders", sub.OrderId.ToString(),
                         new { order_no = sub.OrderNo, status_from = "new", status_to = "checked", via = "customer payment confirmed" });
+                BookMessageRepository.ForOrder(db, tx, sub.OrderId, "payment_received", sub.Amount);
                 AuditLog.Write(db, tx, actorId, "update", "book_payment_submissions", id.ToString(),
                     new { order_no = sub.OrderNo, status = "confirmed", payment_id = paymentId, amount = sub.Amount, order_confirmed = moved > 0 });
                 tx.Commit();
@@ -116,6 +117,8 @@ namespace TheArqamSchools.Web.Data
                 db.Execute(@"UPDATE dbo.book_payment_submissions SET status = N'rejected', reject_reason = @reason, reviewed_by = @actorId, reviewed_at = SYSDATETIMEOFFSET()
                              WHERE id = @id", new { reason, actorId, id }, tx);
                 AuditLog.Write(db, tx, actorId, "update", "book_payment_submissions", id.ToString(), new { status = "rejected", reason });
+                var amount = db.ExecuteScalar<decimal>("SELECT amount FROM dbo.book_payment_submissions WHERE id = @id", new { id }, tx);
+                BookMessageRepository.ForOrder(db, tx, orderId.Value, "payment_not_accepted", amount, reason);
                 tx.Commit();
             }
         }

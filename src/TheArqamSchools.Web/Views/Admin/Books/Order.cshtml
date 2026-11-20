@@ -221,40 +221,7 @@
             </table>
         </div>
     }
-    @if (Model.CanPay && o.StockTakenAt.HasValue && o.Status != "cancelled" && o.Lines.Any(l => l.Quantity > l.ReturnedQty))
-    {
-        <h3 class="admin-subhead">Record a return</h3>
-        <p class="admin-hint">Type how many of each book come back. They go back into stock. If the customer has paid more than the new total, that amount is paid back now (it is worked out for you).</p>
-        <form method="post" action="/admin/books/orders/@o.OrderNo/returns" class="admin-form" novalidate>
-            @Html.AntiForgeryToken()
-            <div class="admin-table-wrap">
-                <table class="admin-table">
-                    <thead><tr><th scope="col">Book</th><th scope="col" class="num">Taken</th><th scope="col" class="num">Already back</th><th scope="col" class="num">Price</th><th scope="col" class="num">Coming back</th></tr></thead>
-                    <tbody>
-                        @foreach (var l in o.Lines.Where(l => l.Quantity > l.ReturnedQty))
-                        {
-                            var rid = "r_" + l.Id.ToString("N");
-                            <tr><td><label for="@rid">@l.ClassName – @l.ItemName</label></td><td class="num">@l.Quantity</td><td class="num">@l.ReturnedQty</td><td class="num">@BookFormat.Money(l.UnitPrice)</td>
-                                <td class="num"><input type="number" class="admin-qty" id="@rid" name="@rid" min="0" max="@(l.Quantity - l.ReturnedQty)" inputmode="numeric" placeholder="0" /></td></tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-            <div class="admin-grid-2">
-                <div class="admin-field">
-                    <label for="ReturnMethod">Pay back by (if anything is due)</label>
-                    <select id="ReturnMethod" name="ReturnMethod" data-account-filter="ReturnAccountId"><option value="cash">Cash</option><option value="bank">Bank transfer</option></select>
-                </div>
-                <div class="admin-field">
-                    <label for="ReturnAccountId">From account</label>
-                    <select id="ReturnAccountId" name="ReturnAccountId"><option value="">Choose…</option>@foreach (var a in Model.Accounts) { <option value="@a.Id.ToString("D")" data-kind="@a.Kind">@(a.Kind == "bank" ? "Bank" : "Cash"): @a.Name</option> }</select>
-                </div>
-                <div class="admin-field"><label for="ReturnedOn">Date</label><input type="date" id="ReturnedOn" name="ReturnedOn" value="@DateTime.UtcNow.AddHours(5).ToString("yyyy-MM-dd", inv)" /></div>
-                <div class="admin-field"><label for="ReturnNote">Note (optional)</label><input type="text" id="ReturnNote" name="ReturnNote" maxlength="400" /></div>
-            </div>
-            <div><button type="submit" class="admin-button" data-confirm="Record this return? The books go back into stock.">Record return</button></div>
-        </form>
-    }
+    <p class="admin-hint">Returns are recorded per customer, because the books may come from several orders: <a href="/admin/books/customer-accounts/@o.CustomerId.ToString("D")/return">Record a return for @o.CustomerName</a>.</p>
 </section>
 
 @if (o.Edits != null && o.Edits.Count > 0)
@@ -272,7 +239,7 @@
         </ul>
     </section>
 }
-<script src="/Scripts/admin-form.js?v=20261120b" defer></script>
+<script src="/Scripts/admin-form.js?v=20261120c" defer></script>
 @functions {
     static IEnumerable<string> EditLines(string json)
     {

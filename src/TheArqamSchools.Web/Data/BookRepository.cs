@@ -184,7 +184,7 @@ namespace TheArqamSchools.Web.Data
 
         // ---- Customers ----------------------------------------------------------------
 
-        private const string CustomerColumns = @"c.id, c.mobile, c.name, c.campus_name, c.address, c.credit, c.is_active,
+        private const string CustomerColumns = @"c.id, c.mobile, c.name, c.campus_name, c.address, c.credit, c.is_active, c.customer_no, c.credit_limit, c.credit_days,
             (SELECT COUNT(*) FROM dbo.book_orders o WHERE o.customer_id = c.id) AS order_count";
 
         public static IList<BookCustomer> Customers(string q)
@@ -192,9 +192,9 @@ namespace TheArqamSchools.Web.Data
             using (var db = Db.Open())
                 return db.Query<BookCustomer>(
                     "SELECT TOP (500) " + CustomerColumns + " FROM dbo.book_customers c WHERE c.archived_at IS NULL" +
-                    (string.IsNullOrEmpty(q) ? "" : " AND (c.mobile LIKE @like ESCAPE '\\' OR c.name LIKE @like ESCAPE '\\' OR c.campus_name LIKE @like ESCAPE '\\')") +
+                    (string.IsNullOrEmpty(q) ? "" : " AND (c.mobile LIKE @like ESCAPE '\\' OR c.name LIKE @like ESCAPE '\\' OR c.campus_name LIKE @like ESCAPE '\\' OR CAST(c.customer_no AS NVARCHAR(20)) = @no)") +
                     " ORDER BY c.name",
-                    new { like = "%" + CampusRepository.EscapeLike(q ?? "") + "%" }).ToList();
+                    new { like = "%" + CampusRepository.EscapeLike(q ?? "") + "%", no = (q ?? "").Trim().TrimStart('C', 'c', '-') }).ToList();
         }
 
         public static int CustomerCount()
@@ -231,19 +231,19 @@ namespace TheArqamSchools.Web.Data
                 object before = null;
                 if (isNew)
                     f.Id = db.ExecuteScalar<Guid>(@"
-                        INSERT INTO dbo.book_customers (mobile, name, campus_name, address, is_active, created_by, updated_by)
-                        OUTPUT inserted.id VALUES (@Mobile, @Name, @CampusName, @Address, @IsActive, @actorId, @actorId)",
-                        new { f.Mobile, f.Name, f.CampusName, f.Address, f.IsActive, actorId }, tx);
+                        INSERT INTO dbo.book_customers (mobile, name, campus_name, address, is_active, credit_limit, credit_days, created_by, updated_by)
+                        OUTPUT inserted.id VALUES (@Mobile, @Name, @CampusName, @Address, @IsActive, @CreditLimit, @CreditDays, @actorId, @actorId)",
+                        new { f.Mobile, f.Name, f.CampusName, f.Address, f.IsActive, f.CreditLimit, f.CreditDays, actorId }, tx);
                 else
                 {
-                    before = db.QuerySingleOrDefault("SELECT mobile, name, campus_name, address, is_active FROM dbo.book_customers WITH (UPDLOCK) WHERE id = @Id", new { f.Id }, tx);
+                    before = db.QuerySingleOrDefault("SELECT mobile, name, campus_name, address, is_active, credit_limit, credit_days FROM dbo.book_customers WITH (UPDLOCK) WHERE id = @Id", new { f.Id }, tx);
                     db.Execute(@"
                         UPDATE dbo.book_customers SET mobile = @Mobile, name = @Name, campus_name = @CampusName, address = @Address, is_active = @IsActive,
-                               updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId
-                        WHERE id = @Id AND archived_at IS NULL", new { f.Id, f.Mobile, f.Name, f.CampusName, f.Address, f.IsActive, actorId }, tx);
+                               credit_limit = @CreditLimit, credit_days = @CreditDays, updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId
+                        WHERE id = @Id AND archived_at IS NULL", new { f.Id, f.Mobile, f.Name, f.CampusName, f.Address, f.IsActive, f.CreditLimit, f.CreditDays, actorId }, tx);
                 }
                 AuditLog.Write(db, tx, actorId, isNew ? "insert" : "update", "book_customers", f.Id.ToString(),
-                    new { before, after = new { f.Mobile, f.Name, f.CampusName, f.Address, f.IsActive } });
+                    new { before, after = new { f.Mobile, f.Name, f.CampusName, f.Address, f.IsActive, f.CreditLimit, f.CreditDays } });
                 tx.Commit();
                 return f.Id;
             }
@@ -305,7 +305,7 @@ namespace TheArqamSchools.Web.Data
             using (var tx = db.BeginTransaction(IsolationLevel.ReadCommitted))
             {
                 var customer = db.QuerySingleOrDefault<BookCustomer>(
-                    "SELECT id, mobile, name, campus_name, address, credit, is_active FROM dbo.book_customers WITH (UPDLOCK, HOLDLOCK) WHERE id = @customerId AND archived_at IS NULL",
+                    "SELECT id, mobile, name, campus_name, address, credit, is_active, customer_no, credit_limit, credit_days FROM dbo.book_customers WITH (UPDLOCK, HOLDLOCK) WHERE id = @customerId AND archived_at IS NULL",
                     new { customerId }, tx);
                 if (customer == null || !customer.IsActive) throw new BookOrderException("This customer cannot order at the moment. Please contact the office.");
                 if (fulfilment == "delivery" && string.IsNullOrWhiteSpace(customer.Address))
@@ -315,6 +315,7 @@ namespace TheArqamSchools.Web.Data
                 CheckStock(items, wanted, null);
                 var subtotal = wanted.Sum(w => items[w.Key].SalePrice * w.Value);
                 var credit = Math.Min(customer.Credit, subtotal);
+                CheckCreditLimit(db, tx, customer, subtotal - credit, 0m);
 
                 var orderNo = db.ExecuteScalar<long>("SELECT NEXT VALUE FOR dbo.book_order_no_seq", null, tx);
                 var orderId = db.ExecuteScalar<Guid>(@"
@@ -333,9 +334,25 @@ namespace TheArqamSchools.Web.Data
                     db.Execute("UPDATE dbo.book_customers SET credit = credit - @credit, updated_at = SYSDATETIMEOFFSET() WHERE id = @customerId", new { credit, customerId }, tx);
                 AuditLog.Write(db, tx, actorId, "insert", "book_orders", orderId.ToString(),
                     new { order_no = orderNo, customer_id = customerId, fulfilment, subtotal, credit_applied = credit, by_customer = byCustomer, lines = wanted });
+                BookMessageRepository.ForOrder(db, tx, orderId, "order_placed");
                 tx.Commit();
                 return orderNo;
             }
+        }
+
+        /// <summary>
+        /// Owner's rule (20 November 2026): a customer with a credit limit may not owe more than the limit. What they
+        /// owe = the balance of all their orders that are not cancelled, less their credit; the new amount is added
+        /// (for an edit, the increase). The customer row is already locked by the caller, so two orders cannot race.
+        /// </summary>
+        internal static void CheckCreditLimit(IDbConnection db, IDbTransaction tx, BookCustomer customer, decimal adding, decimal alreadyCounted)
+        {
+            if (!customer.CreditLimit.HasValue || adding <= 0) return;
+            var owed = db.ExecuteScalar<decimal>(@"SELECT COALESCE(SUM(subtotal - returned_total - discount_total - credit_applied - paid_total + refunded_total), 0)
+                                                   FROM dbo.book_orders WHERE customer_id = @Id AND status <> N'cancelled'", new { customer.Id }, tx) - customer.Credit;
+            if (owed - alreadyCounted + adding > customer.CreditLimit.Value)
+                throw new BookOrderException("This order would take the amount owed above the credit limit of " + BookFormat.Money(customer.CreditLimit.Value)
+                    + " (owed now: " + BookFormat.Money(Math.Max(0m, owed)) + "). Please pay first or contact the office.");
         }
 
         /// <summary>
@@ -361,6 +378,7 @@ namespace TheArqamSchools.Web.Data
                 db.Execute(@"INSERT INTO dbo.book_order_edits (order_id, changes, old_subtotal, new_subtotal, by_customer, by_user)
                              VALUES (@Id, @changes, @Subtotal, @Subtotal, 1, NULL)", new { o.Id, changes, o.Subtotal }, tx);
                 AuditLog.Write(db, tx, null, "update", "book_orders", o.Id.ToString(), new { order_no = orderNo, status_from = o.Status, status_to = "cancelled", by_customer = true, credit_returned = o.CreditApplied });
+                BookMessageRepository.ForOrder(db, tx, o.Id, "order_cancelled");
                 tx.Commit();
             }
         }
@@ -384,7 +402,7 @@ namespace TheArqamSchools.Web.Data
                 if (o == null || (customerId.HasValue && o.CustomerId != customerId.Value)) throw new BookOrderException("The order was not found.");
                 if (customerId.HasValue ? !o.CustomerCanEdit : !o.OfficeCanEdit)
                     throw new BookOrderException("This order can no longer be changed, because a payment has been sent or the office has confirmed it. Please contact the office.");
-                var customer = db.QuerySingle<BookCustomer>("SELECT id, address, credit FROM dbo.book_customers WITH (UPDLOCK, HOLDLOCK) WHERE id = @CustomerId", new { o.CustomerId }, tx);
+                var customer = db.QuerySingle<BookCustomer>("SELECT id, address, credit, credit_limit FROM dbo.book_customers WITH (UPDLOCK, HOLDLOCK) WHERE id = @CustomerId", new { o.CustomerId }, tx);
                 if (fulfilment == "delivery" && string.IsNullOrWhiteSpace(customer.Address))
                     throw new BookOrderException("There is no delivery address for this number. Please choose Pick up, or ask the office to add your address.");
 
@@ -419,6 +437,7 @@ namespace TheArqamSchools.Web.Data
                 // Credit: give back what this order used, then use it again on the new total.
                 var available = customer.Credit + o.CreditApplied;
                 var credit = Math.Min(available, newSubtotal);
+                CheckCreditLimit(db, tx, customer, (newSubtotal - credit) - (o.Subtotal - o.CreditApplied), 0m);
                 db.Execute(@"UPDATE dbo.book_orders SET subtotal = @newSubtotal, credit_applied = @credit, fulfilment = @fulfilment,
                                     delivery_address = @address, edit_count = edit_count + 1, updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId
                              WHERE id = @Id",

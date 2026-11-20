@@ -51,6 +51,13 @@ namespace TheArqamSchools.Web.Models
         public decimal Credit { get; set; }
         public bool IsActive { get; set; }
         public int OrderCount { get; set; }
+        /// <summary>Customer number (Database/27), shown as C-1001.</summary>
+        public long CustomerNo { get; set; }
+        /// <summary>Most the customer may owe at once (null = no limit).</summary>
+        public decimal? CreditLimit { get; set; }
+        /// <summary>Days a handed-over order may stay unpaid before it shows as overdue (null = not tracked).</summary>
+        public int? CreditDays { get; set; }
+        public string CustomerLabel { get { return BookFormat.CustomerLabel(CustomerNo); } }
     }
 
     public class BookOrderLine
@@ -168,6 +175,8 @@ namespace TheArqamSchools.Web.Models
         }
 
         public static string OrderLabel(long orderNo) { return "BK-" + orderNo.ToString(System.Globalization.CultureInfo.InvariantCulture); }
+        public static string CustomerLabel(long customerNo) { return customerNo > 0 ? "C-" + customerNo.ToString(System.Globalization.CultureInfo.InvariantCulture) : ""; }
+        public static string ReturnLabel(long returnNo) { return "RN-" + returnNo.ToString(System.Globalization.CultureInfo.InvariantCulture); }
 
         public static string Money(decimal amount)
         {
@@ -255,6 +264,14 @@ namespace TheArqamSchools.Web.Models
 
         [StringLength(400, ErrorMessage = "The address can be at most 400 characters.")]
         public string Address { get; set; }
+
+        [Range(typeof(decimal), "0", "99999999", ErrorMessage = "Please enter the credit limit in rupees, or leave it empty.")]
+        public decimal? CreditLimit { get; set; }
+
+        [Range(0, 3650, ErrorMessage = "Please enter the credit days (0 to 3650), or leave it empty.")]
+        public int? CreditDays { get; set; }
+
+        public long CustomerNo { get; set; }
 
         public bool IsActive { get; set; }
     }
@@ -387,12 +404,20 @@ namespace TheArqamSchools.Web.Models
     {
         public Guid Id { get; set; }
         public long ReturnNo { get; set; }
-        public Guid OrderId { get; set; }
-        public long OrderNo { get; set; }
+        public Guid? OrderId { get; set; }
+        public long? OrderNo { get; set; }
+        public Guid CustomerId { get; set; }
+        public long CustomerNo { get; set; }
         public string CustomerName { get; set; }
         public string CustomerMobile { get; set; }
         public decimal Amount { get; set; }
         public decimal RefundAmount { get; set; }
+        /// <summary>Part of the return's money that went to the customer's credit (Database/27).</summary>
+        public decimal CreditAmount { get; set; }
+        public DateTimeOffset? RefundPaidAt { get; set; }
+        /// <summary>The orders the returned books came from, for example "BK-1004, BK-1006".</summary>
+        public string OrderLabels { get; set; }
+        public bool RefundPending { get { return RefundAmount > 0 && RefundPaidAt == null; } }
         public string RefundMethod { get; set; }
         public string AccountName { get; set; }
         public DateTime RefundedOn { get; set; }
@@ -405,10 +430,29 @@ namespace TheArqamSchools.Web.Models
 
     public class BookReturnLine
     {
+        public long OrderNo { get; set; }
+        public decimal? NetAmount { get; set; }
         public string ClassName { get; set; }
         public string ItemName { get; set; }
         public int Quantity { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal LineTotal { get { return UnitPrice * Quantity; } }
+    }
+
+    public class BookCustomerAccountViewModel
+    {
+        public BookCustomer Customer { get; set; }
+        public TheArqamSchools.Web.Data.BookCustomerAccountRepository.Summary Summary { get; set; }
+        public string View { get; set; }
+        public DateTime? From { get; set; }
+        public DateTime? To { get; set; }
+        public string Session { get; set; }
+        public TheArqamSchools.Web.Infrastructure.ReportTable Report { get; set; }
+        public IList<TheArqamSchools.Web.Data.BookMessageRepository.Message> Messages { get; set; }
+        public IList<BookReturn> PendingRefunds { get; set; }
+        public IList<BookAccount> Accounts { get; set; }
+        public bool CanPay { get; set; }
+        public bool CanOrders { get; set; }
+        public string Notice { get; set; }
     }
 }

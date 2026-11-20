@@ -1,0 +1,118 @@
+@model BookCustomerAccountViewModel
+@using System.Globalization
+@using TheArqamSchools.Web.Helpers
+@using TheArqamSchools.Web.Infrastructure
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    var c = Model.Customer;
+    var s = Model.Summary;
+    ViewBag.Title = c.Name + " - account";
+    var inv = CultureInfo.InvariantCulture;
+    var baseUrl = "/admin/books/customer-accounts/" + c.Id.ToString("D");
+    Func<DateTime?, string> d = x => x.HasValue ? x.Value.ToString("yyyy-MM-dd", inv) : "";
+    var range = (Model.From.HasValue ? "&from=" + d(Model.From) : "") + (Model.To.HasValue ? "&to=" + d(Model.To) : "");
+    var error = Request.Unvalidated.QueryString["error"];
+    var today = DateTime.UtcNow.AddHours(5);
+    var firstSession = 2025;
+    var lastSession = today.Month >= 4 ? today.Year : today.Year - 1;
+}
+<p><a href="/admin/books/customer-accounts">&larr; Customer Accounts</a></p>
+<div class="admin-page-head">
+    <h1>@c.Name <span class="admin-tag admin-tag--big">@c.CustomerLabel</span></h1>
+    <div class="admin-status-buttons">
+        @if (Model.CanPay) { <a class="admin-button" href="@baseUrl/return">Record a return</a> }
+        <a class="admin-button admin-button--secondary" href="/admin/books/customers/@c.Id.ToString("D")">Customer details</a>
+    </div>
+</div>
+<p class="admin-muted">@Mobile.Format(c.Mobile)@if (!string.IsNullOrEmpty(c.CampusName)) { <text> &middot; @c.CampusName</text> }@if (c.CreditLimit.HasValue) { <text> &middot; Credit limit @BookFormat.Money(c.CreditLimit.Value)</text> }@if (c.CreditDays.HasValue) { <text> &middot; @c.CreditDays credit days</text> }</p>
+@if (Model.Notice != null) { <div class="admin-alert admin-alert--success" role="status"><p>@Model.Notice</p></div> }
+@if (!string.IsNullOrEmpty(error)) { <div class="admin-alert admin-alert--error" role="alert"><p>@error</p></div> }
+
+<section class="admin-summary" aria-label="Summary">
+    <div class="admin-stat@(s.Balance > 0 ? " admin-stat--owed" : " admin-stat--ok")"><p class="admin-stat-value">@BookFormat.Money(s.Balance)</p><p class="admin-stat-label">@(s.Balance >= 0 ? "Balance owed by the customer" : "Balance owed to the customer")</p></div>
+    <div class="admin-stat"><p class="admin-stat-value">@s.Orders</p><p class="admin-stat-label">Orders: @s.Completed completed, @s.Open open, @s.Cancelled cancelled</p></div>
+    <div class="admin-stat"><p class="admin-stat-value">@BookFormat.Money(s.OrderTotal)</p><p class="admin-stat-label">Value of orders</p></div>
+    <div class="admin-stat"><p class="admin-stat-value">@BookFormat.Money(s.Paid)</p><p class="admin-stat-label">Paid@(s.Discounts > 0 ? " (discounts " + BookFormat.Money(s.Discounts) + ")" : "")</p></div>
+    <div class="admin-stat"><p class="admin-stat-value">@BookFormat.Money(s.Returned)</p><p class="admin-stat-label">Returns (@s.BooksReturned of @s.BooksTaken books)</p></div>
+    <div class="admin-stat"><p class="admin-stat-value">@BookFormat.Money(s.Credit)</p><p class="admin-stat-label">Credit for the next order</p></div>
+    @if (s.RefundPending > 0) { <div class="admin-stat admin-stat--owed"><p class="admin-stat-value">@BookFormat.Money(s.RefundPending)</p><p class="admin-stat-label">Refund to pay back</p></div> }
+    @if (s.Overdue > 0) { <div class="admin-stat admin-stat--owed"><p class="admin-stat-value">@BookFormat.Money(s.Overdue)</p><p class="admin-stat-label">Overdue (@s.OverdueOrders @(s.OverdueOrders == 1 ? "order" : "orders"))</p></div> }
+</section>
+
+@if (Model.PendingRefunds.Count > 0 && Model.CanPay)
+{
+    <section class="admin-card" id="refunds">
+        <h2>Refunds to pay back</h2>
+        @foreach (var r in Model.PendingRefunds)
+        {
+            <form method="post" action="/admin/books/returns/@r.ReturnNo/refund" class="admin-form admin-inline-row admin-refund-row">
+                @Html.AntiForgeryToken()
+                <p><strong>@r.ReturnLabel</strong> &middot; @BookFormat.Money(r.RefundAmount) &middot; @r.RefundedOn.ToString("d MMM yyyy", inv)</p>
+                <div class="admin-field"><label for="m-@r.ReturnNo">Paid by</label><select id="m-@r.ReturnNo" name="RefundMethod" data-account-filter="a-@r.ReturnNo"><option value="cash">Cash</option><option value="bank">Bank transfer</option></select></div>
+                <div class="admin-field"><label for="a-@r.ReturnNo">From account</label><select id="a-@r.ReturnNo" name="RefundAccountId"><option value="">Choose&hellip;</option>@foreach (var a in Model.Accounts) { <option value="@a.Id.ToString("D")" data-kind="@a.Kind">@a.Name</option> }</select></div>
+                <button type="submit" class="admin-button" data-confirm="Record @BookFormat.Money(r.RefundAmount) as paid back for @r.ReturnLabel?">Mark as paid</button>
+            </form>
+        }
+    </section>
+}
+
+<nav class="admin-subtabs" aria-label="Account views">
+    @foreach (var v in new[] { new[] { "ledger", "Ledger" }, new[] { "orders", "Orders" }, new[] { "payments", "Payments" }, new[] { "returns", "Returns" }, new[] { "messages", "Messages" } })
+    {
+        <a href="@baseUrl?view=@v[0]@range" @(Model.View == v[0] ? "aria-current=page" : null)>@v[1]</a>
+    }
+</nav>
+
+@if (Model.View != "messages")
+{
+    <form method="get" action="@baseUrl" class="admin-filters admin-no-print">
+        <input type="hidden" name="view" value="@Model.View" />
+        <div class="admin-field"><label for="session">Session</label>
+            <select id="session" name="session"><option value="">Any dates</option>
+                @for (var y = lastSession; y >= firstSession; y--) { <option value="@y" @(Model.Session == y.ToString(inv) ? "selected" : null)>@y-@((y + 1) % 100) (1 Apr - 31 Mar)</option> }
+            </select></div>
+        <div class="admin-field"><label for="from">From</label><input type="date" id="from" name="from" value="@d(Model.From)" /></div>
+        <div class="admin-field"><label for="to">To</label><input type="date" id="to" name="to" value="@d(Model.To)" /></div>
+        <div class="admin-filters-actions"><button type="submit" class="admin-button">Show</button> <a href="@baseUrl?view=@Model.View">Clear</a></div>
+    </form>
+    <div class="admin-status-buttons admin-no-print admin-report-actions">
+        <button type="button" class="admin-button admin-button--secondary" onclick="window.print()">Print</button>
+        <a class="admin-button admin-button--secondary" href="@baseUrl?view=@Model.View@range&amp;format=pdf">Download PDF</a>
+        <a class="admin-button admin-button--secondary" href="@baseUrl?view=@Model.View@range&amp;format=xlsx">Download Excel</a>
+    </div>
+    var t = Model.Report;
+    <section class="admin-report">
+        <h2>The Arqam Schools &ndash; @t.Title</h2>
+        <p class="admin-muted">@t.Subtitle</p>
+        <div class="admin-table-wrap">
+            <table class="admin-table admin-report-table admin-ledger">
+                <thead><tr>@foreach (var col in t.Columns) { <th scope="col">@col.Name</th> }</tr></thead>
+                <tbody>
+                    @if (t.Rows.Count == 0) { <tr><td colspan="@t.Columns.Count">Nothing to show for these dates.</td></tr> }
+                    @foreach (var r in t.Rows)
+                    {
+                        <tr>@for (var i = 0; i < t.Columns.Count; i++) { <td>@ReportTable.Format(i < r.Length ? r[i] : null, t.Columns[i].Kind)</td> }</tr>
+                    }
+                </tbody>
+                @if (t.Totals != null)
+                {
+                    <tfoot><tr class="admin-report-total">@for (var i = 0; i < t.Columns.Count; i++) { <td>@ReportTable.Format(i < t.Totals.Length ? t.Totals[i] : null, t.Columns[i].Kind)</td> }</tr></tfoot>
+                }
+            </table>
+        </div>
+        @foreach (var n in t.Notes) { <p class="admin-hint">@n</p> }
+    </section>
+}
+else
+{
+    <section class="admin-card" id="messages">
+        <h2>Messages</h2>
+        <p class="admin-muted">Ready-made messages for this customer. Copy one into WhatsApp or SMS (or open WhatsApp with it), then mark it as sent. Nothing is sent by the website.</p>
+        @if (Model.Messages.Count == 0) { <p>No messages yet.</p> }
+        @foreach (var m in Model.Messages)
+        {
+            @Html.Partial("~/Views/Admin/Books/_Message.cshtml", m)
+        }
+    </section>
+}
+<script src="/Scripts/admin-form.js?v=20261120c" defer></script>

@@ -237,7 +237,7 @@ namespace TheArqamSchools.Web.Controllers
         {
             var c = BookRepository.Customer(id);
             if (c == null) return HttpNotFound();
-            var f = new BookCustomerForm { Id = c.Id, Mobile = Mobile.Format(c.Mobile), Name = c.Name, CampusName = c.CampusName, Address = c.Address, IsActive = c.IsActive };
+            var f = new BookCustomerForm { Id = c.Id, Mobile = Mobile.Format(c.Mobile), Name = c.Name, CampusName = c.CampusName, Address = c.Address, IsActive = c.IsActive, CreditLimit = c.CreditLimit, CreditDays = c.CreditDays, CustomerNo = c.CustomerNo };
             return CustomerView(f, false, c, notice == "saved" ? "Saved." : null);
         }
 
@@ -259,8 +259,17 @@ namespace TheArqamSchools.Web.Controllers
             f.Address = Trim(posted["Address"]);
             f.Mobile = Trim(posted["Mobile"]);
             f.IsActive = (posted["IsActive"] ?? "").Split(',').Contains("true");
+            var limitRaw = (posted["CreditLimit"] ?? "").Replace(",", "").Trim();
+            var daysRaw = (posted["CreditDays"] ?? "").Trim();
+            decimal limit; int days;
+            var limitBad = limitRaw.Length > 0 && !decimal.TryParse(limitRaw, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out limit);
+            var daysBad = daysRaw.Length > 0 && !int.TryParse(daysRaw, NumberStyles.None, CultureInfo.InvariantCulture, out days);
+            f.CreditLimit = limitRaw.Length > 0 && !limitBad ? Math.Round(decimal.Parse(limitRaw, CultureInfo.InvariantCulture), 2) : (decimal?)null;
+            f.CreditDays = daysRaw.Length > 0 && !daysBad ? int.Parse(daysRaw, CultureInfo.InvariantCulture) : (int?)null;
             ModelState.Clear();
             TryValidateModel(f);
+            if (limitBad) ModelState.AddModelError("CreditLimit", "Please enter the credit limit in rupees, or leave it empty.");
+            if (daysBad) ModelState.AddModelError("CreditDays", "Please enter the credit days (0 to 3650), or leave it empty.");
             var mobile = Mobile.Normalize(f.Mobile);
             if (f.Mobile != null && mobile == null) ModelState.AddModelError("Mobile", "Please enter a Pakistani mobile number like 0300-1234567.");
             if (mobile != null && BookRepository.MobileTaken(mobile, f.Id)) ModelState.AddModelError("Mobile", "Another customer already has this mobile number.");

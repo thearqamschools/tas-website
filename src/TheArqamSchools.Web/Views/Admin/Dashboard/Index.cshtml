@@ -28,6 +28,21 @@
     </section>
 }
 
+@if (Model.BookToDo != null)
+{
+    var td = Model.BookToDo;
+<section class="admin-card" aria-labelledby="todo-h">
+    <h2 id="todo-h">Books: work to do</h2>
+    <div class="admin-todo">
+        <a class="@(td.NewOrders > 0 ? "has-work" : null)" href="/admin/books/orders?status=new"><strong>@td.NewOrders</strong>New orders</a>
+        <a class="@(td.PaymentsToCheck > 0 ? "has-work" : null)" href="/admin/books/orders?payment=tocheck"><strong>@td.PaymentsToCheck</strong>Payments to check</a>
+        <a class="@(td.RefundsPending > 0 ? "has-work" : null)" href="/admin/books/customer-accounts"><strong>@td.RefundsPending</strong>Refunds to pay back</a>
+        <a class="@(td.ReturnRequests + td.ReturnsToReceive > 0 ? "has-work" : null)" href="/admin/books/return-requests"><strong>@(td.ReturnRequests + td.ReturnsToReceive)</strong>Return requests</a>
+        <a class="@(td.MessagesToSend > 0 ? "has-work" : null)" href="/admin/books/messages"><strong>@td.MessagesToSend</strong>Messages to send</a>
+        <a class="@(td.OverdueCustomers > 0 ? "has-work" : null)" href="/admin/books/reports?kind=aging"><strong>@td.OverdueCustomers</strong>Customers overdue</a>
+    </div>
+</section>
+}
 @if (Model.Books != null)
 {
     <section class="admin-stats" aria-label="Book orders">

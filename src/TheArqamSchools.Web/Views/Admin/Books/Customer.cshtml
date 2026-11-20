@@ -12,7 +12,7 @@
     var pk = TimeSpan.FromHours(5);
 }
 <p><a href="/admin/books/customers">&larr; Customers</a></p>
-<div class="admin-page-head"><h1>@(isNew ? "Add customer" : Model.Name)</h1></div>
+<div class="admin-page-head"><h1>@(isNew ? "Add customer" : Model.Name)@if (stored != null) { <span class="admin-tag admin-tag--big">@stored.CustomerLabel</span> }</h1>@if (stored != null) { <a class="admin-button admin-button--secondary" href="/admin/books/customer-accounts/@stored.Id.ToString("D")">Customer account &amp; ledger</a> }</div>
 @if (ViewBag.Notice != null) { <div class="admin-alert admin-alert--success" role="status"><p>@ViewBag.Notice</p></div> }
 @Html.Partial("~/Views/Admin/_Errors.cshtml")
 <form method="post" action="@action" class="admin-form" novalidate>
@@ -40,6 +40,18 @@
                 <textarea id="Address" name="Address" rows="2" maxlength="400" aria-describedby="Address-hint Address-error" @ro>@Model.Address</textarea>
                 <p class="admin-hint" id="Address-hint">Used as the delivery address. Without an address the customer can only choose Pick up.</p>
                 @Html.ValidationMessage("Address", null, new { id = "Address-error", @class = "admin-field-error" })
+            </div>
+            <div class="admin-field">
+                <label for="CreditLimit">Credit limit, Rs. (optional)</label>
+                <input type="text" inputmode="decimal" id="CreditLimit" name="CreditLimit" value="@(Model.CreditLimit.HasValue ? Model.CreditLimit.Value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : "")" aria-describedby="CreditLimit-hint CreditLimit-error" @ro />
+                <p class="admin-hint" id="CreditLimit-hint">The most this customer may owe at one time. A new order above it is refused until they pay. Empty = no limit.</p>
+                @Html.ValidationMessage("CreditLimit", null, new { id = "CreditLimit-error", @class = "admin-field-error" })
+            </div>
+            <div class="admin-field">
+                <label for="CreditDays">Credit days (optional)</label>
+                <input type="text" inputmode="numeric" id="CreditDays" name="CreditDays" value="@Model.CreditDays" aria-describedby="CreditDays-hint CreditDays-error" @ro />
+                <p class="admin-hint" id="CreditDays-hint">Days after the books are handed over before an unpaid order shows as overdue. Empty = not tracked.</p>
+                @Html.ValidationMessage("CreditDays", null, new { id = "CreditDays-error", @class = "admin-field-error" })
             </div>
         </div>
         <div class="admin-check">

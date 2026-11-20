@@ -5,6 +5,19 @@
 }
 <div class="admin-page-head"><h1>Books</h1><a href="/books" target="_blank" rel="noopener">Open the order page</a></div>
 @Html.Partial("~/Views/Admin/Books/_Tabs.cshtml", "home")
+@{ var td = TheArqamSchools.Web.Data.BookCustomerAccountRepository.GetToDo(); }
+<section class="admin-card" aria-labelledby="todo-h">
+    <h2 id="todo-h">Books: work to do</h2>
+    <div class="admin-todo">
+        <a class="@(td.NewOrders > 0 ? "has-work" : null)" href="/admin/books/orders?status=new"><strong>@td.NewOrders</strong>New orders</a>
+        <a class="@(td.PaymentsToCheck > 0 ? "has-work" : null)" href="/admin/books/orders?payment=tocheck"><strong>@td.PaymentsToCheck</strong>Payments to check</a>
+        <a class="@(td.RefundsPending > 0 ? "has-work" : null)" href="/admin/books/customer-accounts"><strong>@td.RefundsPending</strong>Refunds to pay back</a>
+        <a class="@(td.ReturnRequests + td.ReturnsToReceive > 0 ? "has-work" : null)" href="/admin/books/return-requests"><strong>@(td.ReturnRequests + td.ReturnsToReceive)</strong>Return requests</a>
+        <a class="@(td.MessagesToSend > 0 ? "has-work" : null)" href="/admin/books/messages"><strong>@td.MessagesToSend</strong>Messages to send</a>
+        <a class="@(td.OverdueCustomers > 0 ? "has-work" : null)" href="/admin/books/reports?kind=aging"><strong>@td.OverdueCustomers</strong>Customers overdue</a>
+    </div>
+</section>
+
 <div class="admin-stats">
     <a class="admin-stat" href="/admin/books/items"><p class="admin-stat-value">@ViewBag.ItemCount</p><p class="admin-stat-label">books on sale</p></a>
     <a class="admin-stat" href="/admin/books/customers"><p class="admin-stat-value">@ViewBag.CustomerCount</p><p class="admin-stat-label">customers</p></a>

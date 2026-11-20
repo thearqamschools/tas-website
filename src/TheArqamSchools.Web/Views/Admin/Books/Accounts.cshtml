@@ -1,9 +1,9 @@
 @model IList<BookAccount>
 @{
     Layout = "~/Views/Admin/_AdminLayout.cshtml";
-    ViewBag.Title = "Book accounts";
+    ViewBag.Title = "Payment accounts";
 }
-<div class="admin-page-head"><h1>Accounts</h1></div>
+<div class="admin-page-head"><h1>Payment Accounts</h1></div>
 @Html.Partial("~/Views/Admin/Books/_Tabs.cshtml", "accounts")
 <p class="admin-muted">The cash and bank accounts that book payments go into. Hide an account that is no longer used; it stays on old payments.</p>
 @if (ViewBag.Notice != null) { <div class="admin-alert admin-alert--success" role="status"><p>@ViewBag.Notice</p></div> }

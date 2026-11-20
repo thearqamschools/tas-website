@@ -1,0 +1,45 @@
+@model IList<TheArqamSchools.Web.Data.BookCustomerAccountRepository.CustomerRow>
+@using TheArqamSchools.Web.Helpers
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = "Customer accounts";
+    var q = ViewBag.Query as string;
+}
+<div class="admin-page-head"><h1>Customer Accounts</h1></div>
+@Html.Partial("~/Views/Admin/Books/_Tabs.cshtml", "customer-accounts")
+<form method="get" action="/admin/books/customer-accounts" class="admin-search" role="search">
+    <label for="q" class="admin-visually-hidden">Search customers</label>
+    <input type="search" id="q" name="q" value="@q" placeholder="Customer no. (1001), mobile, name or campus" maxlength="60" />
+    <button type="submit" class="admin-button">Search</button>
+    @if (q != null) { <a href="/admin/books/customer-accounts">Clear</a> }
+</form>
+@if (Model.Count == 0)
+{
+    <section class="admin-card"><p>No customers found.</p></section>
+}
+else
+{
+    <p class="admin-muted">@Model.Count.ToString("N0") customers. Click a customer to see the account, ledger and reports.</p>
+    <div class="admin-table-wrap admin-table-wrap--fit">
+        <table class="admin-table admin-table--orders">
+            <thead><tr><th scope="col">No.</th><th scope="col">Customer</th><th scope="col">Campus</th><th scope="col" class="num">Orders</th><th scope="col" class="num">Credit limit</th><th scope="col" class="num">Owed</th><th scope="col" class="num">Credit</th><th scope="col" class="num">Balance</th><th scope="col" class="num">Overdue</th></tr></thead>
+            <tbody>
+                @foreach (var c in Model)
+                {
+                    <tr class="admin-row-link@(c.IsActive ? null : " is-muted")" data-href="/admin/books/customer-accounts/@c.Id.ToString("D")">
+                        <td><a href="/admin/books/customer-accounts/@c.Id.ToString("D")"><strong>@BookFormat.CustomerLabel(c.CustomerNo)</strong></a></td>
+                        <td>@c.Name<span class="admin-cell-sub">@Mobile.Format(c.Mobile)</span></td>
+                        <td>@c.CampusName</td>
+                        <td class="num">@c.Orders</td>
+                        <td class="num">@(c.CreditLimit.HasValue ? BookFormat.Money(c.CreditLimit.Value) : "")@if (c.CreditDays.HasValue) { <span class="admin-cell-sub">@c.CreditDays days</span> }</td>
+                        <td class="num">@BookFormat.Money(c.Owed)</td>
+                        <td class="num">@(c.Credit > 0 ? BookFormat.Money(c.Credit) : "")</td>
+                        <td class="num@(c.Balance > 0 ? " is-low" : "")">@BookFormat.Money(c.Balance)</td>
+                        <td class="num@(c.Overdue > 0 ? " is-low" : "")">@(c.Overdue > 0 ? BookFormat.Money(c.Overdue) : "")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+<script src="/Scripts/admin-form.js?v=20261120c" defer></script>

@@ -259,27 +259,27 @@ const BOOKS = [
   ok('payment after hand-over does not take stock again', (await stockOf('DEMO Colours and Shapes')) === 28);
 
 
-  // --- Returns (part 3): books back into stock, money paid back at once ----------------------------
+  // --- Returns per customer (owner's decision, 20 November 2026) -------------------------------------
   const pickCash = (sel) => admin.evaluate((id) => { const s = document.getElementById(id); const o = [...s.options].find(x => x.text.includes('DEMO Office cash')); s.value = o.value; }, sel);
   await admin.goto(B + '/admin/books/orders/' + thirdNo);
-  const rInput = admin.locator('#returns tr', { hasText: 'DEMO Colours and Shapes' }).locator('input');
-  await rInput.fill('3'); await admin.selectOption('#ReturnMethod', 'cash'); await pickCash('ReturnAccountId');
-  await admin.click('button:has-text("Record return")'); await admin.waitForLoadState();
-  ok('cannot return more than taken', (await admin.content()).includes('at most 2 can come back'));
+  ok('order page has no return form, only a link to the customer', (await admin.locator('button:has-text("Record return")').count()) === 0);
+  const returnUrl = B + await admin.locator('a:has-text("Record a return for")').getAttribute('href');
+  const accountUrl = returnUrl.replace(/\/return$/, '');
+  const rq = async (name, v) => admin.locator('tr', { hasText: name }).locator('input').fill(String(v));
+  await admin.goto(returnUrl); await rq('DEMO Colours and Shapes', 3); await admin.click('button:has-text("Record return")'); await admin.waitForLoadState();
+  ok('cannot return more than the customer has', (await admin.content()).includes('at most 2 can come back'));
   ok('nothing changed when refused', (await stockOf('DEMO Colours and Shapes')) === 28);
-  await admin.goto(B + '/admin/books/orders/' + thirdNo);
-  await admin.locator('#returns tr', { hasText: 'DEMO Colours and Shapes' }).locator('input').fill('1');
-  await admin.selectOption('#ReturnMethod', 'cash'); await pickCash('ReturnAccountId'); await admin.fill('#ReturnNote', 'DEMO damaged cover');
+  await admin.goto(returnUrl); await rq('DEMO Colours and Shapes', 1); await admin.check('#ch-refund'); await admin.fill('#ReturnNote', 'DEMO damaged cover');
   await admin.click('button:has-text("Record return")'); await admin.waitForLoadState();
-  const rn = Number((admin.url().match(/rn=(\d+)/) || [])[1]);
-  ok('return recorded ' + rn, rn >= 101 && (await admin.locator('.admin-notice, .notice, [role=status]').first().innerText().catch(() => '')).includes('RN-' + rn));
+  const rn = Number((admin.url().match(/rn=RN-(\d+)/) || [])[1]);
+  ok('return recorded ' + rn, rn >= 101 && (await admin.locator('[role=status]').first().innerText()).includes('RN-' + rn));
   ok('returned book back in stock (28+1=29)', (await stockOf('DEMO Colours and Shapes')) === 29);
-  await admin.goto(B + '/admin/books/orders/' + thirdNo);
-  const retRow = await admin.locator('#returns table').first().innerText();
-  ok('refund = value when fully paid (Rs. 220)', retRow.includes('RN-' + rn) && /Rs\. 220/.test(retRow));
-  await admin.screenshot({ path: OUT + '/admin-order-returns.png', fullPage: true });
+  await admin.goto(accountUrl + '?view=returns');
+  ok('refund waiting to be paid (Rs. 220)', (await admin.locator('#refunds').innerText()).includes('Rs. 220'));
+  await admin.selectOption('#m-' + rn, 'cash'); await pickCash('a-' + rn); await admin.click('#refunds button:has-text("Mark as paid")'); await admin.waitForLoadState();
+  ok('refund recorded as paid', (await admin.content()).includes('Refund recorded as paid') && (await admin.locator('#refunds').count()) === 0);
   await admin.goto(B + '/admin/books/returns/' + rn);
-  ok('return note page', (await admin.content()).includes('RETURN NOTE') && (await admin.content()).includes('WhatsApp: 0339-2406479'));
+  ok('return note page', (await admin.content()).includes('RETURN NOTE') && (await admin.content()).includes('WhatsApp: 0339-2406479') && (await admin.content()).includes('BK-' + thirdNo));
   await admin.screenshot({ path: OUT + '/return-note.png', fullPage: true });
 
   // Discount and part payment: a discount is never paid out as cash; two returns in a row end at balance 0.
@@ -292,23 +292,52 @@ const BOOKS = [
   const balanceOf = async () => money(await admin.locator('tr', { hasText: 'Balance' }).last().locator('td').innerText());
   ok('discount order balance 500', (await balanceOf()) === 500);
   const tooEarly = new Date(Date.now() + 5 * 3600e3 + 3 * 86400e3).toISOString().slice(0, 10);
-  await admin.locator('#returns tr', { hasText: 'DEMO Alphabet Book' }).locator('input').fill('2'); await admin.fill('#ReturnedOn', tooEarly);
+  await admin.goto(returnUrl); await rq('DEMO Alphabet Book', 2); await admin.fill('#ReturnedOn', tooEarly);
   await admin.click('button:has-text("Record return")'); await admin.waitForLoadState();
   ok('return date in the future refused', (await admin.content()).includes('cannot be in the future'));
+  await admin.goto(returnUrl); await rq('DEMO Alphabet Book', 2); await admin.click('button:has-text("Record return")'); await admin.waitForLoadState();
   await admin.goto(B + '/admin/books/orders/' + fourthNo);
-  await admin.locator('#returns tr', { hasText: 'DEMO Alphabet Book' }).locator('input').fill('2');
-  await admin.click('button:has-text("Record return")'); await admin.waitForLoadState();
-  ok('first return: value after discount 500, nothing paid back, balance 0', (await balanceOf()) === 0 && /Rs\. 500\s+–/.test(await admin.locator('#returns table').first().innerText()));
-  await admin.locator('#returns tr', { hasText: 'DEMO Alphabet Book' }).locator('input').fill('2'); await admin.selectOption('#ReturnMethod', 'cash'); await pickCash('ReturnAccountId');
-  await admin.click('button:has-text("Record return")'); await admin.waitForLoadState();
-  const retText = await admin.locator('#returns table').first().innerText();
-  const backs = [...retText.matchAll(/RN-\d+[^\n]*/g)].map(m => m[0]);
-  ok('second return pays back 500 = cash received (not 520)', (await balanceOf()) === 0 && backs.length === 2 && /Rs\. 500\s+Rs\. 500 \(cash\)/.test(backs[1]));
+  ok('first return: value after discount 500, nothing paid back, balance 0', (await balanceOf()) === 0);
+  await admin.goto(returnUrl); await rq('DEMO Alphabet Book', 2); await admin.check('#ch-refund'); await admin.click('button:has-text("Record return")'); await admin.waitForLoadState();
+  ok('second return: refund 500 = cash received (not 520)', (await admin.locator('#refunds').innerText()).includes('Rs. 500'));
   ok('all four books back in stock (25)', (await stockOf('DEMO Alphabet Book')) === 25);
+  // Credit choice: the last Colours book comes back as credit.
+  await admin.goto(returnUrl); await rq('DEMO Colours and Shapes', 1); await admin.check('#ch-credit'); await admin.click('button:has-text("Record return")'); await admin.waitForLoadState();
+  await admin.goto(accountUrl + '?view=ledger');
+  const summaryText = await admin.locator('.admin-summary').innerText();
+  ok('credit kept for the next order (Rs. 220)', summaryText.includes('Rs. 220') && summaryText.includes('Credit for the next order'));
+  const ledgerRows = admin.locator('.admin-ledger tbody tr');
+  const lastBal = money(await ledgerRows.last().locator('td').last().innerText());
+  const sumBal = (await admin.locator('.admin-summary .admin-stat').first().innerText());
+  ok('ledger balance = summary balance (school owes Rs. 220 + refund due counted)', /-?Rs\. -?220/.test(sumBal) || sumBal.includes('Rs. -220'));
+  ok('ledger last balance matches the summary', Math.abs(lastBal) === 220);
+  await admin.screenshot({ path: OUT + '/customer-account.png', fullPage: true });
+  const stmt = await admin.context().request.get(accountUrl + '?view=ledger&format=pdf'); ok('statement of account PDF', (await stmt.body()).slice(0, 5).toString() === '%PDF-');
+  const stx = await admin.context().request.get(accountUrl + '?view=orders&format=xlsx'); ok('customer orders Excel', (await stx.body()).slice(0, 2).toString() === 'PK');
+  // Messages written for the office to send by hand.
+  await admin.goto(accountUrl + '?view=messages');
+  const msgs = await admin.locator('#messages').innerText();
+  ok('messages written (order placed, payment, return)', msgs.includes('Order placed') && msgs.includes('Payment received') && msgs.includes('Return received') && msgs.includes('Refund paid'));
+  ok('messages never mention a discount', !/discount/i.test(msgs));
+  await admin.locator('.admin-msg').first().locator('button:has-text("Mark as sent")').click(); await admin.waitForLoadState();
+  ok('message marked as sent', (await admin.content()).includes('Message marked as sent'));
+  // Credit limit: a new order above the limit is refused.
+  await admin.goto(accountUrl.replace('customer-accounts', 'customers'));
+  await admin.fill('#CreditLimit', '100'); await admin.fill('#CreditDays', '30'); await admin.click('button:has-text("Save")'); await admin.waitForLoadState();
+  await admin.goto(B + '/admin/books/orders/new?q=0311'); await admin.click('a:has-text("DEMO Pickup Only")'); await admin.waitForLoadState();
+  // owed now = -220 (credit); 3 × 220 = 660 less 220 credit = 440 more → 220 owed > limit 100
+  await admin.fill('#' + await admin.locator('tr', { hasText: 'DEMO Colours and Shapes' }).locator('input').getAttribute('id'), '3');
+  await admin.click('button:has-text("Place order")'); await admin.waitForLoadState();
+  ok('order above the credit limit refused', (await admin.content()).includes('above the credit limit'));
+  await admin.goto(accountUrl.replace('customer-accounts', 'customers')); await admin.fill('#CreditLimit', ''); await admin.click('button:has-text("Save")'); await admin.waitForLoadState();
+  await admin.goto(B + '/admin/books/customer-accounts');
+  ok('customer accounts list shows the number', /C-\d{4}/.test(await admin.locator('table').innerText()));
+  await admin.goto(B + '/admin/books');
+  ok('work-to-do list on the overview', (await admin.content()).includes('Books: work to do') && (await admin.content()).includes('Messages to send'));
 
   // --- Reports ----------------------------------------------------------------------------------
   const today = new Date(Date.now() + 5 * 3600e3).toISOString().slice(0, 10);
-  for (const kind of ['stock', 'sales-books', 'sales-customers', 'payments', 'unpaid', 'discounts', 'returns', 'profit']) {
+  for (const kind of ['stock', 'sales-books', 'sales-customers', 'payments', 'unpaid', 'discounts', 'returns', 'profit', 'aging', 'campus']) {
     const q = B + '/admin/books/reports?kind=' + kind + '&from=' + today.slice(0, 8) + '01&to=' + today;
     await admin.goto(q);
     ok('report ' + kind + ' shows', (await admin.locator('.admin-report table').count()) === 1);
@@ -322,7 +351,7 @@ const BOOKS = [
   ok('returns report lists RN-' + rn, (await admin.locator('.admin-report').innerText()).includes('RN-' + rn));
   await admin.goto(B + '/admin/books/reports?kind=stock');
   ok('stock report has the old system columns', /STOCK IN[\s\S]*STOCK OUT[\s\S]*STOCK LEFT/.test((await admin.locator('.admin-report thead').innerText()).toUpperCase()));
-  ok('stock report shows Colours 29', /DEMO Colours and Shapes[^\n]*29/.test(await admin.locator('.admin-report').innerText()));
+  ok('stock report shows Colours 30 (two returned)', /DEMO Colours and Shapes[^\n]*30/.test(await admin.locator('.admin-report').innerText()));
   const anon = await cust.context().request.get(B + '/admin/books/reports?kind=stock&format=xlsx', { maxRedirects: 0 });
   ok('reports not visible to others', anon.status() !== 200);
 

@@ -168,6 +168,7 @@ namespace TheArqamSchools.Web.Data
                                  FROM dbo.book_customers c JOIN dbo.book_orders o ON o.customer_id = c.id WHERE o.id = @Id;
                                  UPDATE dbo.book_orders SET credit_applied = 0 WHERE id = @Id;", new { o.Id }, tx);
                 AuditLog.Write(db, tx, actorId, "update", "book_orders", o.Id.ToString(), new { order_no = orderNo, status_from = o.Status, status_to = status, stock_taken = tookStock });
+                BookMessageRepository.ForOrder(db, tx, o.Id, status == "checked" ? "order_confirmed" : "order_" + status);
                 tx.Commit();
                 return null;
             }
@@ -193,6 +194,8 @@ namespace TheArqamSchools.Web.Data
                                                       WHERE o.order_no = @orderNo AND s.status = N'pending'", new { orderNo }, tx);
                 if (waiting > 0) throw new BookOrderException("A payment sent by the customer is waiting under \"Payments sent by the customer\". Please confirm or reject it first, so the same money is not counted twice.");
                 var id = RecordPaymentTx(db, tx, orderNo, p, receiptPath, receiptMime, actorId);
+                if (p.Amount > 0)
+                    BookMessageRepository.ForOrder(db, tx, db.ExecuteScalar<Guid>("SELECT id FROM dbo.book_orders WHERE order_no = @orderNo", new { orderNo }, tx), "payment_received", p.Amount);
                 tx.Commit();
                 return id;
             }

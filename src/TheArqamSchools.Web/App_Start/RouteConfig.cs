@@ -121,7 +121,12 @@ namespace TheArqamSchools.Web
             routes.MapRoute("AdminBookInvoicePdf", "admin/books/orders/{orderNo}/invoice.pdf", new { controller = "AdminBooks", action = "InvoicePdf" }, new { orderNo = bookNo });
             routes.MapRoute("AdminBookInvoice", "admin/books/orders/{orderNo}/invoice", new { controller = "AdminBooks", action = "Invoice" }, new { orderNo = bookNo });
             routes.MapRoute("AdminBookOrderEdit", "admin/books/orders/{orderNo}/edit", new { controller = "AdminBooks", action = "EditOrder" }, new { orderNo = bookNo });
-            routes.MapRoute("AdminBookOrderReturn", "admin/books/orders/{orderNo}/returns", new { controller = "AdminBooks", action = "Return" }, new { orderNo = bookNo, httpMethod = postOnly });
+            routes.MapRoute("AdminBookRefund", "admin/books/returns/{returnNo}/refund", new { controller = "AdminBooks", action = "PayRefund" }, new { returnNo = bookNo, httpMethod = postOnly });
+            routes.MapRoute("AdminBookCustomerAccounts", "admin/books/customer-accounts", new { controller = "AdminBooks", action = "CustomerAccounts" });
+            routes.MapRoute("AdminBookCustomerReturn", "admin/books/customer-accounts/{id}/return", new { controller = "AdminBooks", action = "CustomerReturn" }, new { id = new GuidRouteConstraint() });
+            routes.MapRoute("AdminBookCustomerAccount", "admin/books/customer-accounts/{id}", new { controller = "AdminBooks", action = "CustomerAccount" }, new { id = new GuidRouteConstraint() });
+            routes.MapRoute("AdminBookMessageSent", "admin/books/messages/{id}/sent", new { controller = "AdminBooks", action = "MessageSent" }, new { id = new GuidRouteConstraint(), httpMethod = postOnly });
+            routes.MapRoute("AdminBookMessages", "admin/books/messages", new { controller = "AdminBooks", action = "Messages" });
             routes.MapRoute("AdminBookReturnNote", "admin/books/returns/{returnNo}", new { controller = "AdminBooks", action = "ReturnNote" }, new { returnNo = bookNo });
             routes.MapRoute("AdminBookReports", "admin/books/reports", new { controller = "AdminBooks", action = "Reports" });
             routes.MapRoute("AdminBookOrder", "admin/books/orders/{orderNo}", new { controller = "AdminBooks", action = "Order" }, new { orderNo = bookNo });
