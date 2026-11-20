@@ -122,6 +122,7 @@
     <Compile Include="Data\AdminUserRepository.cs" />
     <Compile Include="Data\BookRepository.cs" />
     <Compile Include="Data\BookOrderRepository.cs" />
+    <Compile Include="Data\BookPaymentSubmissionRepository.cs" />
     <Compile Include="Data\BookReports.cs" />
     <Compile Include="Data\BookReturnRepository.cs" />
     <Compile Include="Data\CampusAdminRepository.cs" />

@@ -25,7 +25,7 @@
                     <li class="books-card books-history-item">
                         <div class="books-history-head">
                             <a class="books-order-link" href="/books/orders/@o.OrderNo">@o.OrderLabel</a>
-                            <span class="books-status books-status-@o.Status">@BookFormat.StatusLabel(o.Status)</span>
+                            <span class="books-status books-status-@o.Status">@o.CustomerStatusLabel</span>
                         </div>
                         <p class="books-history-meta">@o.CreatedAt.ToOffset(pk).ToString("d MMMM yyyy", System.Globalization.CultureInfo.InvariantCulture) · @o.Lines.Sum(l => l.Quantity) books · <strong>@BookFormat.Money(o.CustomerTotal)</strong></p>
                         @if (o.CustomerCanEdit) { <p><a href="/books/orders/@o.OrderNo">Change or cancel this order</a></p> }

@@ -141,6 +141,44 @@ namespace TheArqamSchools.Web.Controllers
             return View("~/Views/Books/Orders.cshtml", BookRepository.CustomerOrders(customer.Id));
         }
 
+        /// <summary>
+        /// POST /books/orders/{no}/pay (multipart): the customer has paid into one of the school's bank accounts and
+        /// sends the amount and the receipt. The office checks and confirms it; nothing counts as paid before that.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Pay(long orderNo, string website)
+        {
+            var customer = CurrentCustomer();
+            if (customer == null) return Redirect("/books");
+            if (!string.IsNullOrEmpty(website)) return Redirect("/books");
+            var order = OwnOrder(customer, orderNo);
+            if (order == null) return HttpNotFound();
+            if (!RateLimiter.Allow("books-pay", PageBuilder.ClientKey(Request), 10, TimeSpan.FromHours(1)))
+                return DetailView(customer, order, false, false, false, "Too many payments sent from this network. Please wait and try again, or call the office.");
+            var form = Request.Unvalidated.Form;
+            Guid accountId;
+            decimal amount;
+            var rawAmount = (form["PayAmount"] ?? "").Replace(",", "").Trim();
+            if (!Guid.TryParse(form["PayAccount"], out accountId))
+                return DetailView(customer, order, false, false, false, "Please choose the bank account you paid into.");
+            if (!decimal.TryParse(rawAmount, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out amount) || amount <= 0)
+                return DetailView(customer, order, false, false, false, "Please enter the amount you paid, in rupees.");
+            var file = Request.Files["PayReceipt"];
+            if (file == null || file.ContentLength <= 0)
+                return DetailView(customer, order, false, false, false, "Please attach the receipt (a photo or a PDF).");
+            string path, mime;
+            try { path = ReceiptStore.Save(file.InputStream, file.ContentLength, out mime); }
+            catch (ImageRejectedException ex) { return DetailView(customer, order, false, false, false, ex.Message); }
+            try { BookPaymentSubmissionRepository.Submit(orderNo, customer.Id, accountId, amount, path, mime); }
+            catch (BookOrderException ex)
+            {
+                ReceiptStore.Delete(path);
+                return DetailView(customer, OwnOrder(customer, orderNo), false, false, false, ex.Message);
+            }
+            return Redirect("/books/orders/" + orderNo.ToString(CultureInfo.InvariantCulture) + "?sent=true#payment");
+        }
+
         /// <summary>POST /books/orders/{no}/cancel: the customer cancels their own order while it is still New.</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -159,12 +197,13 @@ namespace TheArqamSchools.Web.Controllers
         }
 
         [HttpGet]
-        public ActionResult Detail(long orderNo, bool placed = false, bool changed = false, bool cancelled = false)
+        public ActionResult Detail(long orderNo, bool placed = false, bool changed = false, bool cancelled = false, bool sent = false)
         {
             var customer = CurrentCustomer();
             if (customer == null) return Redirect("/books");
             var order = OwnOrder(customer, orderNo);
             if (order == null) return HttpNotFound();
+            ViewBag.Sent = sent;
             return DetailView(customer, order, placed, changed, cancelled, null);
         }
 
@@ -175,6 +214,8 @@ namespace TheArqamSchools.Web.Controllers
             ViewBag.Changed = changed;
             ViewBag.Cancelled = cancelled;
             ViewBag.Error = error;
+            ViewBag.Accounts = BookPaymentSubmissionRepository.CustomerAccounts();
+            ViewBag.Submissions = order == null ? new List<BookPaymentSubmission>() : BookPaymentSubmissionRepository.ForOrder(order.Id);
             ViewBag.Meta = Meta();
             return View("~/Views/Books/Detail.cshtml", order);
         }

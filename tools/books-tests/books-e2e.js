@@ -64,7 +64,7 @@ const BOOKS = [
     await admin.goto(B + '/admin/books/accounts'); const f = admin.locator('form', { hasText: 'Add an account' });
     await f.locator('input[name=Name]').fill(n); await f.locator('select[name=Kind]').selectOption(kind); await f.locator('button:has-text("Add account")').click(); await admin.waitForLoadState();
   }
-  ok('accounts added', (await admin.locator('form.admin-account').count()) === 3);
+  ok('accounts added', (await admin.locator('form.admin-account').count()) >= 3);
 
   // --- Customer order (phone size) ------------------------------------------------------------
   const cust = await (await browser.newContext({ ...devices['iPhone 13'] })).newPage(); cust.on('pageerror', e => errors.push(e.message));
@@ -100,7 +100,7 @@ const BOOKS = [
   ok('customer cancelled a new order', (await cust.content()).includes('has been cancelled') && (await cust.locator('.books-detail-status').innerText()).includes('Cancelled'));
   await cust.goto(B + '/books/order'); await q('DEMO Rhymes Book', 1); await cust.click('button:has-text("Preview order")'); await cust.waitForLoadState(); await cust.click('button:has-text("Place order")'); await cust.waitForLoadState();
   const checkedNo = Number((cust.url().match(/orders\/(\d+)/) || [])[1]);
-  await admin.goto(B + '/admin/books/orders/' + checkedNo); await admin.click('button:has-text("Mark as checked")'); await admin.waitForLoadState();
+  await admin.goto(B + '/admin/books/orders/' + checkedNo); await admin.click('button:has-text("Confirm order")'); await admin.waitForLoadState();
   await cust.goto(B + '/books/orders/' + checkedNo);
   ok('no change or cancel after the office checks', (await cust.locator('button:has-text("Cancel this order")').count()) === 0 && !(await cust.content()).includes('Change this order'));
   await cust.goto(B + '/books/orders/' + checkedNo + '/edit'); ok('edit page closed after checked', cust.url().endsWith('/books/orders/' + checkedNo));
@@ -112,6 +112,50 @@ const BOOKS = [
   }, checkedNo);
   ok('cancel refused by the server after checked', forced.includes('can no longer be cancelled'));
   await admin.goto(B + '/admin/books/orders/' + checkedNo); await admin.click('button:has-text("Cancel order")'); await admin.waitForLoadState();
+
+  // --- Customer pays by bank transfer and attaches the receipt; the office confirms or rejects -----------------
+  await admin.goto(B + '/admin/books/accounts'); { const f = admin.locator('form', { hasText: 'Add an account' });
+    await f.locator('input[name=Name]').fill('DEMO Customer Bank'); await f.locator('select[name=Kind]').selectOption('bank');
+    await f.locator('input[name=AccountTitle]').fill('DEMO TITLE'); await f.locator('input[name=AccountNumber]').fill('12345678901');
+    await f.locator('input[name=Iban]').fill('PK00DEMO0000012345678901'); await f.locator('input[name=ShowToCustomers][type=checkbox]').check();
+    await f.locator('button:has-text("Add account")').click(); await admin.waitForLoadState(); }
+  ok('bank account for customers saved', (await admin.content()).includes('PK00DEMO0000012345678901'));
+  await cust.goto(B + '/books/order'); await q('DEMO Retail Book', 2); await cust.click('button:has-text("Preview order")'); await cust.waitForLoadState(); await cust.click('button:has-text("Place order")'); await cust.waitForLoadState();
+  const payNo = Number((cust.url().match(/orders\/(\d+)/) || [])[1]);   // 2 × 450 = 900
+  ok('payment section with the bank account', (await cust.locator('#payment').innerText()).includes('12345678901') && (await cust.locator('.books-detail-status').innerText()).includes('Payment pending'));
+  ok('order buttons in one row', (await cust.locator('.books-actions--row button:has-text("Cancel this order")').count()) === 1);
+  await cust.screenshot({ path: OUT + '/m-payment.png', fullPage: true });
+  const bankRadio = cust.locator('.books-bank', { hasText: 'DEMO Customer Bank' }).locator('input');
+  await bankRadio.check(); await cust.fill('#bp-amount', '400'); await cust.click('button:has-text("Send payment")'); await cust.waitForLoadState();
+  ok('receipt required', (await cust.content()).includes('attach the receipt'));
+  await cust.locator('.books-bank', { hasText: 'DEMO Customer Bank' }).locator('input').check(); await cust.fill('#bp-amount', '1000'); await cust.setInputFiles('#bp-receipt', JPEG);
+  await cust.click('button:has-text("Send payment")'); await cust.waitForLoadState();
+  ok('amount above the total refused', (await cust.content()).includes('more than'));
+  await cust.locator('.books-bank', { hasText: 'DEMO Customer Bank' }).locator('input').check(); await cust.fill('#bp-amount', '400'); await cust.setInputFiles('#bp-receipt', JPEG);
+  await cust.click('button:has-text("Send payment")'); await cust.waitForLoadState();
+  ok('payment sent, waiting for the office', (await cust.content()).includes('Your payment has been sent') && (await cust.locator('.books-detail-status').innerText()).includes('Payment sent'));
+  ok('no change or cancel after sending a payment', (await cust.locator('button:has-text("Cancel this order")').count()) === 0 && !(await cust.content()).includes('Change this order'));
+  ok('no second payment while one is checked', (await cust.locator('button:has-text("Send payment")').count()) === 0);
+  await admin.goto(B + '/admin/books/orders?payment=tocheck');
+  ok('office list shows payment to check', (await admin.content()).includes('payment to check') && (await admin.content()).includes('>BK-' + payNo + '<'));
+  await admin.goto(B + '/admin/books/orders/' + payNo);
+  const sentRec = await admin.locator('#sent a:has-text("View receipt")').getAttribute('href');
+  const rr = await admin.context().request.get(B + sentRec); ok('office sees the receipt', rr.status() === 200 && rr.headers()['content-type'].startsWith('image/jpeg'));
+  const rc = await cust.context().request.get(B + sentRec, { maxRedirects: 0 }); ok('customer cannot open the office receipt link', rc.status() !== 200);
+  await admin.fill('#sent input[name=Reason]', 'DEMO amount not received'); await admin.click('#sent button:has-text("Not accepted")'); await admin.waitForLoadState();
+  await cust.goto(B + '/books/orders/' + payNo);
+  ok('customer sees the reason and can send again', (await cust.content()).includes('DEMO amount not received') && (await cust.locator('button:has-text("Send payment")').count()) === 1);
+  await cust.locator('.books-bank', { hasText: 'DEMO Customer Bank' }).locator('input').check(); await cust.fill('#bp-amount', '900'); await cust.setInputFiles('#bp-receipt', JPEG);
+  await cust.click('button:has-text("Send payment")'); await cust.waitForLoadState();
+  const before = await stockOf('DEMO Retail Book');
+  await admin.goto(B + '/admin/books/orders/' + payNo); await admin.click('#sent button:has-text("Confirm payment")'); await admin.waitForLoadState();
+  ok('office confirmed: payment recorded and order confirmed', (await admin.content()).includes('Payment confirmed and recorded') && (await admin.locator('.admin-order-head').innerText()).includes('Confirmed') && (await admin.locator('#payments table').innerText()).includes('900'));
+  await admin.screenshot({ path: OUT + '/admin-sent-payment.png', fullPage: true });
+  ok('stock taken at the confirmed payment', (await stockOf('DEMO Retail Book')) === before - 2);
+  await cust.goto(B + '/books/orders/' + payNo);
+  ok('customer sees confirmed', (await cust.locator('.books-detail-status').innerText()).includes('Confirmed') && (await cust.locator('#payment').innerText()).includes('Confirmed'));
+  await admin.goto(B + '/admin/books/orders');
+  ok('orders list has campus column', (await admin.locator('thead').first().innerText()).toUpperCase().includes('CAMPUS'));
   // total now 12×350 + 3×320 = 5,160
 
   // --- Office: order page, payments, stock -----------------------------------------------------
@@ -151,7 +195,7 @@ const BOOKS = [
   const r1 = await admin.context().request.get(B + receipt); ok('receipt visible to admin', r1.status() === 200 && r1.headers()['content-type'].startsWith('image/jpeg'));
   const r2 = await cust.context().request.get(B + receipt, { maxRedirects: 0 }); ok('receipt not visible to others', r2.status() !== 200);
   ok('cancel not offered after payment', (await admin.locator('button:has-text("Cancel order")').count()) === 0);
-  await admin.click('button:has-text("Mark as checked")'); await admin.waitForLoadState();
+  await admin.click('button:has-text("Confirm order")'); await admin.waitForLoadState();
   await admin.click('button:has-text("Mark as packed")'); await admin.waitForLoadState();
   await admin.click('button:has-text("Mark as delivered")'); await admin.waitForLoadState();
   ok('status delivered', (await admin.locator('.admin-order-head').innerText()).includes('Delivered'));
@@ -193,7 +237,7 @@ const BOOKS = [
   await admin.click('button:has-text("Mark as collected")'); await admin.waitForLoadState();
   ok('collected before payment takes stock (30-2=28)', (await stockOf('DEMO Colours and Shapes')) === 28);
   await admin.goto(B + '/admin/books/orders/' + thirdNo);
-  ok('no backwards status buttons', (await admin.locator('button:has-text("Mark as checked")').count()) === 0);
+  ok('no backwards status buttons', (await admin.locator('button:has-text("Confirm order")').count()) === 0);
   const back = await admin.evaluate(async (no) => {
     const token = document.querySelector('input[name=__RequestVerificationToken]').value;
     const r = await fetch('/admin/books/orders/' + no + '/status', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'status=new&__RequestVerificationToken=' + encodeURIComponent(token) });

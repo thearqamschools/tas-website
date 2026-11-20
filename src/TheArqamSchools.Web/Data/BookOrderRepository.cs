@@ -29,14 +29,14 @@ namespace TheArqamSchools.Web.Data
         public static IList<BookAccount> Accounts(bool activeOnly)
         {
             using (var db = Db.Open())
-                return db.Query<BookAccount>("SELECT id, name, kind, details, is_active FROM dbo.book_accounts" +
+                return db.Query<BookAccount>("SELECT id, name, kind, details, is_active, account_title, account_number, iban, show_to_customers FROM dbo.book_accounts" +
                                              (activeOnly ? " WHERE is_active = 1" : "") + " ORDER BY kind, name").ToList();
         }
 
         public static BookAccount Account(Guid id)
         {
             using (var db = Db.Open())
-                return db.QuerySingleOrDefault<BookAccount>("SELECT id, name, kind, details, is_active FROM dbo.book_accounts WHERE id = @id", new { id });
+                return db.QuerySingleOrDefault<BookAccount>("SELECT id, name, kind, details, is_active, account_title, account_number, iban, show_to_customers FROM dbo.book_accounts WHERE id = @id", new { id });
         }
 
         public static Guid SaveAccount(BookAccount a, bool isNew, Guid actorId)
@@ -45,14 +45,15 @@ namespace TheArqamSchools.Web.Data
             using (var tx = db.BeginTransaction())
             {
                 if (isNew)
-                    a.Id = db.ExecuteScalar<Guid>(@"INSERT INTO dbo.book_accounts (name, kind, details, is_active, created_by, updated_by)
-                                                    OUTPUT inserted.id VALUES (@Name, @Kind, @Details, @IsActive, @actorId, @actorId)",
-                        new { a.Name, a.Kind, a.Details, a.IsActive, actorId }, tx);
+                    a.Id = db.ExecuteScalar<Guid>(@"INSERT INTO dbo.book_accounts (name, kind, details, is_active, account_title, account_number, iban, show_to_customers, created_by, updated_by)
+                                                    OUTPUT inserted.id VALUES (@Name, @Kind, @Details, @IsActive, @AccountTitle, @AccountNumber, @Iban, @ShowToCustomers, @actorId, @actorId)",
+                        new { a.Name, a.Kind, a.Details, a.IsActive, a.AccountTitle, a.AccountNumber, a.Iban, a.ShowToCustomers, actorId }, tx);
                 else
                     db.Execute(@"UPDATE dbo.book_accounts SET name = @Name, kind = @Kind, details = @Details, is_active = @IsActive,
+                                        account_title = @AccountTitle, account_number = @AccountNumber, iban = @Iban, show_to_customers = @ShowToCustomers,
                                         updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId WHERE id = @Id",
-                        new { a.Id, a.Name, a.Kind, a.Details, a.IsActive, actorId }, tx);
-                AuditLog.Write(db, tx, actorId, isNew ? "insert" : "update", "book_accounts", a.Id.ToString(), new { a.Name, a.Kind, a.Details, a.IsActive });
+                        new { a.Id, a.Name, a.Kind, a.Details, a.IsActive, a.AccountTitle, a.AccountNumber, a.Iban, a.ShowToCustomers, actorId }, tx);
+                AuditLog.Write(db, tx, actorId, isNew ? "insert" : "update", "book_accounts", a.Id.ToString(), new { a.Name, a.Kind, a.Details, a.IsActive, a.AccountTitle, a.AccountNumber, a.Iban, a.ShowToCustomers });
                 tx.Commit();
                 return a.Id;
             }
@@ -67,6 +68,7 @@ namespace TheArqamSchools.Web.Data
             if (f.Payment == "pending") where.Add("o.paid_total = 0 AND o.discount_total = 0 AND o.status <> N'cancelled'");
             else if (f.Payment == "part") where.Add("(o.paid_total > 0 OR o.discount_total > 0) AND " + BalanceSql + " > 0");
             else if (f.Payment == "paid") where.Add("(o.paid_total > 0 OR o.discount_total > 0) AND " + BalanceSql + " <= 0");
+            else if (f.Payment == "tocheck") where.Add("EXISTS (SELECT 1 FROM dbo.book_payment_submissions s WHERE s.order_id = o.id AND s.status = N'pending')");
             else if (f.Payment == "unpaid") where.Add(BalanceSql + " > 0 AND o.status <> N'cancelled'");
             if (f.From.HasValue) where.Add("o.created_at >= @fromUtc");
             if (f.To.HasValue) where.Add("o.created_at < @toUtc");
@@ -82,7 +84,8 @@ namespace TheArqamSchools.Web.Data
                 return db.Query<BookOrder>(@"
                     SELECT TOP (500) o.id, o.order_no, o.customer_id, c.name AS customer_name, c.mobile AS customer_mobile, c.campus_name,
                            o.fulfilment, o.delivery_address, o.status, o.source, o.subtotal, o.discount_total, o.credit_applied, o.paid_total,
-                           o.returned_total, o.refunded_total, o.edit_count, o.stock_taken_at, o.created_at
+                           o.returned_total, o.refunded_total, o.edit_count, o.stock_taken_at, o.created_at,
+                           (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE s.order_id = o.id AND s.status = N'pending') AS pending_payments
                     FROM dbo.book_orders o JOIN dbo.book_customers c ON c.id = o.customer_id" +
                     (where.Count > 0 ? " WHERE " + string.Join(" AND ", where) : "") + " ORDER BY o.created_at DESC",
                     new
@@ -100,7 +103,8 @@ namespace TheArqamSchools.Web.Data
                 return db.QuerySingle<BookCounts>(@"
                     SELECT (SELECT COUNT(*) FROM dbo.book_orders WHERE status = N'new') AS new_orders,
                            (SELECT COUNT(*) FROM dbo.book_orders o WHERE o.status <> N'cancelled' AND " + BalanceSql + @" > 0) AS unpaid_orders,
-                           (SELECT COUNT(*) FROM dbo.book_orders WHERE created_at >= DATEADD(day, -1, SYSDATETIMEOFFSET())) AS last_day");
+                           (SELECT COUNT(*) FROM dbo.book_orders WHERE created_at >= DATEADD(day, -1, SYSDATETIMEOFFSET())) AS last_day,
+                           (SELECT COUNT(*) FROM dbo.book_payment_submissions WHERE status = N'pending') AS payments_to_check");
         }
 
         public static IList<BookPayment> Payments(Guid orderId)
@@ -181,6 +185,16 @@ namespace TheArqamSchools.Web.Data
             using (var db = Db.Open())
             using (var tx = db.BeginTransaction())
             {
+                var id = RecordPaymentTx(db, tx, orderNo, p, receiptPath, receiptMime, actorId);
+                tx.Commit();
+                return id;
+            }
+        }
+
+        /// <summary>Records a payment inside the caller's transaction (also used when the office confirms a payment the customer sent).</summary>
+        internal static Guid RecordPaymentTx(System.Data.IDbConnection db, System.Data.IDbTransaction tx, long orderNo, BookPaymentForm p, string receiptPath, string receiptMime, Guid actorId)
+        {
+            {
                 var o = db.QuerySingleOrDefault<BookOrder>(@"
                     SELECT id, order_no, status, subtotal, discount_total, credit_applied, paid_total, returned_total, refunded_total, stock_taken_at
                     FROM dbo.book_orders WITH (UPDLOCK, HOLDLOCK) WHERE order_no = @orderNo", new { orderNo }, tx);
@@ -213,7 +227,6 @@ namespace TheArqamSchools.Web.Data
                     new { p.Amount, p.Discount, actorId, o.Id }, tx);
                 AuditLog.Write(db, tx, actorId, "insert", "book_payments", id.ToString(),
                     new { order_no = orderNo, p.Amount, p.Discount, p.Method, account_id = p.AccountId, received_on = receivedOn, stock_taken = first, receipt = receiptPath != null });
-                tx.Commit();
                 return id;
             }
         }

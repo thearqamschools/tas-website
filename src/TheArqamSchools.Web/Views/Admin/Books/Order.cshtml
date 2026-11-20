@@ -9,7 +9,7 @@
     var inv = CultureInfo.InvariantCulture;
     var pf = Model.PaymentForm;
     var next = new List<KeyValuePair<string, string>>();
-    if (o.Status == "new") { next.Add(new KeyValuePair<string, string>("checked", "Mark as checked")); }
+    if (o.Status == "new") { next.Add(new KeyValuePair<string, string>("checked", "Confirm order")); }
     if (o.Status == "new" || o.Status == "checked") { next.Add(new KeyValuePair<string, string>("packed", "Mark as packed")); }
     if (o.Status != "cancelled" && o.Status != "delivered" && o.Status != "collected")
     {
@@ -79,6 +79,35 @@
     </table>
 </section>
 
+@if (Model.Submissions != null && Model.Submissions.Count > 0)
+{
+    <section class="admin-card" id="sent" aria-labelledby="sent-h">
+        <h2 id="sent-h">Payments sent by the customer</h2>
+        <p class="admin-muted">Open the receipt and check that the money has arrived in the account. Confirm records the payment (and takes the books off stock at the first payment) and confirms the order.</p>
+        @foreach (var sp in Model.Submissions)
+        {
+            <div class="admin-sent-item@(sp.Status == "pending" ? " is-pending" : "")">
+                <p><strong>@BookFormat.Money(sp.Amount)</strong> into <strong>@sp.AccountName</strong> &middot; sent @sp.CreatedAt.ToOffset(TimeSpan.FromHours(5)).ToString("d MMM yyyy, h:mm tt", inv)
+                   &middot; <a href="/admin/books/sent-payments/@sp.Id.ToString("D")/receipt" target="_blank" rel="noopener">View receipt</a></p>
+                <p>Status: <strong>@sp.StatusLabel</strong>@if (sp.ReviewedAt.HasValue) { <text> by @sp.ReviewedByName, @sp.ReviewedAt.Value.ToOffset(TimeSpan.FromHours(5)).ToString("d MMM yyyy", inv)</text> }@if (!string.IsNullOrEmpty(sp.RejectReason)) { <text> &middot; Reason: @sp.RejectReason</text> }</p>
+                @if (sp.Status == "pending" && Model.CanPay)
+                {
+                    <div class="admin-sent-actions">
+                        <form method="post" action="/admin/books/sent-payments/@sp.Id.ToString("D")/confirm">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="admin-button" data-confirm="Confirm @BookFormat.Money(sp.Amount) received in @sp.AccountName?">Confirm payment</button>
+                        </form>
+                        <form method="post" action="/admin/books/sent-payments/@sp.Id.ToString("D")/reject">
+                            @Html.AntiForgeryToken()
+                            <div class="admin-field"><label for="reason-@sp.Id.ToString("N")">Reason, if not accepted</label><input type="text" id="reason-@sp.Id.ToString("N")" name="Reason" maxlength="300" placeholder="For example: amount not received" /></div>
+                            <button type="submit" class="admin-button admin-button--secondary admin-danger">Not accepted</button>
+                        </form>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+}
 <section class="admin-card" id="payments">
     <h2>Payments</h2>
     @if (Model.Payments.Count == 0)

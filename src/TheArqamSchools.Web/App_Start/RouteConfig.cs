@@ -48,6 +48,7 @@ namespace TheArqamSchools.Web
             routes.MapRoute("BooksOrder", "books/order", new { controller = "Books", action = "Order" }, new { httpMethod = get });
             routes.MapRoute("BooksOrders", "books/orders", new { controller = "Books", action = "Orders" }, new { httpMethod = get });
             routes.MapRoute("BooksEditPost", "books/orders/{orderNo}/edit", new { controller = "Books", action = "Submit" }, new { orderNo = @"\d{1,12}", httpMethod = post });
+            routes.MapRoute("BooksPay", "books/orders/{orderNo}/pay", new { controller = "Books", action = "Pay" }, new { orderNo = @"\d{1,12}", httpMethod = post });
             routes.MapRoute("BooksCancel", "books/orders/{orderNo}/cancel", new { controller = "Books", action = "Cancel" }, new { orderNo = @"\d{1,12}", httpMethod = post });
             routes.MapRoute("BooksEdit", "books/orders/{orderNo}/edit", new { controller = "Books", action = "Edit" }, new { orderNo = @"\d{1,12}", httpMethod = get });
             routes.MapRoute("BooksDetail", "books/orders/{orderNo}", new { controller = "Books", action = "Detail" }, new { orderNo = @"\d{1,12}", httpMethod = get });
@@ -124,6 +125,9 @@ namespace TheArqamSchools.Web
             routes.MapRoute("AdminBookReturnNote", "admin/books/returns/{returnNo}", new { controller = "AdminBooks", action = "ReturnNote" }, new { returnNo = bookNo });
             routes.MapRoute("AdminBookReports", "admin/books/reports", new { controller = "AdminBooks", action = "Reports" });
             routes.MapRoute("AdminBookOrder", "admin/books/orders/{orderNo}", new { controller = "AdminBooks", action = "Order" }, new { orderNo = bookNo });
+            routes.MapRoute("AdminBookSentConfirm", "admin/books/sent-payments/{id}/confirm", new { controller = "AdminBooks", action = "ConfirmSent" }, new { id = new GuidRouteConstraint(), httpMethod = postOnly });
+            routes.MapRoute("AdminBookSentReject", "admin/books/sent-payments/{id}/reject", new { controller = "AdminBooks", action = "RejectSent" }, new { id = new GuidRouteConstraint(), httpMethod = postOnly });
+            routes.MapRoute("AdminBookSentReceipt", "admin/books/sent-payments/{id}/receipt", new { controller = "AdminBooks", action = "SentReceipt" }, new { id = new GuidRouteConstraint() });
             routes.MapRoute("AdminBookReceipt", "admin/books/payments/{id}/receipt", new { controller = "AdminBooks", action = "Receipt" }, new { id = new GuidRouteConstraint() });
             routes.MapRoute("AdminBookAccountsPost", "admin/books/accounts", new { controller = "AdminBooks", action = "SaveAccount" }, new { httpMethod = postOnly });
             routes.MapRoute("AdminBookAccounts", "admin/books/accounts", new { controller = "AdminBooks", action = "Accounts" });

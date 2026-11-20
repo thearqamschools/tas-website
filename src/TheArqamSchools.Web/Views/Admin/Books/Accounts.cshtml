@@ -27,7 +27,11 @@
     <div class="admin-grid-2">
         <div class="admin-field"><label for="name-@key">Name</label><input type="text" id="name-@key" name="Name" value="@a.Name" maxlength="120" placeholder="For example: Office cash, or Meezan Bank" /></div>
         <div class="admin-field"><label for="kind-@key">Type</label><select id="kind-@key" name="Kind"><option value="cash" @(a.Kind == "cash" ? "selected" : null)>Cash</option><option value="bank" @(a.Kind == "bank" ? "selected" : null)>Bank</option></select></div>
-        <div class="admin-field"><label for="details-@key">Details (optional)</label><input type="text" id="details-@key" name="Details" value="@a.Details" maxlength="300" placeholder="For example the account title and last 4 digits" /></div>
+        <div class="admin-field"><label for="details-@key">Note for the office (optional)</label><input type="text" id="details-@key" name="Details" value="@a.Details" maxlength="300" /></div>
+        <div class="admin-field"><label for="title-@key">Account title (bank)</label><input type="text" id="title-@key" name="AccountTitle" value="@a.AccountTitle" maxlength="150" placeholder="THE ARQAM SCHOOLS" /></div>
+        <div class="admin-field"><label for="number-@key">Account number (bank)</label><input type="text" id="number-@key" name="AccountNumber" value="@a.AccountNumber" maxlength="40" inputmode="numeric" /></div>
+        <div class="admin-field"><label for="iban-@key">IBAN (bank)</label><input type="text" id="iban-@key" name="Iban" value="@a.Iban" maxlength="34" placeholder="PK00XXXX0000000000000000" /></div>
     </div>
+    <div class="admin-check"><input type="checkbox" id="show-@key" name="ShowToCustomers" value="true" @(a.ShowToCustomers ? "checked" : null) /><input type="hidden" name="ShowToCustomers" value="false" /><label for="show-@key"><strong>Show to customers for payment</strong><span class="admin-hint">Bank accounts only. Customers see the name, account title, number and IBAN on their order page.</span></label></div>
     <div class="admin-check"><input type="checkbox" id="active-@key" name="IsActive" value="true" @(a.IsActive ? "checked" : null) /><input type="hidden" name="IsActive" value="false" /><label for="active-@key"><strong>In use</strong></label></div>
 }

@@ -28,7 +28,7 @@ namespace TheArqamSchools.Web.Controllers
             var f = new BookOrderFilter
             {
                 Status = BookOrderRepository.Statuses.Contains(status) ? status : null,
-                Payment = new[] { "pending", "part", "paid", "unpaid" }.Contains(payment) ? payment : null,
+                Payment = new[] { "pending", "part", "paid", "unpaid", "tocheck" }.Contains(payment) ? payment : null,
                 From = ParseDate(from), To = ParseDate(to),
                 Query = Trim(q) == null ? null : (Trim(q).Length > 60 ? Trim(q).Substring(0, 60) : Trim(q))
             };
@@ -56,6 +56,8 @@ namespace TheArqamSchools.Web.Controllers
             var o = BookRepository.Order(orderNo);
             if (o == null) return HttpNotFound();
             var msg = notice == "status" ? "Status changed." : notice == "paid" ? "Payment recorded." : notice == "placed" ? "Order placed." : notice == "edited" ? "Order changed."
+                : notice == "sentconfirmed" ? "Payment confirmed and recorded. The order is confirmed."
+                : notice == "sentrejected" ? "Payment marked as not accepted. The customer sees the reason."
                 : notice == "returned" ? "Return " + (rn.HasValue ? "RN-" + rn.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + " " : "") + "recorded. The books are back in stock." : null;
             return OrderView(o, null, msg, null);
         }
@@ -66,9 +68,52 @@ namespace TheArqamSchools.Web.Controllers
             return View("~/Views/Admin/Books/Order.cshtml", new BookOrderAdminViewModel
             {
                 Order = o, Payments = BookOrderRepository.Payments(o.Id), Accounts = BookOrderRepository.Accounts(true), Returns = BookReturnRepository.ForOrder(o.Id),
+                Submissions = BookPaymentSubmissionRepository.ForOrder(o.Id),
                 PaymentForm = form ?? new BookPaymentForm { ReceivedOn = DateTime.UtcNow.Add(PakistanTime).Date, Method = "cash" },
                 Notice = notice, Error = error, CanOrders = actor.Can("books.orders"), CanPay = actor.Can("books.payments")
             });
+        }
+
+        /// <summary>POST /admin/books/sent-payments/{id}/confirm: the receipt is right; record the payment and confirm the order.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AdminAuthorize("books.payments")]
+        public ActionResult ConfirmSent(Guid id)
+        {
+            var sub = BookPaymentSubmissionRepository.Get(id);
+            if (sub == null) return HttpNotFound();
+            try { BookPaymentSubmissionRepository.Confirm(id, AdminAuth.Current(HttpContext).Id); }
+            catch (BookOrderException ex) { return OrderView(BookRepository.Order(sub.OrderNo), null, null, ex.Message); }
+            return Redirect("/admin/books/orders/" + sub.OrderNo.ToString(CultureInfo.InvariantCulture) + "?notice=sentconfirmed#sent");
+        }
+
+        /// <summary>POST /admin/books/sent-payments/{id}/reject: the payment is not accepted; the customer sees the reason.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AdminAuthorize("books.payments")]
+        public ActionResult RejectSent(Guid id)
+        {
+            var sub = BookPaymentSubmissionRepository.Get(id);
+            if (sub == null) return HttpNotFound();
+            var reason = Trim(Request.Unvalidated.Form["Reason"]);
+            if (reason != null && reason.Length > 300) reason = reason.Substring(0, 300);
+            try { BookPaymentSubmissionRepository.Reject(id, reason, AdminAuth.Current(HttpContext).Id); }
+            catch (BookOrderException ex) { return OrderView(BookRepository.Order(sub.OrderNo), null, null, ex.Message); }
+            return Redirect("/admin/books/orders/" + sub.OrderNo.ToString(CultureInfo.InvariantCulture) + "?notice=sentrejected#sent");
+        }
+
+        /// <summary>GET /admin/books/sent-payments/{id}/receipt: the receipt the customer attached (admin only, sandboxed).</summary>
+        [HttpGet]
+        public ActionResult SentReceipt(Guid id)
+        {
+            var sub = BookPaymentSubmissionRepository.Get(id);
+            if (sub == null) return HttpNotFound();
+            var path = ReceiptStore.PhysicalPath(sub.ReceiptPath);
+            if (!System.IO.File.Exists(path)) return HttpNotFound();
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
+            Response.Headers["Cache-Control"] = "private, no-store";
+            Response.Headers["Content-Security-Policy"] = "sandbox; default-src 'none'; img-src 'self'; style-src 'unsafe-inline'";
+            return File(System.IO.File.ReadAllBytes(path), sub.ReceiptMime ?? "application/octet-stream");
         }
 
         [HttpPost]
@@ -294,11 +339,23 @@ namespace TheArqamSchools.Web.Controllers
             var a = new BookAccount
             {
                 Id = id ?? Guid.Empty, Name = Trim(form["Name"]), Kind = form["Kind"] == "bank" ? "bank" : "cash",
-                Details = Trim(form["Details"]), IsActive = (form["IsActive"] ?? "").Split(',').Contains("true")
+                Details = Trim(form["Details"]), IsActive = (form["IsActive"] ?? "").Split(',').Contains("true"),
+                AccountTitle = Trim(form["AccountTitle"]),
+                AccountNumber = Trim(form["AccountNumber"]),
+                Iban = (Trim(form["Iban"]) ?? "").Replace(" ", "").ToUpperInvariant(),
+                ShowToCustomers = (form["ShowToCustomers"] ?? "").Split(',').Contains("true")
             };
+            if (a.Iban.Length == 0) a.Iban = null;
+            string error = null;
             if (a.Name == null || a.Name.Length < 2 || a.Name.Length > 120 || (a.Details != null && a.Details.Length > 300))
+                error = "Please enter an account name (2 to 120 characters); the note can be at most 300 characters.";
+            else if (a.AccountTitle != null && a.AccountTitle.Length > 150) error = "The account title can be at most 150 characters.";
+            else if (a.AccountNumber != null && !System.Text.RegularExpressions.Regex.IsMatch(a.AccountNumber, "^[0-9 -]{4,40}$")) error = "The account number may have only digits, spaces and dashes.";
+            else if (a.Iban != null && !System.Text.RegularExpressions.Regex.IsMatch(a.Iban, "^[A-Z]{2}[0-9]{2}[A-Z0-9]{10,30}$")) error = "Please check the IBAN, for example PK88BKIP0223900012520001.";
+            else if (a.ShowToCustomers && (a.Kind != "bank" || a.AccountNumber == null)) error = "Only a bank account with an account number can be shown to customers.";
+            if (error != null)
             {
-                ViewBag.Error = "Please enter an account name (2 to 120 characters); details can be at most 300 characters.";
+                ViewBag.Error = error;
                 return View("~/Views/Admin/Books/Accounts.cshtml", BookOrderRepository.Accounts(false));
             }
             if (id.HasValue && BookOrderRepository.Account(id.Value) == null) return HttpNotFound();

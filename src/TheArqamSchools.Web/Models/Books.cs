@@ -95,6 +95,10 @@ namespace TheArqamSchools.Web.Models
         public decimal ReturnedTotal { get; set; }
         public decimal RefundedTotal { get; set; }
         public int EditCount { get; set; }
+        /// <summary>Payments the customer has sent online that are pending or confirmed (Database/26).</summary>
+        public int SentPayments { get; set; }
+        /// <summary>Payments the customer has sent that the office has not checked yet.</summary>
+        public int PendingPayments { get; set; }
         public DateTimeOffset? StockTakenAt { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public IList<BookOrderLine> Lines { get; set; }
@@ -113,12 +117,27 @@ namespace TheArqamSchools.Web.Models
             }
         }
         /// <summary>
-        /// Owner's rule (20 November 2026): the customer may change or cancel an order only while it is New,
-        /// that is before the office marks it as Checked (and before any payment or discount).
+        /// Owner's rules (20 November 2026): the customer may change or cancel an order only while it is New and
+        /// before they send a payment (a rejected payment does not count); never after a payment or discount.
         /// </summary>
         public bool CustomerCanEdit
         {
-            get { return PaidTotal == 0 && DiscountTotal == 0 && StockTakenAt == null && Status == "new"; }
+            get { return PaidTotal == 0 && DiscountTotal == 0 && StockTakenAt == null && Status == "new" && SentPayments == 0; }
+        }
+        /// <summary>The customer may send a payment while something is still to be paid and no earlier payment waits for the office.</summary>
+        public bool CustomerCanPay
+        {
+            get { return Status != "cancelled" && Balance > 0 && PendingPayments == 0; }
+        }
+        /// <summary>What the customer sees: "Payment pending", "Payment sent" or the order status.</summary>
+        public string CustomerStatusLabel
+        {
+            get
+            {
+                if (Status == "new" && PendingPayments > 0) return "Payment sent";
+                if (Status == "new" && Balance > 0) return "Payment pending";
+                return BookFormat.StatusLabel(Status);
+            }
         }
         /// <summary>The office may change the books until any payment is recorded, while the order is New or Checked.</summary>
         public bool OfficeCanEdit
@@ -160,7 +179,7 @@ namespace TheArqamSchools.Web.Models
             switch (status)
             {
                 case "new": return "New";
-                case "checked": return "Checked";
+                case "checked": return "Confirmed";
                 case "packed": return "Packed";
                 case "delivered": return "Delivered";
                 case "collected": return "Collected";
@@ -275,6 +294,34 @@ namespace TheArqamSchools.Web.Models
         public string Kind { get; set; }
         public string Details { get; set; }
         public bool IsActive { get; set; }
+        /// <summary>Bank details shown to customers when <see cref="ShowToCustomers"/> (Database/26).</summary>
+        public string AccountTitle { get; set; }
+        public string AccountNumber { get; set; }
+        public string Iban { get; set; }
+        public bool ShowToCustomers { get; set; }
+    }
+
+    /// <summary>A payment the customer sent online with a receipt (dbo.book_payment_submissions), waiting for the office.</summary>
+    public class BookPaymentSubmission
+    {
+        public Guid Id { get; set; }
+        public Guid OrderId { get; set; }
+        public long OrderNo { get; set; }
+        public Guid AccountId { get; set; }
+        public string AccountName { get; set; }
+        public decimal Amount { get; set; }
+        public string ReceiptPath { get; set; }
+        public string ReceiptMime { get; set; }
+        public string Status { get; set; }
+        public string RejectReason { get; set; }
+        public string ReviewedByName { get; set; }
+        public DateTimeOffset? ReviewedAt { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+        public string CustomerName { get; set; }
+        public string StatusLabel
+        {
+            get { return Status == "confirmed" ? "Confirmed" : Status == "rejected" ? "Not accepted" : "Waiting for the office"; }
+        }
     }
 
     public class BookPayment
@@ -315,6 +362,7 @@ namespace TheArqamSchools.Web.Models
     public class BookCounts
     {
         public int NewOrders { get; set; }
+        public int PaymentsToCheck { get; set; }
         public int UnpaidOrders { get; set; }
         public int LastDay { get; set; }
     }
@@ -325,6 +373,7 @@ namespace TheArqamSchools.Web.Models
         public IList<BookPayment> Payments { get; set; }
         public IList<BookAccount> Accounts { get; set; }
         public IList<BookReturn> Returns { get; set; }
+        public IList<BookPaymentSubmission> Submissions { get; set; }
         public BookPaymentForm PaymentForm { get; set; }
         public string Notice { get; set; }
         public string Error { get; set; }

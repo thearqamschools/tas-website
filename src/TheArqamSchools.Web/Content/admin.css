@@ -282,3 +282,8 @@ body.invoice-page { display: block; background: var(--grey); font-family: var(--
 .admin-reorder { align-items: flex-start; }
 .admin-reorder > .admin-button { margin-top: 1.95rem; }
 .admin-reorder .admin-field--narrow { width: 17rem; }
+.admin-tag--warn { background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; }
+.admin-sent-item { border: 1px solid var(--line); border-radius: var(--r-md); padding: 1rem; margin-top: .75rem; }
+.admin-sent-item.is-pending { border-color: #fcd34d; background: #fffdf5; }
+.admin-sent-actions { display: flex; flex-wrap: wrap; gap: .75rem; align-items: flex-end; margin-top: .75rem; }
+.admin-sent-actions form { margin: 0; display: flex; gap: .5rem; align-items: flex-end; flex-wrap: wrap; }

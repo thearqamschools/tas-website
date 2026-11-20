@@ -35,6 +35,10 @@
             <p class="admin-stat-value">@Model.Books.NewOrders.ToString("N0")</p>
             <p class="admin-stat-label">New book orders@(Model.Books.LastDay > 0 ? " (" + Model.Books.LastDay + " in the last 24 hours)" : "")</p>
         </a>
+        <a class="admin-stat@(Model.Books.PaymentsToCheck > 0 ? " admin-stat--new" : "")" href="/admin/books/orders?payment=tocheck">
+            <p class="admin-stat-value">@Model.Books.PaymentsToCheck.ToString("N0")</p>
+            <p class="admin-stat-label">Book payments sent by customers, to check</p>
+        </a>
         <a class="admin-stat" href="/admin/books/orders?payment=unpaid">
             <p class="admin-stat-value">@Model.Books.UnpaidOrders.ToString("N0")</p>
             <p class="admin-stat-label">Book orders not fully paid</p>

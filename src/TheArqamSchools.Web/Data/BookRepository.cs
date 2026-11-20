@@ -253,7 +253,9 @@ namespace TheArqamSchools.Web.Data
 
         private const string OrderColumns = @"o.id, o.order_no, o.customer_id, c.name AS customer_name, c.mobile AS customer_mobile, c.campus_name,
             o.fulfilment, o.delivery_address, o.status, o.source, o.subtotal, o.discount_total, o.credit_applied, o.paid_total,
-            o.returned_total, o.refunded_total, o.edit_count, o.stock_taken_at, o.created_at";
+            o.returned_total, o.refunded_total, o.edit_count, o.stock_taken_at, o.created_at,
+            (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE s.order_id = o.id AND s.status <> N'rejected') AS sent_payments,
+            (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE s.order_id = o.id AND s.status = N'pending') AS pending_payments";
 
         public static IList<BookOrder> CustomerOrders(Guid customerId)
         {
@@ -346,10 +348,11 @@ namespace TheArqamSchools.Web.Data
             using (var db = Db.Open())
             using (var tx = db.BeginTransaction())
             {
-                var o = db.QuerySingleOrDefault<BookOrder>(@"SELECT id, order_no, customer_id, status, subtotal, discount_total, credit_applied, paid_total, stock_taken_at
-                                                             FROM dbo.book_orders WITH (UPDLOCK, HOLDLOCK) WHERE order_no = @orderNo", new { orderNo }, tx);
+                var o = db.QuerySingleOrDefault<BookOrder>(@"SELECT id, order_no, customer_id, status, subtotal, discount_total, credit_applied, paid_total, stock_taken_at,
+                                                                    (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE s.order_id = o.id AND s.status <> N'rejected') AS sent_payments
+                                                             FROM dbo.book_orders o WITH (UPDLOCK, HOLDLOCK) WHERE order_no = @orderNo", new { orderNo }, tx);
                 if (o == null || o.CustomerId != customerId) throw new BookOrderException("The order was not found.");
-                if (!o.CustomerCanEdit) throw new BookOrderException("This order can no longer be cancelled online, because the office has already checked it. Please contact the office.");
+                if (!o.CustomerCanEdit) throw new BookOrderException("This order can no longer be cancelled online, because a payment has been sent or the office has confirmed it. Please contact the office.");
                 db.Execute("SELECT id FROM dbo.book_customers WITH (UPDLOCK, HOLDLOCK) WHERE id = @CustomerId", new { o.CustomerId }, tx);
                 db.Execute("UPDATE dbo.book_orders SET status = N'cancelled', credit_applied = 0, edit_count = edit_count + 1, updated_at = SYSDATETIMEOFFSET(), updated_by = NULL WHERE id = @Id", new { o.Id }, tx);
                 if (o.CreditApplied > 0)
@@ -374,11 +377,12 @@ namespace TheArqamSchools.Web.Data
             using (var db = Db.Open())
             using (var tx = db.BeginTransaction(IsolationLevel.ReadCommitted))
             {
-                var o = db.QuerySingleOrDefault<BookOrder>(@"SELECT id, order_no, customer_id, fulfilment, status, subtotal, discount_total, credit_applied, paid_total, stock_taken_at
-                                                             FROM dbo.book_orders WITH (UPDLOCK, HOLDLOCK) WHERE order_no = @orderNo", new { orderNo }, tx);
+                var o = db.QuerySingleOrDefault<BookOrder>(@"SELECT id, order_no, customer_id, fulfilment, status, subtotal, discount_total, credit_applied, paid_total, stock_taken_at,
+                                                                    (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE s.order_id = o.id AND s.status <> N'rejected') AS sent_payments
+                                                             FROM dbo.book_orders o WITH (UPDLOCK, HOLDLOCK) WHERE order_no = @orderNo", new { orderNo }, tx);
                 if (o == null || (customerId.HasValue && o.CustomerId != customerId.Value)) throw new BookOrderException("The order was not found.");
                 if (customerId.HasValue ? !o.CustomerCanEdit : !o.OfficeCanEdit)
-                    throw new BookOrderException("This order can no longer be changed, because the office has already checked it or a payment has been recorded. Please contact the office.");
+                    throw new BookOrderException("This order can no longer be changed, because a payment has been sent or the office has confirmed it. Please contact the office.");
                 var customer = db.QuerySingle<BookCustomer>("SELECT id, address, credit FROM dbo.book_customers WITH (UPDLOCK, HOLDLOCK) WHERE id = @CustomerId", new { o.CustomerId }, tx);
                 if (fulfilment == "delivery" && string.IsNullOrWhiteSpace(customer.Address))
                     throw new BookOrderException("There is no delivery address for this number. Please choose Pick up, or ask the office to add your address.");
