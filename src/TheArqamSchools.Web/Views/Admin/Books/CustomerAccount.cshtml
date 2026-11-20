@@ -22,6 +22,7 @@
     <div class="admin-status-buttons">
         @if (Model.CanPay) { <a class="admin-button" href="@baseUrl/return">Record a return</a> }
         <a class="admin-button admin-button--secondary" href="/admin/books/customers/@c.Id.ToString("D")">Customer details</a>
+        <a class="admin-button admin-button--secondary" href="/admin/books/return-requests">Return requests</a>
     </div>
 </div>
 <p class="admin-muted">@Mobile.Format(c.Mobile)@if (!string.IsNullOrEmpty(c.CampusName)) { <text> &middot; @c.CampusName</text> }@if (c.CreditLimit.HasValue) { <text> &middot; Credit limit @BookFormat.Money(c.CreditLimit.Value)</text> }@if (c.CreditDays.HasValue) { <text> &middot; @c.CreditDays credit days</text> }</p>

@@ -62,6 +62,12 @@ namespace TheArqamSchools.Web.Data
                 return db.Query<BookPaymentSubmission>("SELECT " + Columns + From + " WHERE s.order_id = @orderId ORDER BY s.created_at", new { orderId }).ToList();
         }
 
+        public static IList<BookPaymentSubmission> ForCustomer(Guid customerId)
+        {
+            using (var db = Db.Open())
+                return db.Query<BookPaymentSubmission>("SELECT " + Columns + From + " WHERE o.customer_id = @customerId ORDER BY s.created_at DESC", new { customerId }).ToList();
+        }
+
         public static BookPaymentSubmission Get(Guid id)
         {
             using (var db = Db.Open())

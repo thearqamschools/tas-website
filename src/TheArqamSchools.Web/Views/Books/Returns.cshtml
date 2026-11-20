@@ -1,0 +1,82 @@
+@using TheArqamSchools.Web.Helpers
+@{
+    var customer = ViewBag.Customer as BookCustomer;
+    var requests = ViewBag.Requests as IList<TheArqamSchools.Web.Data.BookReturnRequestRepository.Request>;
+    var books = ViewBag.Books as IList<TheArqamSchools.Web.Data.BookReturnRepository.Returnable>;
+    var form = ViewBag.Form as System.Collections.Specialized.NameValueCollection;
+    var pk = TimeSpan.FromHours(5);
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+<section class="page-header tone-warm">
+    <div class="container">
+        <h1 class="h1">Return books</h1>
+        <p class="lead">Ask to return books you received. The office checks your request; when it is approved, send the books to the office.</p>
+    </div>
+</section>
+<section class="section tone-white books">
+    <div class="container books-wide">
+        @Html.Partial("~/Views/Books/_Who.cshtml", customer)
+        @if (ViewBag.Sent == true)
+        {
+            <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p>Thank you. Your return request has been sent. The office will check it and tell you when to send the books.</p></div>
+        }
+        @if (ViewBag.Error != null) { <div class="alert alert-error" role="alert" tabindex="-1" data-focus><p>@ViewBag.Error</p></div> }
+        @if (requests.Count > 0)
+        {
+            <div class="books-card">
+                <h2 class="h3">My return requests</h2>
+                <ul class="books-sent">
+                    @foreach (var r in requests)
+                    {
+                        <li class="books-sent-item books-sent-@(r.Status == "received" ? "confirmed" : r.Status == "rejected" ? "rejected" : "pending")">
+                            <span><strong>@r.Label</strong> &middot; @r.CreatedAt.ToOffset(pk).ToString("d MMM yyyy", inv) &middot; @r.Lines.Sum(l => l.Quantity) books &middot; @(r.Choice == "refund" ? "money back" : "credit for the next order")</span>
+                            <span class="books-sent-status">@r.StatusLabel</span>
+                            @if (r.ReturnAmount.HasValue) { <span class="books-sent-reason">Value: @BookFormat.Money(r.ReturnAmount.Value)</span> }
+                            @if (r.Status == "rejected" && !string.IsNullOrEmpty(r.RejectReason)) { <span class="books-sent-reason">@r.RejectReason</span> }
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+        <div class="books-card">
+            <h2 class="h3">New return request</h2>
+            @if (books.Count == 0)
+            {
+                <p>There are no books you can return at the moment (only books you have received, and not already in a request).</p>
+            }
+            else
+            {
+                <form method="post" action="/books/returns" class="books-form" data-books-form novalidate>
+                    @Html.AntiForgeryToken()
+                    <div class="hp" aria-hidden="true"><label for="br-website">Website</label><input id="br-website" name="website" type="text" tabindex="-1" autocomplete="off" /></div>
+                    <fieldset class="books-class-group">
+                        <legend>Books you received</legend>
+                        <div class="books-row books-row--head" aria-hidden="true"><span>Book</span><span class="num">Price</span><span class="num-c">Return</span><span class="num">Total</span></div>
+                        <ul class="books-rows">
+                            @foreach (var b in books)
+                            {
+                                var id = "r_" + b.ItemId.ToString("N");
+                                <li class="books-row">
+                                    <label for="@id" class="books-row-name"><span class="books-class">@b.ClassName</span> @b.ItemName <span class="books-class">(you have @b.Available)</span></label>
+                                    <span class="books-row-price">@BookFormat.Money(b.UnitPrice)</span>
+                                    <input type="number" id="@id" name="@id" min="0" max="@b.Available" inputmode="numeric" placeholder="0" value="@(form != null ? form[id] : null)" data-price="@b.UnitPrice.ToString(inv)" aria-label="How many @b.ItemName to return" />
+                                    <output class="books-row-total" for="@id" data-line-total></output>
+                                </li>
+                            }
+                        </ul>
+                    </fieldset>
+                    <p class="books-return-total">Estimated value: <strong data-books-total>Rs. 0</strong></p>
+                    <p class="form-note">The final value is worked out by the office from the price you paid on each order (after any reduction), and the books must reach the office.</p>
+                    <fieldset class="books-fulfil-choice">
+                        <legend>What should happen to the money?</legend>
+                        <label class="books-radio"><input type="radio" name="choice" value="credit" @(form == null || form["choice"] != "refund" ? "checked" : null) /> <span><strong>Adjust in my next order</strong> (keep as credit)</span></label>
+                        <label class="books-radio"><input type="radio" name="choice" value="refund" @(form != null && form["choice"] == "refund" ? "checked" : null) /> <span><strong>Pay the money back to me</strong></span></label>
+                    </fieldset>
+                    <div class="field"><label for="br-note">Note (optional)</label><input id="br-note" name="note" type="text" maxlength="400" value="@(form != null ? form["note"] : null)" /></div>
+                    <div class="books-actions"><button type="submit" class="btn btn-primary">Send return request</button></div>
+                </form>
+            }
+        </div>
+    </div>
+</section>
+<script src="~/Scripts/books.js?v=20261120b" defer></script>

@@ -30,7 +30,7 @@ namespace TheArqamSchools.Web.Controllers
         [HttpGet]
         public ActionResult Index()
         {
-            if (CurrentCustomer() != null) return Redirect("/books/order");
+            if (CurrentCustomer() != null) return Redirect("/books/dashboard");
             return View("~/Views/Books/Index.cshtml", Meta());
         }
 
@@ -54,7 +54,7 @@ namespace TheArqamSchools.Web.Controllers
                 return StartError("This number is not registered for book orders. Please contact the office to register.", mobile);
             }
             SetCookie(customer.Id);
-            return Redirect("/books/order");
+            return Redirect("/books/dashboard");
         }
 
         [HttpPost]
@@ -185,6 +185,97 @@ namespace TheArqamSchools.Web.Controllers
                 throw;
             }
             return Redirect("/books/orders/" + orderNo.ToString(CultureInfo.InvariantCulture) + "?sent=true#payment");
+        }
+
+        // ---- Customer area: dashboard, payments, returns (owner's request, 20 November 2026) -------------
+
+        [HttpGet]
+        public ActionResult Dashboard()
+        {
+            var customer = CurrentCustomer();
+            if (customer == null) return Redirect("/books");
+            ViewBag.Customer = customer;
+            ViewBag.Meta = Meta();
+            ViewBag.Summary = BookCustomerAccountRepository.GetSummary(customer.Id);
+            ViewBag.Orders = BookRepository.CustomerOrders(customer.Id).Take(5).ToList();
+            ViewBag.OpenReturns = BookReturnRequestRepository.OpenCount(customer.Id);
+            return View("~/Views/Books/Dashboard.cshtml");
+        }
+
+        [HttpGet]
+        public ActionResult Payments()
+        {
+            var customer = CurrentCustomer();
+            if (customer == null) return Redirect("/books");
+            ViewBag.Customer = customer;
+            ViewBag.Meta = Meta();
+            ViewBag.Summary = BookCustomerAccountRepository.GetSummary(customer.Id);
+            ViewBag.Submissions = BookPaymentSubmissionRepository.ForCustomer(customer.Id);
+            ViewBag.Ledger = BookCustomerAccountRepository.Ledger(customer.Id, null, null, true);
+            return View("~/Views/Books/Payments.cshtml");
+        }
+
+        /// <summary>GET /books/receipts/{id}: a receipt this customer sent (never anyone else's), shown in a sandbox.</summary>
+        [HttpGet]
+        public ActionResult Receipt(Guid id)
+        {
+            var customer = CurrentCustomer();
+            if (customer == null) return Redirect("/books");
+            var sub = BookPaymentSubmissionRepository.Get(id);
+            if (sub == null || BookRepository.Order(sub.OrderNo) == null || BookRepository.Order(sub.OrderNo).CustomerId != customer.Id) return HttpNotFound();
+            var path = ReceiptStore.PhysicalPath(sub.ReceiptPath);
+            if (!System.IO.File.Exists(path)) return HttpNotFound();
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
+            Response.Headers["Cache-Control"] = "private, no-store";
+            Response.Headers["Content-Security-Policy"] = "sandbox; default-src 'none'; img-src 'self'; style-src 'unsafe-inline'";
+            return File(System.IO.File.ReadAllBytes(path), sub.ReceiptMime ?? "application/octet-stream");
+        }
+
+        [HttpGet]
+        public ActionResult Returns(bool sent = false)
+        {
+            var customer = CurrentCustomer();
+            if (customer == null) return Redirect("/books");
+            return ReturnsView(customer, null, null, sent);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [ActionName("Returns")]
+        public ActionResult ReturnsPost(string website)
+        {
+            var customer = CurrentCustomer();
+            if (customer == null) return Redirect("/books");
+            if (!string.IsNullOrEmpty(website)) return Redirect("/books");
+            var form = Request.Unvalidated.Form;
+            if (!RateLimiter.Allow("books-return", PageBuilder.ClientKey(Request), 10, TimeSpan.FromHours(1)))
+                return ReturnsView(customer, form, "Too many requests from this network. Please wait and try again, or call the office.", false);
+            var qty = new Dictionary<Guid, int>();
+            foreach (var key in form.AllKeys.Where(k => k != null && k.StartsWith("r_", StringComparison.Ordinal)))
+            {
+                Guid itemId; int n;
+                var raw = (form[key] ?? "").Trim();
+                if (!Guid.TryParse(key.Substring(2), out itemId) || raw.Length == 0) continue;
+                if (!int.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture, out n)) return ReturnsView(customer, form, "Please enter whole numbers.", false);
+                qty[itemId] = n;
+            }
+            var note = (form["note"] ?? "").Trim();
+            if (note.Length > 400) note = note.Substring(0, 400);
+            try { BookReturnRequestRepository.Create(customer.Id, qty, form["choice"] == "refund" ? "refund" : "credit", note.Length == 0 ? null : note); }
+            catch (BookOrderException ex) { return ReturnsView(customer, form, ex.Message, false); }
+            return Redirect("/books/returns?sent=true");
+        }
+
+        private ActionResult ReturnsView(BookCustomer customer, System.Collections.Specialized.NameValueCollection form, string error, bool sent)
+        {
+            ViewBag.Customer = customer;
+            ViewBag.Meta = Meta();
+            ViewBag.Error = error;
+            ViewBag.Form = form;
+            ViewBag.Sent = sent;
+            ViewBag.Requests = BookReturnRequestRepository.ForCustomer(customer.Id);
+            ViewBag.Books = BookReturnRequestRepository.Requestable(customer.Id);
+            return View("~/Views/Books/Returns.cshtml");
         }
 
         /// <summary>POST /books/orders/{no}/cancel: the customer cancels their own order while it is still New.</summary>

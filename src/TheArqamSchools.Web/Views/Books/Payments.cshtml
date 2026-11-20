@@ -1,0 +1,65 @@
+@using TheArqamSchools.Web.Helpers
+@{
+    var customer = ViewBag.Customer as BookCustomer;
+    var s = ViewBag.Summary as TheArqamSchools.Web.Data.BookCustomerAccountRepository.Summary;
+    var subs = ViewBag.Submissions as IList<BookPaymentSubmission>;
+    var ledger = ViewBag.Ledger as IList<TheArqamSchools.Web.Data.BookCustomerAccountRepository.LedgerLine>;
+    var pk = TimeSpan.FromHours(5);
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+<section class="page-header tone-warm">
+    <div class="container">
+        <h1 class="h1">My payments</h1>
+        <p class="lead">Payments you sent, and your statement with The Arqam Schools.</p>
+    </div>
+</section>
+<section class="section tone-white books">
+    <div class="container books-wide">
+        @Html.Partial("~/Views/Books/_Who.cshtml", customer)
+        <div class="books-stats">
+            <div class="books-stat@(s.Balance > 0 ? " is-due" : " is-ok")"><p class="books-stat-value">@BookFormat.Money(Math.Max(0m, s.Balance))</p><p class="books-stat-label">Still to pay</p></div>
+            <div class="books-stat"><p class="books-stat-value">@BookFormat.Money(s.Paid)</p><p class="books-stat-label">You have paid</p></div>
+            @if (s.Credit > 0) { <div class="books-stat is-ok"><p class="books-stat-value">@BookFormat.Money(s.Credit)</p><p class="books-stat-label">Your credit</p></div> }
+        </div>
+        <div class="books-card">
+            <h2 class="h3">Payments you sent</h2>
+            @if (subs.Count == 0) { <p>You have not sent a payment online yet. Open an order and use "Send payment".</p> }
+            else
+            {
+                <ul class="books-sent">
+                    @foreach (var sp in subs)
+                    {
+                        <li class="books-sent-item books-sent-@sp.Status">
+                            <span><strong>@BookFormat.Money(sp.Amount)</strong> for <a href="/books/orders/@sp.OrderNo">@BookFormat.OrderLabel(sp.OrderNo)</a> to @sp.AccountName &middot; @sp.CreatedAt.ToOffset(pk).ToString("d MMM yyyy", inv)</span>
+                            <span class="books-sent-status">@sp.StatusLabel</span>
+                            <a href="/books/receipts/@sp.Id.ToString("D")" target="_blank" rel="noopener">View receipt</a>
+                            @if (sp.Status == "rejected" && !string.IsNullOrEmpty(sp.RejectReason)) { <span class="books-sent-reason">@sp.RejectReason</span> }
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+        <div class="books-card">
+            <h2 class="h3">My statement</h2>
+            <p class="form-note">Orders add to what you owe; payments and returns take it off.</p>
+            <div class="books-table-wrap">
+                <table class="books-table books-ledger">
+                    <thead><tr><th scope="col">Date</th><th scope="col">Entry</th><th scope="col" class="num">Amount</th><th scope="col" class="num">Balance</th></tr></thead>
+                    <tbody>
+                        @if (ledger.Count == 0) { <tr><td colspan="4">Nothing yet.</td></tr> }
+                        @foreach (var l in ledger)
+                        {
+                            <tr>
+                                <td>@l.On.ToString("d MMM yyyy", inv)</td>
+                                <td>@l.Kind @l.Reference@if (!string.IsNullOrEmpty(l.Details) && l.Kind != "Order") { <span class="books-class"> @l.Details</span> }</td>
+                                <td class="num">@(l.Debit > 0 ? BookFormat.Money(l.Debit) : l.CreditAmount > 0 ? "− " + BookFormat.Money(l.CreditAmount) : "")</td>
+                                <td class="num">@BookFormat.Money(l.Balance)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p class="form-note">A balance below zero means the school owes you that amount (credit or money to be paid back).</p>
+        </div>
+    </div>
+</section>

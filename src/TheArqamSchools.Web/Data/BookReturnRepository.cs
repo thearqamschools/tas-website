@@ -57,7 +57,8 @@ namespace TheArqamSchools.Web.Data
         /// the return completes a customer's request (same number), otherwise a new number is taken. Returns the number.
         /// </summary>
         internal static long Record(IDbConnection db, IDbTransaction tx, Guid customerId, IDictionary<Guid, int> quantities, string choice,
-                                    DateTime returnedOn, string note, Guid actorId, long? returnNo)
+                                    DateTime returnedOn, string note, Guid actorId, long? returnNo,
+                                    Func<KeyValuePair<string, string>> afterLocks = null)
         {
             var wanted = (quantities ?? new Dictionary<Guid, int>()).Where(q => q.Value > 0).ToDictionary(q => q.Key, q => q.Value);
             if (wanted.Count == 0) throw new BookOrderException("Please enter how many of each book come back.");
@@ -72,6 +73,8 @@ namespace TheArqamSchools.Web.Data
                 new { customerId }, tx).ToDictionary(o => o.Id);
             var customer = db.QuerySingleOrDefault<BookCustomer>("SELECT id, name FROM dbo.book_customers WITH (UPDLOCK, HOLDLOCK) WHERE id = @customerId", new { customerId }, tx);
             if (customer == null) throw new BookOrderException("The customer was not found.");
+            // A request locks its own row only after the orders and the customer (the lock order), and gives its choice and note.
+            if (afterLocks != null) { var cn = afterLocks(); choice = cn.Key == "refund" ? "refund" : "credit"; note = cn.Value; }
             var orderIds = orders.Keys.ToList();
             var lines = orderIds.Count == 0 ? new List<LineRow>() : db.Query<LineRow>(@"
                 SELECT l.id, l.order_id, o.order_no, l.item_id, l.class_name, l.item_name, l.unit_price, l.quantity, l.returned_qty, o.created_at

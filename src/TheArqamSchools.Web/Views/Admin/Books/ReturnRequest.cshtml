@@ -1,0 +1,68 @@
+@model TheArqamSchools.Web.Data.BookReturnRequestRepository.Request
+@using TheArqamSchools.Web.Helpers
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewBag.Title = "Return request " + Model.Label;
+    var r = Model;
+    var canPay = (bool)ViewBag.CanPay;
+    var available = ViewBag.Available as IDictionary<Guid, int>;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var today = DateTime.UtcNow.AddHours(5).ToString("yyyy-MM-dd", inv);
+}
+<p><a href="/admin/books/return-requests">&larr; Return requests</a></p>
+<div class="admin-page-head"><h1>Return request @r.Label</h1>@if (r.Status == "received") { <a class="admin-button admin-button--secondary" href="/admin/books/returns/@r.ReturnNo" target="_blank" rel="noopener">Return note</a> }</div>
+@if (ViewBag.Notice != null) { <div class="admin-alert admin-alert--success" role="status"><p>@ViewBag.Notice</p></div> }
+@if (ViewBag.Error != null) { <div class="admin-alert admin-alert--error" role="alert"><p>@ViewBag.Error</p></div> }
+<section class="admin-card">
+    <p><strong><a href="/admin/books/customer-accounts/@r.CustomerId.ToString("D")">@r.CustomerName</a></strong> (@BookFormat.CustomerLabel(r.CustomerNo)) &middot; @Mobile.Format(r.CustomerMobile)</p>
+    <p>Asked on @r.CreatedAt.ToOffset(TimeSpan.FromHours(5)).ToString("d MMMM yyyy, h:mm tt", inv) &middot; Money: <strong>@(r.Choice == "refund" ? "pay back" : "keep as credit")</strong> &middot; Status: <strong>@r.StatusLabel</strong></p>
+    @if (!string.IsNullOrEmpty(r.Note)) { <p>Customer's note: @r.Note</p> }
+    @if (!string.IsNullOrEmpty(r.RejectReason)) { <p>Reason: @r.RejectReason</p> }
+    @if (r.ReviewedAt.HasValue) { <p class="admin-muted">Checked by @r.ReviewedByName on @r.ReviewedAt.Value.ToOffset(TimeSpan.FromHours(5)).ToString("d MMM yyyy", inv)</p> }
+    @if (r.ReturnAmount.HasValue) { <p>Return value: <strong>@BookFormat.Money(r.ReturnAmount.Value)</strong></p> }
+</section>
+<form method="post" action="/admin/books/return-requests/@r.ReturnNo/receive" class="admin-form" novalidate>
+    @Html.AntiForgeryToken()
+    <section class="admin-card">
+        <h2 class="admin-card-title">Books</h2>
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead><tr><th scope="col">Class</th><th scope="col">Book</th><th scope="col" class="num">Asked</th><th scope="col" class="num">With the customer now</th>@if (r.Status == "approved" && canPay) { <th scope="col" class="num">Received</th> }</tr></thead>
+                <tbody>
+                    @foreach (var l in r.Lines)
+                    {
+                        var rid = "r_" + l.ItemId.ToString("N");
+                        int have; available.TryGetValue(l.ItemId, out have);
+                        <tr><td>@l.ClassName</td><td><label for="@rid">@l.ItemName</label></td><td class="num">@l.Quantity</td><td class="num">@have</td>
+                            @if (r.Status == "approved" && canPay) { <td class="num"><input type="number" class="admin-qty" id="@rid" name="@rid" min="0" max="@l.Quantity" value="@l.Quantity" inputmode="numeric" /></td> }</tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (r.Status == "approved" && canPay)
+        {
+            <p class="admin-hint">When the books arrive, check them and change a number if fewer came. They go back into stock and the money is handled as the customer chose.</p>
+            <div class="admin-inline-row">
+                <div class="admin-field admin-field--narrow"><label for="ReceivedOn">Date received</label><input type="date" id="ReceivedOn" name="ReceivedOn" value="@today" /></div>
+                <button type="submit" class="admin-button" data-confirm="Record these books as received for @r.Label?">Books received</button>
+            </div>
+        }
+    </section>
+</form>
+@if (canPay && (r.Status == "requested" || r.Status == "approved"))
+{
+    <section class="admin-card">
+        <div class="admin-sent-actions">
+            @if (r.Status == "requested")
+            {
+                <form method="post" action="/admin/books/return-requests/@r.ReturnNo/approve">@Html.AntiForgeryToken()<button type="submit" class="admin-button">Approve</button></form>
+            }
+            <form method="post" action="/admin/books/return-requests/@r.ReturnNo/reject">
+                @Html.AntiForgeryToken()
+                <div class="admin-field"><label for="Reason">Reason, if not approved</label><input type="text" id="Reason" name="Reason" maxlength="300" /></div>
+                <button type="submit" class="admin-button admin-button--secondary admin-danger">Not approved</button>
+            </form>
+        </div>
+    </section>
+}
+<script src="/Scripts/admin-form.js?v=20261120c" defer></script>

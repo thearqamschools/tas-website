@@ -103,6 +103,7 @@
     <Compile Include="Controllers\AdminBooksOrdersController.cs" />
     <Compile Include="Controllers\AdminBooksReportsController.cs" />
     <Compile Include="Controllers\AdminBooksCustomerAccountsController.cs" />
+    <Compile Include="Controllers\AdminBooksReturnRequestsController.cs" />
     <Compile Include="Controllers\AdminFranchiseController.cs" />
     <Compile Include="Controllers\AdminHomeController.cs" />
     <Compile Include="Controllers\AdminInboxController.cs" />
@@ -126,6 +127,7 @@
     <Compile Include="Data\BookPaymentSubmissionRepository.cs" />
     <Compile Include="Data\BookCustomerAccountRepository.cs" />
     <Compile Include="Data\BookMessageRepository.cs" />
+    <Compile Include="Data\BookReturnRequestRepository.cs" />
     <Compile Include="Data\BookReports.cs" />
     <Compile Include="Data\BookReturnRepository.cs" />
     <Compile Include="Data\CampusAdminRepository.cs" />
@@ -235,6 +237,9 @@
     <Content Include="Views\Books\Order.cshtml" />
     <Content Include="Views\Books\Orders.cshtml" />
     <Content Include="Views\Books\Detail.cshtml" />
+    <Content Include="Views\Books\Dashboard.cshtml" />
+    <Content Include="Views\Books\Payments.cshtml" />
+    <Content Include="Views\Books\Returns.cshtml" />
     <Content Include="Views\Books\_Who.cshtml" />
     <Content Include="Views\Admin\Books\_Tabs.cshtml" />
     <Content Include="Views\Admin\Books\ReturnNote.cshtml" />
@@ -244,6 +249,8 @@
     <Content Include="Views\Admin\Books\CustomerReturn.cshtml" />
     <Content Include="Views\Admin\Books\Messages.cshtml" />
     <Content Include="Views\Admin\Books\_Message.cshtml" />
+    <Content Include="Views\Admin\Books\ReturnRequests.cshtml" />
+    <Content Include="Views\Admin\Books\ReturnRequest.cshtml" />
     <Content Include="Views\Admin\Books\Orders.cshtml" />
     <Content Include="Views\Admin\Books\Order.cshtml" />
     <Content Include="Views\Admin\Books\Invoice.cshtml" />

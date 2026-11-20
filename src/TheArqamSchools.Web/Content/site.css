@@ -1439,3 +1439,28 @@ body:has(.books) .wa-float { display: none; }
 @media (min-width: 40rem) {
   .books-row { grid-template-columns: minmax(0, 1fr) 6.5rem 5.5rem 6.5rem; }
 }
+/* Customer area (owner's request, 20 November 2026): dashboard figures, statement, returns. */
+.books-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr)); gap: 12px; margin: 0 0 20px; }
+.books-stat { padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: #fff; }
+.books-stat p { margin: 0; }
+.books-stat-value { font-size: 1.375rem; font-weight: 700; color: var(--ink); line-height: 1.25; }
+.books-stat-label { font-size: .875rem; color: var(--muted); margin-top: 2px !important; }
+.books-stat.is-due { border-color: #fecaca; background: var(--red-50); }
+.books-stat.is-due .books-stat-value { color: var(--red-700); }
+.books-stat.is-ok .books-stat-value { color: var(--success); }
+.books-table-wrap { overflow-x: auto; }
+.books-ledger td, .books-ledger th { white-space: nowrap; }
+.books-ledger td:nth-child(2) { white-space: normal; }
+.books-return-total { margin: 12px 0 4px; font-size: 1.0625rem; }
+.books-who-links { justify-content: flex-end; }
+@media (max-width: 40rem) { .books-who-links { justify-content: flex-start; } .books-nav-btn { padding: 8px 12px; font-size: .875rem; } }
+/* Phones: the book name gets the whole width; price, quantity and total go on the line below. */
+@media (max-width: 30rem) {
+  .books-row { grid-template-columns: minmax(0, 1fr) 4.75rem 5.5rem; grid-template-areas: "name name name" "price qty total"; row-gap: 6px; }
+  .books-row-price { justify-self: start; }
+  .books-row--head { grid-template-areas: "name name name" "price qty total"; }
+  .books-row--head > span:nth-child(1) { grid-area: name; }
+  .books-row--head > span:nth-child(2) { grid-area: price; text-align: left; }
+  .books-row--head > span:nth-child(3) { grid-area: qty; }
+  .books-row--head > span:nth-child(4) { grid-area: total; }
+}

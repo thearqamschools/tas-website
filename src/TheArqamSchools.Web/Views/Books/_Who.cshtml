@@ -4,16 +4,18 @@
 <div class="books-who">
     <div>
         <p class="books-who-name">@Model.Name</p>
-        <p class="books-who-meta">@Mobile.Format(Model.Mobile)@if (!string.IsNullOrEmpty(Model.CampusName)) { <text> · @Model.CampusName</text> }</p>
+        <p class="books-who-meta">@Model.CustomerLabel &middot; @Mobile.Format(Model.Mobile)@if (!string.IsNullOrEmpty(Model.CampusName)) { <text> &middot; @Model.CampusName</text> }</p>
     </div>
     @{
         var path = (Request.Path ?? "").TrimEnd('/').ToLowerInvariant();
-        var onNew = path == "/books/order";
-        var onList = path == "/books/orders";
+        Func<string, bool> on = p => path == p;
     }
     <nav class="books-who-links" aria-label="Book orders">
-        <a class="books-nav-btn@(onNew ? " is-current" : "")" href="/books/order" @(onNew ? "aria-current=page" : null)>New order</a>
-        <a class="books-nav-btn@(onList ? " is-current" : "")" href="/books/orders" @(onList ? "aria-current=page" : null)>My orders</a>
+        <a class="books-nav-btn@(on("/books/dashboard") ? " is-current" : "")" href="/books/dashboard" @(on("/books/dashboard") ? "aria-current=page" : null)>Dashboard</a>
+        <a class="books-nav-btn@(on("/books/order") ? " is-current" : "")" href="/books/order" @(on("/books/order") ? "aria-current=page" : null)>New order</a>
+        <a class="books-nav-btn@(on("/books/orders") ? " is-current" : "")" href="/books/orders" @(on("/books/orders") ? "aria-current=page" : null)>My orders</a>
+        <a class="books-nav-btn@(on("/books/payments") ? " is-current" : "")" href="/books/payments" @(on("/books/payments") ? "aria-current=page" : null)>My payments</a>
+        <a class="books-nav-btn@(on("/books/returns") ? " is-current" : "")" href="/books/returns" @(on("/books/returns") ? "aria-current=page" : null)>Returns</a>
         <form method="post" action="/books/signout">@Html.AntiForgeryToken()<button type="submit" class="books-nav-btn books-nav-btn--out">Sign out</button></form>
     </nav>
 </div>
