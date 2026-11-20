@@ -139,6 +139,7 @@
     @if (Model.CanPay && o.Status != "cancelled" && o.Balance > 0)
     {
         <h3 class="admin-subhead" id="payment">Record a payment</h3>
+        if (o.PendingPayments > 0) { <p class="admin-alert admin-alert--warn" role="status">The customer has sent a payment (see "Payments sent by the customer" above). Please confirm or reject it before recording another payment.</p> }
         if (Model.Accounts.Count == 0)
         {
             <p>Please add a cash or bank account first under <a href="/admin/books/accounts">Accounts</a>.</p>

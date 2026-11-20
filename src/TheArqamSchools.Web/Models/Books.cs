@@ -142,7 +142,7 @@ namespace TheArqamSchools.Web.Models
         /// <summary>The office may change the books until any payment is recorded, while the order is New or Checked.</summary>
         public bool OfficeCanEdit
         {
-            get { return PaidTotal == 0 && DiscountTotal == 0 && StockTakenAt == null && (Status == "new" || Status == "checked"); }
+            get { return PaidTotal == 0 && DiscountTotal == 0 && StockTakenAt == null && (Status == "new" || Status == "checked") && PendingPayments == 0; }
         }
         public string OrderLabel { get { return BookFormat.OrderLabel(OrderNo); } }
     }

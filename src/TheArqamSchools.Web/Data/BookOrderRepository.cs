@@ -149,6 +149,8 @@ namespace TheArqamSchools.Web.Data
                 if (status == "cancelled" && Step(o.Status) >= 3) return "A delivered or collected order cannot be cancelled. Record a return instead.";
                 if (status == "cancelled" && (o.PaidTotal > 0 || o.DiscountTotal > 0))
                     return "A payment has been recorded for this order, so it cannot be cancelled. Record a return instead.";
+                if (status == "cancelled" && db.ExecuteScalar<int>("SELECT COUNT(*) FROM dbo.book_payment_submissions WHERE order_id = @Id AND status = N'pending'", new { o.Id }, tx) > 0)
+                    return "The customer has sent a payment for this order. Please confirm or reject it first.";
                 if (status == "delivered" && o.Fulfilment != "delivery") return "This order is for pick up; mark it as Collected.";
                 if (status == "collected" && o.Fulfilment != "pickup") return "This order is for delivery; mark it as Delivered.";
                 // When the books leave the office before any payment, they come off stock now (not again at payment).
@@ -185,6 +187,11 @@ namespace TheArqamSchools.Web.Data
             using (var db = Db.Open())
             using (var tx = db.BeginTransaction())
             {
+                // Order row first (the lock order everywhere), then: no manual payment while a customer's payment waits.
+                db.Execute("SELECT id FROM dbo.book_orders WITH (UPDLOCK, HOLDLOCK) WHERE order_no = @orderNo", new { orderNo }, tx);
+                var waiting = db.ExecuteScalar<int>(@"SELECT COUNT(*) FROM dbo.book_payment_submissions s JOIN dbo.book_orders o ON o.id = s.order_id
+                                                      WHERE o.order_no = @orderNo AND s.status = N'pending'", new { orderNo }, tx);
+                if (waiting > 0) throw new BookOrderException("A payment sent by the customer is waiting under \"Payments sent by the customer\". Please confirm or reject it first, so the same money is not counted twice.");
                 var id = RecordPaymentTx(db, tx, orderNo, p, receiptPath, receiptMime, actorId);
                 tx.Commit();
                 return id;
@@ -192,7 +199,7 @@ namespace TheArqamSchools.Web.Data
         }
 
         /// <summary>Records a payment inside the caller's transaction (also used when the office confirms a payment the customer sent).</summary>
-        internal static Guid RecordPaymentTx(System.Data.IDbConnection db, System.Data.IDbTransaction tx, long orderNo, BookPaymentForm p, string receiptPath, string receiptMime, Guid actorId)
+        internal static Guid RecordPaymentTx(System.Data.IDbConnection db, System.Data.IDbTransaction tx, long orderNo, BookPaymentForm p, string receiptPath, string receiptMime, Guid actorId, bool accountMayBeInactive = false)
         {
             {
                 var o = db.QuerySingleOrDefault<BookOrder>(@"
@@ -205,7 +212,8 @@ namespace TheArqamSchools.Web.Data
                 if (p.Amount > 0)
                 {
                     var account = db.QuerySingleOrDefault<BookAccount>("SELECT id, name, kind, is_active FROM dbo.book_accounts WHERE id = @AccountId", new { p.AccountId }, tx);
-                    if (account == null || !account.IsActive) throw new BookOrderException("Please choose the account the money went into.");
+                    // A customer's payment stays confirmable even if the account was switched off after they paid into it.
+                    if (account == null || (!account.IsActive && !accountMayBeInactive)) throw new BookOrderException("Please choose the account the money went into.");
                     if (account.Kind != p.Method) throw new BookOrderException("The account \"" + account.Name + "\" is a " + account.Kind + " account; please choose a " + p.Method + " account or change the method.");
                 }
 

@@ -88,11 +88,14 @@ namespace TheArqamSchools.Web.Data
                     Amount = sub.Amount, Discount = 0, Method = "bank", AccountId = sub.AccountId,
                     ReceivedOn = sub.CreatedAt.ToOffset(TimeSpan.FromHours(5)).Date, Note = "Sent by the customer online"
                 };
-                var paymentId = BookOrderRepository.RecordPaymentTx(db, tx, sub.OrderNo, form, sub.ReceiptPath, sub.ReceiptMime, actorId);
+                var paymentId = BookOrderRepository.RecordPaymentTx(db, tx, sub.OrderNo, form, sub.ReceiptPath, sub.ReceiptMime, actorId, true);
                 db.Execute(@"UPDATE dbo.book_payment_submissions SET status = N'confirmed', payment_id = @paymentId, reviewed_by = @actorId, reviewed_at = SYSDATETIMEOFFSET()
                              WHERE id = @id", new { paymentId, actorId, id }, tx);
                 var moved = db.Execute("UPDATE dbo.book_orders SET status = N'checked', updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId WHERE id = @OrderId AND status = N'new'",
                     new { actorId, sub.OrderId }, tx);
+                if (moved > 0)
+                    AuditLog.Write(db, tx, actorId, "update", "book_orders", sub.OrderId.ToString(),
+                        new { order_no = sub.OrderNo, status_from = "new", status_to = "checked", via = "customer payment confirmed" });
                 AuditLog.Write(db, tx, actorId, "update", "book_payment_submissions", id.ToString(),
                     new { order_no = sub.OrderNo, status = "confirmed", payment_id = paymentId, amount = sub.Amount, order_confirmed = moved > 0 });
                 tx.Commit();

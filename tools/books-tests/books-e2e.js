@@ -142,6 +142,14 @@ const BOOKS = [
   const sentRec = await admin.locator('#sent a:has-text("View receipt")').getAttribute('href');
   const rr = await admin.context().request.get(B + sentRec); ok('office sees the receipt', rr.status() === 200 && rr.headers()['content-type'].startsWith('image/jpeg'));
   const rc = await cust.context().request.get(B + sentRec, { maxRedirects: 0 }); ok('customer cannot open the office receipt link', rc.status() !== 200);
+  await admin.fill('#Amount', '400'); await admin.selectOption('#Method', 'bank');
+  await admin.evaluate(() => { const s = document.getElementById('AccountId'); const o = [...s.options].find(x => x.text.includes('DEMO Customer Bank')); s.value = o.value; });
+  await admin.click('button:has-text("Save payment")'); await admin.waitForLoadState();
+  ok('no manual payment while a customer payment waits', (await admin.content()).includes('so the same money is not counted twice'));
+  await admin.goto(B + '/admin/books/orders/' + payNo); await admin.click('button:has-text("Cancel order")'); await admin.waitForLoadState();
+  ok('office cannot cancel while a customer payment waits', (await admin.content()).includes('Please confirm or reject it first'));
+  ok('office cannot change books while a customer payment waits', (await admin.locator('a:has-text("Change books")').count()) === 0);
+  await admin.goto(B + '/admin/books/orders/' + payNo);
   await admin.fill('#sent input[name=Reason]', 'DEMO amount not received'); await admin.click('#sent button:has-text("Not accepted")'); await admin.waitForLoadState();
   await cust.goto(B + '/books/orders/' + payNo);
   ok('customer sees the reason and can send again', (await cust.content()).includes('DEMO amount not received') && (await cust.locator('button:has-text("Send payment")').count()) === 1);

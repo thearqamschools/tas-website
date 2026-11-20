@@ -378,7 +378,8 @@ namespace TheArqamSchools.Web.Data
             using (var tx = db.BeginTransaction(IsolationLevel.ReadCommitted))
             {
                 var o = db.QuerySingleOrDefault<BookOrder>(@"SELECT id, order_no, customer_id, fulfilment, status, subtotal, discount_total, credit_applied, paid_total, stock_taken_at,
-                                                                    (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE s.order_id = o.id AND s.status <> N'rejected') AS sent_payments
+                                                                    (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE s.order_id = o.id AND s.status <> N'rejected') AS sent_payments,
+                                                                    (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE s.order_id = o.id AND s.status = N'pending') AS pending_payments
                                                              FROM dbo.book_orders o WITH (UPDLOCK, HOLDLOCK) WHERE order_no = @orderNo", new { orderNo }, tx);
                 if (o == null || (customerId.HasValue && o.CustomerId != customerId.Value)) throw new BookOrderException("The order was not found.");
                 if (customerId.HasValue ? !o.CustomerCanEdit : !o.OfficeCanEdit)

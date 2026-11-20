@@ -176,6 +176,11 @@ namespace TheArqamSchools.Web.Controllers
                 ReceiptStore.Delete(path);
                 return DetailView(customer, OwnOrder(customer, orderNo), false, false, false, ex.Message);
             }
+            catch
+            {
+                ReceiptStore.Delete(path);   // no orphan receipt when the database is unavailable
+                throw;
+            }
             return Redirect("/books/orders/" + orderNo.ToString(CultureInfo.InvariantCulture) + "?sent=true#payment");
         }
 
