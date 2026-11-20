@@ -193,3 +193,6 @@ admin inbox, campus and page editing, on a phone and a computer.
   payments with a receipt, office confirms or rejects, "Checked" shown as "Confirmed", Campus column in the orders list)
   went up first time; `/`, `/books`, `/about`, `/campuses`, `/admin/login` answered 200 and the new site.css is served.
   Receipts are saved under `App_Data\private\book-receipts`: that folder needs write permission on the server.
+- 20 November 2026 (later): site only (commit 116f217, no database change): stock report like the old system, admin
+  orders list fits the page and whole rows open the order, Books page contact lines (Phone, Mobile/WhatsApp), customer
+  buttons, whole order cards clickable. `/`, `/books`, `/about`, `/campuses`, `/admin/login` answered 200.
