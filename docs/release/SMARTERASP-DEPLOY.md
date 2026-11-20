@@ -188,3 +188,8 @@ admin inbox, campus and page editing, on a phone and a computer.
   (old system "Product Stock" report: 78 items updated, 23 new, stock = Stock Left; the safety check found no unknown
   items; 2 orders had already been handed over, 0 open). The site (commit aa440e5: Category books/stationery, book form
   layout) went up; `/`, `/books`, `/about`, `/campuses`, `/admin/login` answered 200, new admin.css served.
+- 20 November 2026: `26_customer_payments` ran through `deploy/smarterasp-db` (customer payments with receipts,
+  bank details, BankIslami and Bank Alfalah accounts shown to customers). The site (commit 40456a0: customers send bank
+  payments with a receipt, office confirms or rejects, "Checked" shown as "Confirmed", Campus column in the orders list)
+  went up first time; `/`, `/books`, `/about`, `/campuses`, `/admin/login` answered 200 and the new site.css is served.
+  Receipts are saved under `App_Data\private\book-receipts`: that folder needs write permission on the server.
