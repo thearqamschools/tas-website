@@ -19,13 +19,8 @@ namespace TheArqamSchools.Web.Controllers
         {
             var settings = SiteSettingsRepository.Public();
             ViewBag.Tagline = SiteSettingsRepository.Text(settings, "site.tagline");
-            // Campus finder: only published campuses from dbo.branches, never sample data.
-            // At most three campus cards (TOP 3 in SQL); the full list is on /campuses.
-            // Cached for a minute because the homepage is the busiest public URL. If the
-            // database is briefly unreachable the last good copy is used, or the finder
-            // is left out (the view hides it when the lists are empty).
-            ViewBag.Cities = Cache.GetOrLastGood("home:cities", () => CampusRepository.Cities(), () => new List<FilterOption>());
-            ViewBag.Campuses = Cache.GetOrLastGood("home:campuses", () => CampusRepository.Featured(MaxHomepageCampuses), () => new List<Campus>());
+            // The campus finder is only a search box and "Show all campuses" (owner's request, 21 November 2026),
+            // so the homepage no longer loads cities or campus cards.
             // Newest three published news posts and events (cleared when one is saved in the admin panel).
             ViewBag.News = Cache.GetOrLastGood("home:news", () => NewsRepository.Published(null, 3), () => new List<NewsItem>());
             SeoMetadata seo = null;

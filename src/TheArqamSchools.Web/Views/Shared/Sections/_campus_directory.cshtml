@@ -11,6 +11,49 @@
         <div class="section-head">
             <h2 class="h2" id="h-@Model.Id">@Model.Text("heading")</h2>
         </div>
+        @if (!cityLocked)
+        {
+            @* Head offices first (owner's request, 21 November 2026); the full campus list follows, where they may appear again. *@
+            var offices = new[]
+            {
+                new { City = "Faisalabad", Address = "Sanora Colony, Samanabad, Faisalabad", Phones = new[] { "041-2660265", "041-2406479" }, Mobile = "0339-2406479", WhatsApp = "0339-2406479" },
+                new { City = "Lahore", Address = "163-Tufail Block, Canal Bank Housing Scheme, Lahore 54000", Phones = new[] { "042-36520008" }, Mobile = "0331-1304001", WhatsApp = (string)null }
+            };
+            <div class="head-offices" aria-labelledby="ho-h">
+                <h3 class="h3" id="ho-h">Head Offices</h3>
+                <ul class="campus-grid head-office-grid">
+                    @foreach (var o in offices)
+                    {
+                        <li>
+                            <article class="campus-card head-office-card">
+                                <div class="campus-card-head">
+                                    <h4 class="h4">Head Office, @o.City</h4>
+                                    <p class="campus-locality">@Icons.Svg("map-pin", 16) @o.City</p>
+                                </div>
+                                <dl class="campus-facts">
+                                    <div><dt>Address</dt><dd>@o.Address</dd></div>
+                                    <div><dt>Phone</dt><dd>@for (var i = 0; i < o.Phones.Length; i++) { if (i > 0) { <text>, </text> } <a href="@Contact.TelUrl(o.Phones[i])">@o.Phones[i]</a> }</dd></div>
+                                    <div><dt>@(o.WhatsApp != null ? "Mobile / WhatsApp" : "Mobile")</dt><dd><a href="@Contact.TelUrl(o.Mobile)">@o.Mobile</a></dd></div>
+                                </dl>
+                                <div class="campus-actions">
+                                    <a class="btn btn-primary btn-sm" href="@Contact.TelUrl(o.Phones[0])">@Icons.Svg("phone", 16) Call<span class="sr-only">: Head Office, @o.City</span></a>
+                                    @if (o.WhatsApp != null)
+                                    {
+                                        <a class="btn btn-outline btn-sm" href="@Contact.WhatsAppUrl(o.WhatsApp)" target="_blank" rel="noopener">@Icons.Svg("whatsapp", 16) WhatsApp<span class="sr-only"> (opens in a new tab)</span></a>
+                                    }
+                                    else
+                                    {
+                                        <a class="btn btn-outline btn-sm" href="@Contact.TelUrl(o.Mobile)">@Icons.Svg("phone", 16) Call mobile</a>
+                                    }
+                                    <a class="btn btn-outline btn-sm" href="https://www.google.com/maps/search/?api=1&amp;query=@Url.Encode("The Arqam Schools Head Office, " + o.Address)" target="_blank" rel="noopener">@Icons.Svg("map-pin", 16) Map<span class="sr-only"> (opens in a new tab)</span></a>
+                                </div>
+                            </article>
+                        </li>
+                    }
+                </ul>
+                <h3 class="h3 head-offices-next">All campuses</h3>
+            </div>
+        }
         <form class="finder@(cityLocked ? " finder-locked" : "")" method="get" action="@(action)#find" role="search" aria-label="Find a campus">
             <div class="field finder-q">
                 <label for="cf-q">Campus name, area or address</label>

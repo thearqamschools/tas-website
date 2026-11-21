@@ -33,6 +33,8 @@ namespace TheArqamSchools.Web.Infrastructure
             /// <summary>For images: the current picture's address and description (alt text).</summary>
             public string ImageUrl;
             public string Alt;
+            /// <summary>For images: position (0-100) and zoom (1-3) chosen with "Adjust"; null when not set.</summary>
+            public double? FocusX, FocusY, Zoom;
             /// <summary>The list item this field belongs to, for example "items[2]" (null for fields outside a list).</summary>
             public string ItemPath;
             public string ItemLabel;
@@ -219,6 +221,34 @@ namespace TheArqamSchools.Web.Infrastructure
             return errors;
         }
 
+        private static double? Focus(JObject o, string key, double min, double max)
+        {
+            double v;
+            return o != null && Helpers.Media.TryNumber(o[key], min, max, out v) ? v : (double?)null;
+        }
+
+        /// <summary>
+        /// Stores the position and zoom chosen with "Adjust" in the image object (posted x{i}, y{i}, z{i}); blank values remove
+        /// them, so the website uses its usual position. Values out of range are ignored. The picture file is not touched.
+        /// </summary>
+        public static void SetFocus(JObject root, Field field, string x, string y, string z)
+        {
+            var o = root.SelectToken(field.Path) as JObject;
+            if (o == null) return;
+            Action<string, string, double, double, int> put = (key, raw, min, max, digits) =>
+            {
+                double v;
+                if (string.IsNullOrWhiteSpace(raw)) { o.Remove(key); return; }
+                if (!double.TryParse(raw.Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out v) || double.IsNaN(v) || v < min || v > max) return;
+                o[key] = Math.Round(v, digits);
+            };
+            put("fx", x, 0, 100, 1);
+            put("fy", y, 0, 100, 1);
+            put("zoom", z, 1, 3, 2);
+            var zoom = o["zoom"];
+            if (zoom != null && Math.Abs(zoom.Value<double>() - 1) < 0.001) o.Remove("zoom");
+        }
+
         /// <summary>Puts a new picture (or none) at an image field's place, keeping its description when no new one is given.</summary>
         public static void SetImage(JObject root, Field field, StoredImage img, string alt)
         {
@@ -310,7 +340,8 @@ namespace TheArqamSchools.Web.Infrastructure
                                 Path = p.Value.Path, Label = Label(p.Value.Path, sectionType), Kind = FieldKind.Image,
                                 Value = o == null ? "" : (string)o["path"] ?? "",
                                 ImageUrl = o == null ? null : Helpers.Media.Url(o),
-                                Alt = o == null ? "" : (string)o["alt"] ?? ""
+                                Alt = o == null ? "" : (string)o["alt"] ?? "",
+                                FocusX = Focus(o, "fx", 0, 100), FocusY = Focus(o, "fy", 0, 100), Zoom = Focus(o, "zoom", 1, 3)
                             });
                             continue;
                         }

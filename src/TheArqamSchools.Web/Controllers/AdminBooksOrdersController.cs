@@ -68,9 +68,11 @@ namespace TheArqamSchools.Web.Controllers
             return View("~/Views/Admin/Books/Order.cshtml", new BookOrderAdminViewModel
             {
                 Order = o, Payments = BookOrderRepository.Payments(o.Id), Accounts = BookOrderRepository.Accounts(true), Returns = BookReturnRepository.ForOrder(o.Id),
-                Submissions = BookPaymentSubmissionRepository.ForOrder(o.Id),
+                Submissions = BookPaymentSubmissionRepository.ForOrder(o.Id)
+                    .Concat(BookPaymentSubmissionRepository.ForCustomer(o.CustomerId).Where(x => !x.OrderId.HasValue && x.Status == "pending")).ToList(),
                 PaymentForm = form ?? new BookPaymentForm { ReceivedOn = DateTime.UtcNow.Add(PakistanTime).Date, Method = "cash" },
-                Notice = notice, Error = error, CanOrders = actor.Can("books.orders"), CanPay = actor.Can("books.payments")
+                Notice = notice, Error = error, CanOrders = actor.Can("books.orders"), CanPay = actor.Can("books.payments"),
+                CanRemove = actor.IsSuperAdmin && o.Status == "cancelled" && o.PaidTotal == 0 && o.DiscountTotal == 0 && o.ReturnedTotal == 0 && o.StockTakenAt == null
             });
         }
 
@@ -78,28 +80,46 @@ namespace TheArqamSchools.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AdminAuthorize("books.payments")]
-        public ActionResult ConfirmSent(Guid id)
+        public ActionResult ConfirmSent(Guid id, string back)
         {
             var sub = BookPaymentSubmissionRepository.Get(id);
             if (sub == null) return HttpNotFound();
             try { BookPaymentSubmissionRepository.Confirm(id, AdminAuth.Current(HttpContext).Id); }
-            catch (BookOrderException ex) { return OrderView(BookRepository.Order(sub.OrderNo), null, null, ex.Message); }
-            return Redirect("/admin/books/orders/" + sub.OrderNo.ToString(CultureInfo.InvariantCulture) + "?notice=sentconfirmed#sent");
+            catch (BookOrderException ex) { return SentError(sub, back, ex.Message); }
+            return SentDone(sub, back, "sentconfirmed");
+        }
+
+        /// <summary>
+        /// After Confirm / Not accepted: back to the order for an order payment; for a balance payment, back to the
+        /// customer's account (or to the order page it was confirmed from, which shows the new figures).
+        /// </summary>
+        private ActionResult SentDone(BookPaymentSubmission sub, string back, string notice)
+        {
+            if (sub.OrderNo.HasValue)
+                return Redirect("/admin/books/orders/" + sub.OrderNo.Value.ToString(CultureInfo.InvariantCulture) + "?notice=" + notice + "#sent");
+            return Redirect("/admin/books/customer-accounts/" + sub.CustomerId.ToString("D") + "?notice=" + notice + "#sent");
+        }
+
+        private ActionResult SentError(BookPaymentSubmission sub, string back, string error)
+        {
+            if (sub.OrderNo.HasValue) return OrderView(BookRepository.Order(sub.OrderNo.Value), null, null, error);
+            TempData["BooksError"] = error;
+            return Redirect("/admin/books/customer-accounts/" + sub.CustomerId.ToString("D") + "#sent");
         }
 
         /// <summary>POST /admin/books/sent-payments/{id}/reject: the payment is not accepted; the customer sees the reason.</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AdminAuthorize("books.payments")]
-        public ActionResult RejectSent(Guid id)
+        public ActionResult RejectSent(Guid id, string back)
         {
             var sub = BookPaymentSubmissionRepository.Get(id);
             if (sub == null) return HttpNotFound();
             var reason = Trim(Request.Unvalidated.Form["Reason"]);
             if (reason != null && reason.Length > 300) reason = reason.Substring(0, 300);
             try { BookPaymentSubmissionRepository.Reject(id, reason, AdminAuth.Current(HttpContext).Id); }
-            catch (BookOrderException ex) { return OrderView(BookRepository.Order(sub.OrderNo), null, null, ex.Message); }
-            return Redirect("/admin/books/orders/" + sub.OrderNo.ToString(CultureInfo.InvariantCulture) + "?notice=sentrejected#sent");
+            catch (BookOrderException ex) { return SentError(sub, back, ex.Message); }
+            return SentDone(sub, back, "sentrejected");
         }
 
         /// <summary>GET /admin/books/sent-payments/{id}/receipt: the receipt the customer attached (admin only, sandboxed).</summary>
@@ -126,6 +146,24 @@ namespace TheArqamSchools.Web.Controllers
             var error = BookOrderRepository.SetStatus(orderNo, status, AdminAuth.Current(HttpContext).Id);
             if (error != null) return OrderView(o, null, null, error);
             return Redirect("/admin/books/orders/" + orderNo.ToString(CultureInfo.InvariantCulture) + "?notice=status");
+        }
+
+        /// <summary>
+        /// POST /admin/books/orders/{no}/remove: a Super Admin removes a cancelled order that no money, stock or return
+        /// touched. It is archived (kept in the database) and hidden everywhere; see BookOrderRepository.RemoveCancelled.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AdminAuthorize("books.orders")]
+        public ActionResult RemoveOrder(long orderNo)
+        {
+            var actor = AdminAuth.Current(HttpContext);
+            if (!actor.IsSuperAdmin) return new HttpStatusCodeResult(403);
+            var o = BookRepository.Order(orderNo);
+            if (o == null) return HttpNotFound();
+            try { BookOrderRepository.RemoveCancelled(orderNo, actor.Id); }
+            catch (BookOrderException ex) { return OrderView(o, null, null, ex.Message); }
+            return Redirect("/admin/books/orders?notice=removed");
         }
 
         // ---- Payments -----------------------------------------------------------------------

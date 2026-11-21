@@ -236,3 +236,16 @@ tools/compile-check/      Mono C# compile check with stub MVC/Dapper types (does
   discount; cash paid back at once up to what was received, any part that was the customer's credit goes back to credit), `Data/BookReports.cs` + `Infrastructure/ReportTable.cs` (screen, Print, PDF, Excel .xlsx
   written with System.IO.Compression), `Controllers/AdminBooksReportsController.cs`, permission `books.reports`.
 - Tests: `tools/books-tests/books-e2e.js` (Playwright, synthetic data only, local site only).
+
+## Notes 41-51 (21 November 2026; Database/28)
+
+- Customer area: menu Dashboard, New order, My orders, Returns, My payments, Sign out; no buttons under the dashboard figures.
+- "Make a payment" on My payments pays towards the whole balance (`book_payment_submissions.order_id` NULL, `customer_id` set).
+  The amount may not be more than owed, one payment waits at a time, and while it waits the customer cannot change orders and
+  the office cannot record manual payments. Confirm applies it to the OLDEST unpaid orders first; anything left becomes credit
+  (`credit_amount`, shown in the statement). `/books/statement.pdf` is the customer's statement ("Adjustment", never discount).
+- A Super Admin can remove a cancelled order with no payment, stock or return: it is archived (`book_orders.archived_at`),
+  hidden from lists, customer pages and messages; queries that list orders must keep `archived_at IS NULL`.
+- Admin Books has a Messages tab (status, customer, kind, dates). Homepage slides store `fx`, `fy`, `zoom` in the image JSON
+  ("Adjust" in the admin panel; separate for computer and phone); the homepage finder is only search + "Show all campuses";
+  the Campuses page lists the two head offices first.

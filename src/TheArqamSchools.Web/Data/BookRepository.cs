@@ -185,7 +185,7 @@ namespace TheArqamSchools.Web.Data
         // ---- Customers ----------------------------------------------------------------
 
         private const string CustomerColumns = @"c.id, c.mobile, c.name, c.campus_name, c.address, c.credit, c.is_active, c.customer_no, c.credit_limit, c.credit_days,
-            (SELECT COUNT(*) FROM dbo.book_orders o WHERE o.customer_id = c.id) AS order_count";
+            (SELECT COUNT(*) FROM dbo.book_orders o WHERE o.customer_id = c.id AND o.archived_at IS NULL) AS order_count";
 
         public static IList<BookCustomer> Customers(string q)
         {
@@ -254,15 +254,15 @@ namespace TheArqamSchools.Web.Data
         private const string OrderColumns = @"o.id, o.order_no, o.customer_id, c.name AS customer_name, c.mobile AS customer_mobile, c.campus_name,
             o.fulfilment, o.delivery_address, o.status, o.source, o.subtotal, o.discount_total, o.credit_applied, o.paid_total,
             o.returned_total, o.refunded_total, o.edit_count, o.stock_taken_at, o.created_at,
-            (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE s.order_id = o.id AND s.status <> N'rejected') AS sent_payments,
-            (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE s.order_id = o.id AND s.status = N'pending') AS pending_payments";
+            (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE (s.order_id = o.id AND s.status <> N'rejected') OR (s.order_id IS NULL AND s.customer_id = o.customer_id AND s.status = N'pending')) AS sent_payments,
+            (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE (s.order_id = o.id OR (s.order_id IS NULL AND s.customer_id = o.customer_id)) AND s.status = N'pending') AS pending_payments";
 
         public static IList<BookOrder> CustomerOrders(Guid customerId)
         {
             using (var db = Db.Open())
             {
                 var orders = db.Query<BookOrder>("SELECT " + OrderColumns + @" FROM dbo.book_orders o JOIN dbo.book_customers c ON c.id = o.customer_id
-                                                   WHERE o.customer_id = @customerId ORDER BY o.created_at DESC", new { customerId }).ToList();
+                                                   WHERE o.customer_id = @customerId AND o.archived_at IS NULL ORDER BY o.created_at DESC", new { customerId }).ToList();
                 var lines = db.Query<BookOrderLine>(@"SELECT l.order_id AS id, l.item_id, l.class_name, l.item_name, l.unit_price, l.quantity, l.returned_qty
                                                       FROM dbo.book_order_lines l JOIN dbo.book_orders o ON o.id = l.order_id
                                                       WHERE o.customer_id = @customerId AND l.quantity > 0", new { customerId }).ToList();
@@ -275,7 +275,7 @@ namespace TheArqamSchools.Web.Data
         {
             using (var db = Db.Open())
             {
-                var o = db.QuerySingleOrDefault<BookOrder>("SELECT " + OrderColumns + " FROM dbo.book_orders o JOIN dbo.book_customers c ON c.id = o.customer_id WHERE o.order_no = @orderNo", new { orderNo });
+                var o = db.QuerySingleOrDefault<BookOrder>("SELECT " + OrderColumns + " FROM dbo.book_orders o JOIN dbo.book_customers c ON c.id = o.customer_id WHERE o.order_no = @orderNo AND o.archived_at IS NULL", new { orderNo });
                 if (o == null) return null;
                 o.Lines = Lines(db, null, o.Id);
                 o.Edits = db.Query<BookOrderEdit>(@"SELECT e.changes, e.old_subtotal, e.new_subtotal, e.by_customer, u.full_name AS user_name, e.created_at
@@ -369,7 +369,7 @@ namespace TheArqamSchools.Web.Data
             using (var tx = db.BeginTransaction())
             {
                 var o = db.QuerySingleOrDefault<BookOrder>(@"SELECT id, order_no, customer_id, status, subtotal, discount_total, credit_applied, paid_total, stock_taken_at,
-                                                                    (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE s.order_id = o.id AND s.status <> N'rejected') AS sent_payments
+                                                                    (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE (s.order_id = o.id AND s.status <> N'rejected') OR (s.order_id IS NULL AND s.customer_id = o.customer_id AND s.status = N'pending')) AS sent_payments
                                                              FROM dbo.book_orders o WITH (UPDLOCK, HOLDLOCK) WHERE order_no = @orderNo", new { orderNo }, tx);
                 if (o == null || o.CustomerId != customerId) throw new BookOrderException("The order was not found.");
                 if (!o.CustomerCanEdit) throw new BookOrderException("This order can no longer be cancelled online, because a payment has been sent or the office has confirmed it. Please contact the office.");
@@ -399,8 +399,8 @@ namespace TheArqamSchools.Web.Data
             using (var tx = db.BeginTransaction(IsolationLevel.ReadCommitted))
             {
                 var o = db.QuerySingleOrDefault<BookOrder>(@"SELECT id, order_no, customer_id, fulfilment, status, subtotal, discount_total, credit_applied, paid_total, stock_taken_at,
-                                                                    (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE s.order_id = o.id AND s.status <> N'rejected') AS sent_payments,
-                                                                    (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE s.order_id = o.id AND s.status = N'pending') AS pending_payments
+                                                                    (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE (s.order_id = o.id AND s.status <> N'rejected') OR (s.order_id IS NULL AND s.customer_id = o.customer_id AND s.status = N'pending')) AS sent_payments,
+                                                                    (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE (s.order_id = o.id OR (s.order_id IS NULL AND s.customer_id = o.customer_id)) AND s.status = N'pending') AS pending_payments
                                                              FROM dbo.book_orders o WITH (UPDLOCK, HOLDLOCK) WHERE order_no = @orderNo", new { orderNo }, tx);
                 if (o == null || (customerId.HasValue && o.CustomerId != customerId.Value)) throw new BookOrderException("The order was not found.");
                 if (customerId.HasValue ? !o.CustomerCanEdit : !o.OfficeCanEdit)

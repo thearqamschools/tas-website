@@ -75,7 +75,7 @@ namespace TheArqamSchools.Web.Data
                            COALESCE(SUM(CASE WHEN o.status <> N'cancelled' THEN " + Bal + @" END), 0) AS owed,
                            COALESCE(SUM(CASE WHEN o.status <> N'cancelled' AND " + Bal + " > 0 AND " + OverdueCond + " THEN " + Bal + @" END), 0) AS overdue,
                            COALESCE(SUM(CASE WHEN o.status <> N'cancelled' AND " + Bal + " > 0 AND " + OverdueCond + @" THEN 1 ELSE 0 END), 0) AS overdue_orders
-                    FROM dbo.book_orders o JOIN dbo.book_customers c ON c.id = o.customer_id WHERE o.customer_id = @customerId", new { customerId });
+                    FROM dbo.book_orders o JOIN dbo.book_customers c ON c.id = o.customer_id WHERE o.customer_id = @customerId AND o.archived_at IS NULL", new { customerId });
                 s.BooksTaken = db.ExecuteScalar<int>(@"SELECT COALESCE(SUM(l.quantity), 0) FROM dbo.book_order_lines l JOIN dbo.book_orders o ON o.id = l.order_id
                                                        WHERE o.customer_id = @customerId AND o.stock_taken_at IS NOT NULL AND o.status <> N'cancelled'", new { customerId });
                 s.BooksReturned = db.ExecuteScalar<int>(@"SELECT COALESCE(SUM(rl.quantity), 0) FROM dbo.book_return_lines rl JOIN dbo.book_returns r ON r.id = rl.return_id
@@ -111,6 +111,14 @@ namespace TheArqamSchools.Web.Data
                                                    Details = ((string)p.method == "bank" ? "Bank" : "Cash") + (p.account != null && !forCustomer ? " · " + (string)p.account : ""), CreditAmount = (decimal)p.amount });
                     if ((decimal)p.discount > 0)
                         lines.Add(new LedgerLine { At = at, On = on, Kind = forCustomer ? "Adjustment" : "Discount", Reference = BookFormat.OrderLabel((long)p.order_no), CreditAmount = (decimal)p.discount });
+                }
+                // The part of a balance payment that was more than the customer owed became credit (Database/28).
+                foreach (var p in db.Query(@"SELECT amount, credit_amount, reviewed_at, created_at FROM dbo.book_payment_submissions
+                                             WHERE customer_id = @customerId AND order_id IS NULL AND status = N'confirmed' AND credit_amount > 0", new { customerId }))
+                {
+                    var at = (DateTimeOffset)p.reviewed_at;
+                    lines.Add(new LedgerLine { At = at, On = at.ToOffset(pk).Date, Kind = "Payment", Reference = "To credit",
+                                               Details = "Bank · part of " + BookFormat.Money((decimal)p.amount), CreditAmount = (decimal)p.credit_amount });
                 }
                 foreach (var r in db.Query(@"SELECT return_no, amount, refund_amount, credit_amount, refund_method, refund_paid_at, refunded_on, created_at FROM dbo.book_returns WHERE customer_id = @customerId", new { customerId }))
                 {

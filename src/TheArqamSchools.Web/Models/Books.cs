@@ -322,8 +322,13 @@ namespace TheArqamSchools.Web.Models
     public class BookPaymentSubmission
     {
         public Guid Id { get; set; }
-        public Guid OrderId { get; set; }
-        public long OrderNo { get; set; }
+        /// <summary>Empty when the customer paid towards their whole balance (Database/28).</summary>
+        public Guid? OrderId { get; set; }
+        public long? OrderNo { get; set; }
+        public Guid CustomerId { get; set; }
+        public long CustomerNo { get; set; }
+        /// <summary>Part of a balance payment that became credit when it was confirmed.</summary>
+        public decimal CreditAmount { get; set; }
         public Guid AccountId { get; set; }
         public string AccountName { get; set; }
         public decimal Amount { get; set; }
@@ -396,6 +401,8 @@ namespace TheArqamSchools.Web.Models
         public string Error { get; set; }
         public bool CanOrders { get; set; }
         public bool CanPay { get; set; }
+        /// <summary>Only a Super Admin may remove a cancelled order (owner's decision, 21 November 2026).</summary>
+        public bool CanRemove { get; set; }
     }
 
     // ---- Part 3: returns and reports ------------------------------------------------------------
@@ -450,6 +457,8 @@ namespace TheArqamSchools.Web.Models
         public TheArqamSchools.Web.Infrastructure.ReportTable Report { get; set; }
         public IList<TheArqamSchools.Web.Data.BookMessageRepository.Message> Messages { get; set; }
         public IList<BookReturn> PendingRefunds { get; set; }
+        /// <summary>Payments the customer sent towards the whole balance (Database/28); the newest ten.</summary>
+        public IList<BookPaymentSubmission> Submissions { get; set; }
         public IList<BookAccount> Accounts { get; set; }
         public bool CanPay { get; set; }
         public bool CanOrders { get; set; }

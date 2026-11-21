@@ -11,7 +11,7 @@
     var baseUrl = "/admin/books/customer-accounts/" + c.Id.ToString("D");
     Func<DateTime?, string> d = x => x.HasValue ? x.Value.ToString("yyyy-MM-dd", inv) : "";
     var range = (Model.From.HasValue ? "&from=" + d(Model.From) : "") + (Model.To.HasValue ? "&to=" + d(Model.To) : "");
-    var error = Request.Unvalidated.QueryString["error"];
+    var error = (TempData["BooksError"] as string) ?? Request.Unvalidated.QueryString["error"];
     var today = DateTime.UtcNow.AddHours(5);
     var firstSession = 2025;
     var lastSession = today.Month >= 4 ? today.Year : today.Year - 1;
@@ -39,6 +39,17 @@
     @if (s.RefundPending > 0) { <div class="admin-stat admin-stat--owed"><p class="admin-stat-value">@BookFormat.Money(s.RefundPending)</p><p class="admin-stat-label">Refund to pay back</p></div> }
     @if (s.Overdue > 0) { <div class="admin-stat admin-stat--owed"><p class="admin-stat-value">@BookFormat.Money(s.Overdue)</p><p class="admin-stat-label">Overdue (@s.OverdueOrders @(s.OverdueOrders == 1 ? "order" : "orders"))</p></div> }
 </section>
+
+@if (Model.Submissions != null && Model.Submissions.Count > 0)
+{
+    <section class="admin-card" id="sent" aria-labelledby="sent-h">
+        <h2 id="sent-h">Payments sent towards the balance</h2>
+        @foreach (var sp in Model.Submissions)
+        {
+            @Html.Partial("~/Views/Admin/Books/_SentPayment.cshtml", sp, new ViewDataDictionary { { "CanPay", Model.CanPay }, { "Back", "customer" } })
+        }
+    </section>
+}
 
 @if (Model.PendingRefunds.Count > 0 && Model.CanPay)
 {

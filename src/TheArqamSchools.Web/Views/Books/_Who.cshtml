@@ -1,10 +1,20 @@
 @model BookCustomer
 @using TheArqamSchools.Web.Helpers
 @* The signed-in customer: name, campus and part of the address, with links to the order pages. *@
+@{
+    var initials = string.Concat((Model.Name ?? "").Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(w => char.IsLetter(w[0])).Take(2).Select(w => char.ToUpperInvariant(w[0])));
+}
 <div class="books-who">
-    <div>
-        <p class="books-who-name">@Model.Name</p>
-        <p class="books-who-meta">@Model.CustomerLabel &middot; @Mobile.Format(Model.Mobile)@if (!string.IsNullOrEmpty(Model.CampusName)) { <text> &middot; @Model.CampusName</text> }</p>
+    <div class="books-who-card">
+        <span class="books-who-avatar" aria-hidden="true">@(string.IsNullOrEmpty(initials) ? "C" : initials)</span>
+        <div class="books-who-text">
+            <p class="books-who-name">@Model.Name</p>
+            <dl class="books-who-facts">
+                <div><dt>Customer no.</dt><dd>@Model.CustomerLabel</dd></div>
+                <div><dt>Mobile</dt><dd>@Mobile.Format(Model.Mobile)</dd></div>
+                @if (!string.IsNullOrEmpty(Model.CampusName)) { <div><dt>Campus</dt><dd>@Model.CampusName</dd></div> }
+            </dl>
+        </div>
     </div>
     @{
         var path = (Request.Path ?? "").TrimEnd('/').ToLowerInvariant();
@@ -14,8 +24,8 @@
         <a class="books-nav-btn@(on("/books/dashboard") ? " is-current" : "")" href="/books/dashboard" @(on("/books/dashboard") ? "aria-current=page" : null)>Dashboard</a>
         <a class="books-nav-btn@(on("/books/order") ? " is-current" : "")" href="/books/order" @(on("/books/order") ? "aria-current=page" : null)>New order</a>
         <a class="books-nav-btn@(on("/books/orders") ? " is-current" : "")" href="/books/orders" @(on("/books/orders") ? "aria-current=page" : null)>My orders</a>
-        <a class="books-nav-btn@(on("/books/payments") ? " is-current" : "")" href="/books/payments" @(on("/books/payments") ? "aria-current=page" : null)>My payments</a>
         <a class="books-nav-btn@(on("/books/returns") ? " is-current" : "")" href="/books/returns" @(on("/books/returns") ? "aria-current=page" : null)>Returns</a>
+        <a class="books-nav-btn@(on("/books/payments") ? " is-current" : "")" href="/books/payments" @(on("/books/payments") ? "aria-current=page" : null)>My payments</a>
         <form method="post" action="/books/signout">@Html.AntiForgeryToken()<button type="submit" class="books-nav-btn books-nav-btn--out">Sign out</button></form>
     </nav>
 </div>

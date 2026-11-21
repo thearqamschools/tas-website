@@ -87,6 +87,13 @@ namespace TheArqamSchools.Web.Infrastructure
                 return result;
             }
 
+            // Position and zoom from "Adjust" (only sent by the slides' pictures; others post nothing here).
+            for (var i = 0; i < fields.Count; i++)
+            {
+                if (fields[i].Kind != JsonContentFields.FieldKind.Image || form["x" + i] == null) continue;
+                JsonContentFields.SetFocus(root, fields[i], form["x" + i], form["y" + i], form["z" + i]);
+            }
+
             // The list button that was pressed, for example "add:items", "remove:items:2", "up:items:2".
             var op = (form["op"] ?? "save").Split(':');
             // Only lists of items (objects) such as stages, people or slides; not lists of paragraphs.

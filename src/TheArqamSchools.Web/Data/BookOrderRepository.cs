@@ -63,7 +63,7 @@ namespace TheArqamSchools.Web.Data
 
         public static IList<BookOrder> List(BookOrderFilter f)
         {
-            var where = new List<string>();
+            var where = new List<string> { "o.archived_at IS NULL" };   // removed cancelled orders (Database/28) are never listed
             if (!string.IsNullOrEmpty(f.Status)) where.Add("o.status = @Status");
             if (f.Payment == "pending") where.Add("o.paid_total = 0 AND o.discount_total = 0 AND o.status <> N'cancelled'");
             else if (f.Payment == "part") where.Add("(o.paid_total > 0 OR o.discount_total > 0) AND " + BalanceSql + " > 0");
@@ -85,7 +85,7 @@ namespace TheArqamSchools.Web.Data
                     SELECT TOP (500) o.id, o.order_no, o.customer_id, c.name AS customer_name, c.mobile AS customer_mobile, c.campus_name,
                            o.fulfilment, o.delivery_address, o.status, o.source, o.subtotal, o.discount_total, o.credit_applied, o.paid_total,
                            o.returned_total, o.refunded_total, o.edit_count, o.stock_taken_at, o.created_at,
-                           (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE s.order_id = o.id AND s.status = N'pending') AS pending_payments
+                           (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE (s.order_id = o.id OR (s.order_id IS NULL AND s.customer_id = o.customer_id)) AND s.status = N'pending') AS pending_payments
                     FROM dbo.book_orders o JOIN dbo.book_customers c ON c.id = o.customer_id" +
                     (where.Count > 0 ? " WHERE " + string.Join(" AND ", where) : "") + " ORDER BY o.created_at DESC",
                     new
@@ -96,6 +96,33 @@ namespace TheArqamSchools.Web.Data
                     }).ToList();
         }
 
+        /// <summary>
+        /// Removes a cancelled order (owner's decision, 21 November 2026; Super Admin only, checked by the controller).
+        /// Nothing is deleted: the order is archived and then hidden from every list, the customer's pages and the reports.
+        /// Only an order that was cancelled before any money, stock or return touched it can be removed; the database
+        /// checks the same (CK_book_orders_archived).
+        /// </summary>
+        public static void RemoveCancelled(long orderNo, Guid actorId)
+        {
+            using (var db = Db.Open())
+            using (var tx = db.BeginTransaction())
+            {
+                var o = db.QuerySingleOrDefault<BookOrder>(@"SELECT id, order_no, customer_id, status, paid_total, discount_total, returned_total, refunded_total, credit_applied, stock_taken_at
+                                                             FROM dbo.book_orders WITH (UPDLOCK, HOLDLOCK) WHERE order_no = @orderNo AND archived_at IS NULL", new { orderNo }, tx);
+                if (o == null) throw new BookOrderException("The order was not found.");
+                if (o.Status != "cancelled") throw new BookOrderException("Only a cancelled order can be removed.");
+                var touched = db.ExecuteScalar<int>(@"SELECT (SELECT COUNT(*) FROM dbo.book_payments WHERE order_id = @Id)
+                                                           + (SELECT COUNT(*) FROM dbo.book_payment_submissions WHERE order_id = @Id AND status <> N'rejected')
+                                                           + (SELECT COUNT(*) FROM dbo.book_return_lines rl JOIN dbo.book_order_lines l ON l.id = rl.order_line_id WHERE l.order_id = @Id)", new { o.Id }, tx);
+                if (o.PaidTotal != 0 || o.DiscountTotal != 0 || o.ReturnedTotal != 0 || o.RefundedTotal != 0 || o.StockTakenAt != null || touched > 0)
+                    throw new BookOrderException("This order has a payment, a discount, a return or books taken off stock, so it must stay on record.");
+                db.Execute("UPDATE dbo.book_orders SET archived_at = SYSDATETIMEOFFSET(), archived_by = @actorId, updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId WHERE id = @Id",
+                    new { actorId, o.Id }, tx);
+                AuditLog.Write(db, tx, actorId, "update", "book_orders", o.Id.ToString(), new { order_no = o.OrderNo, status = o.Status, archived = true, removed_by_super_admin = true });
+                tx.Commit();
+            }
+        }
+
         /// <summary>Numbers for the dashboard: orders waiting to be checked, and orders not fully paid.</summary>
         public static BookCounts Counts()
         {
@@ -103,7 +130,7 @@ namespace TheArqamSchools.Web.Data
                 return db.QuerySingle<BookCounts>(@"
                     SELECT (SELECT COUNT(*) FROM dbo.book_orders WHERE status = N'new') AS new_orders,
                            (SELECT COUNT(*) FROM dbo.book_orders o WHERE o.status <> N'cancelled' AND " + BalanceSql + @" > 0) AS unpaid_orders,
-                           (SELECT COUNT(*) FROM dbo.book_orders WHERE created_at >= DATEADD(day, -1, SYSDATETIMEOFFSET())) AS last_day,
+                           (SELECT COUNT(*) FROM dbo.book_orders WHERE archived_at IS NULL AND created_at >= DATEADD(day, -1, SYSDATETIMEOFFSET())) AS last_day,
                            (SELECT COUNT(*) FROM dbo.book_payment_submissions WHERE status = N'pending') AS payments_to_check");
         }
 
@@ -190,7 +217,8 @@ namespace TheArqamSchools.Web.Data
             {
                 // Order row first (the lock order everywhere), then: no manual payment while a customer's payment waits.
                 db.Execute("SELECT id FROM dbo.book_orders WITH (UPDLOCK, HOLDLOCK) WHERE order_no = @orderNo", new { orderNo }, tx);
-                var waiting = db.ExecuteScalar<int>(@"SELECT COUNT(*) FROM dbo.book_payment_submissions s JOIN dbo.book_orders o ON o.id = s.order_id
+                var waiting = db.ExecuteScalar<int>(@"SELECT COUNT(*) FROM dbo.book_payment_submissions s JOIN dbo.book_orders o
+                                                        ON o.id = s.order_id OR (s.order_id IS NULL AND s.customer_id = o.customer_id)
                                                       WHERE o.order_no = @orderNo AND s.status = N'pending'", new { orderNo }, tx);
                 if (waiting > 0) throw new BookOrderException("A payment sent by the customer is waiting under \"Payments sent by the customer\". Please confirm or reject it first, so the same money is not counted twice.");
                 var id = RecordPaymentTx(db, tx, orderNo, p, receiptPath, receiptMime, actorId);

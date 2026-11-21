@@ -203,16 +203,91 @@ namespace TheArqamSchools.Web.Controllers
         }
 
         [HttpGet]
-        public ActionResult Payments()
+        public ActionResult Payments(bool sent = false)
         {
             var customer = CurrentCustomer();
             if (customer == null) return Redirect("/books");
+            ViewBag.Sent = sent;
+            return PaymentsView(customer, null);
+        }
+
+        private ActionResult PaymentsView(BookCustomer customer, string error)
+        {
             ViewBag.Customer = customer;
             ViewBag.Meta = Meta();
+            ViewBag.Error = error;
             ViewBag.Summary = BookCustomerAccountRepository.GetSummary(customer.Id);
             ViewBag.Submissions = BookPaymentSubmissionRepository.ForCustomer(customer.Id);
             ViewBag.Ledger = BookCustomerAccountRepository.Ledger(customer.Id, null, null, true);
+            ViewBag.Accounts = BookPaymentSubmissionRepository.CustomerAccounts();
+            ViewBag.Owed = BookPaymentSubmissionRepository.Owed(customer.Id);
             return View("~/Views/Books/Payments.cshtml");
+        }
+
+        /// <summary>
+        /// POST /books/payments (multipart): "Make a payment" towards everything the customer owes (owner's request,
+        /// 21 November 2026). The office confirms it; then it is applied to the oldest unpaid orders first.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult PayBalance(string website)
+        {
+            var customer = CurrentCustomer();
+            if (customer == null) return Redirect("/books");
+            if (!string.IsNullOrEmpty(website)) return Redirect("/books");
+            if (!RateLimiter.Allow("books-pay", PageBuilder.ClientKey(Request), 10, TimeSpan.FromHours(1)))
+                return PaymentsView(customer, "Too many payments sent from this network. Please wait and try again, or call the office.");
+            var form = Request.Unvalidated.Form;
+            Guid accountId;
+            decimal amount;
+            var rawAmount = (form["PayAmount"] ?? "").Replace(",", "").Trim();
+            if (!Guid.TryParse(form["PayAccount"], out accountId))
+                return PaymentsView(customer, "Please choose the bank account you paid into.");
+            if (!decimal.TryParse(rawAmount, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out amount) || amount <= 0)
+                return PaymentsView(customer, "Please enter the amount you paid, in rupees.");
+            var file = Request.Files["PayReceipt"];
+            if (file == null || file.ContentLength <= 0)
+                return PaymentsView(customer, "Please attach the receipt (a photo or a PDF).");
+            string path, mime;
+            try { path = ReceiptStore.Save(file.InputStream, file.ContentLength, out mime); }
+            catch (ImageRejectedException ex) { return PaymentsView(customer, ex.Message); }
+            try { BookPaymentSubmissionRepository.SubmitForBalance(customer.Id, accountId, amount, path, mime); }
+            catch (BookOrderException ex)
+            {
+                ReceiptStore.Delete(path);
+                return PaymentsView(customer, ex.Message);
+            }
+            catch
+            {
+                ReceiptStore.Delete(path);
+                throw;
+            }
+            return Redirect("/books/payments?sent=true#make-payment");
+        }
+
+        /// <summary>GET /books/statement.pdf: the customer's own statement (no purchase prices or discounts; discounts show as "Adjustment").</summary>
+        [HttpGet]
+        public ActionResult Statement()
+        {
+            var customer = CurrentCustomer();
+            if (customer == null) return Redirect("/books");
+            var lines = BookCustomerAccountRepository.Ledger(customer.Id, null, null, true);
+            var s = BookCustomerAccountRepository.GetSummary(customer.Id);
+            var tbl = new ReportTable
+            {
+                Title = "Statement \u2013 " + customer.Name + " (" + customer.CustomerLabel + ")",
+                Subtitle = Mobile.Format(customer.Mobile) + (string.IsNullOrEmpty(customer.CampusName) ? "" : " \u00b7 " + customer.CampusName)
+                         + " \u00b7 " + DateTime.UtcNow.AddHours(5).ToString("d MMM yyyy", CultureInfo.InvariantCulture)
+            }.Col("Date", "text", 0.8).Col("Entry", "text", 0.9).Col("Reference", "text", 0.8).Col("Details", "text", 1.3)
+             .Col("Amount due", "money", 0.8).Col("Paid / returned", "money", 0.9).Col("Balance", "money", 0.8);
+            foreach (var l in lines)
+                tbl.Rows.Add(new object[] { l.On, l.Kind, l.Reference, l.Kind == "Order" ? "" : l.Details, l.Debit == 0 ? (object)null : l.Debit, l.CreditAmount == 0 ? (object)null : l.CreditAmount, l.Balance });
+            tbl.Totals = new object[] { "Total", null, null, null, lines.Sum(l => l.Debit), lines.Sum(l => l.CreditAmount), lines.Count > 0 ? lines.Last().Balance : 0m };
+            tbl.Notes.Add("Balance = what you owe. A balance below zero means the school owes you that amount; it is kept as credit for your next order.");
+            if (s.Credit > 0) tbl.Notes.Add("Your credit: " + BookFormat.Money(s.Credit) + " (already included in the balance).");
+            tbl.Notes.Add("The Arqam Schools, Faisalabad. Phone 041-2660265, 041-2406479. Mobile/WhatsApp 0339-2406479.");
+            Response.Headers["Cache-Control"] = "private, no-store";
+            return File(tbl.ToPdf(), "application/pdf", "statement-" + customer.CustomerLabel + ".pdf");
         }
 
         /// <summary>GET /books/receipts/{id}: a receipt this customer sent (never anyone else's), shown in a sandbox.</summary>
@@ -222,7 +297,7 @@ namespace TheArqamSchools.Web.Controllers
             var customer = CurrentCustomer();
             if (customer == null) return Redirect("/books");
             var sub = BookPaymentSubmissionRepository.Get(id);
-            if (sub == null || BookRepository.Order(sub.OrderNo) == null || BookRepository.Order(sub.OrderNo).CustomerId != customer.Id) return HttpNotFound();
+            if (sub == null || sub.CustomerId != customer.Id) return HttpNotFound();
             var path = ReceiptStore.PhysicalPath(sub.ReceiptPath);
             if (!System.IO.File.Exists(path)) return HttpNotFound();
             Response.Headers["X-Content-Type-Options"] = "nosniff";

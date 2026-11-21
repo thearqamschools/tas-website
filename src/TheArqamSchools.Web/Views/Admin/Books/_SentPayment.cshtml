@@ -1,0 +1,33 @@
+@model BookPaymentSubmission
+@using TheArqamSchools.Web.Helpers
+@* A payment the customer sent, with Confirm / Not accepted. ViewData: CanPay (bool), Back (address to return to). *@
+@{
+    var sp = Model;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var canPay = (bool)(ViewData["CanPay"] ?? false);
+    var back = ViewData["Back"] as string;
+}
+<div class="admin-sent-item@(sp.Status == "pending" ? " is-pending" : "")">
+    <p><strong>@BookFormat.Money(sp.Amount)</strong> into <strong>@sp.AccountName</strong>
+       @if (sp.OrderNo.HasValue) { <text>for <a href="/admin/books/orders/@sp.OrderNo">@BookFormat.OrderLabel(sp.OrderNo.Value)</a></text> } else { <span class="admin-tag admin-tag--warn">towards the balance</span> }
+       &middot; sent @sp.CreatedAt.ToOffset(TimeSpan.FromHours(5)).ToString("d MMM yyyy, h:mm tt", inv)
+       &middot; <a href="/admin/books/sent-payments/@sp.Id.ToString("D")/receipt" target="_blank" rel="noopener">View receipt</a></p>
+    @if (!sp.OrderNo.HasValue && sp.Status == "pending") { <p class="admin-muted">Confirm applies it to the customer's oldest unpaid orders first; anything left becomes credit.</p> }
+    <p>Status: <strong>@sp.StatusLabel</strong>@if (sp.ReviewedAt.HasValue) { <text> by @sp.ReviewedByName, @sp.ReviewedAt.Value.ToOffset(TimeSpan.FromHours(5)).ToString("d MMM yyyy", inv)</text> }@if (sp.CreditAmount > 0) { <text> &middot; @BookFormat.Money(sp.CreditAmount) to credit</text> }@if (!string.IsNullOrEmpty(sp.RejectReason)) { <text> &middot; Reason: @sp.RejectReason</text> }</p>
+    @if (sp.Status == "pending" && canPay)
+    {
+        <div class="admin-sent-actions">
+            <form method="post" action="/admin/books/sent-payments/@sp.Id.ToString("D")/confirm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="back" value="@back" />
+                <button type="submit" class="admin-button" data-confirm="Confirm @BookFormat.Money(sp.Amount) received in @sp.AccountName?">Confirm payment</button>
+            </form>
+            <form method="post" action="/admin/books/sent-payments/@sp.Id.ToString("D")/reject">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="back" value="@back" />
+                <div class="admin-field"><label for="reason-@sp.Id.ToString("N")">Reason, if not accepted</label><input type="text" id="reason-@sp.Id.ToString("N")" name="Reason" maxlength="300" placeholder="For example: amount not received" /></div>
+                <button type="submit" class="admin-button admin-button--secondary admin-danger">Not accepted</button>
+            </form>
+        </div>
+    }
+</div>

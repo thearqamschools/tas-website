@@ -57,9 +57,12 @@ namespace TheArqamSchools.Web.Controllers
                 Customer = c, Summary = BookCustomerAccountRepository.GetSummary(id), View = view, From = f, To = t, Session = session,
                 Report = table, Messages = view == "messages" ? BookMessageRepository.ForCustomer(id) : null,
                 PendingRefunds = BookReturnRepository.ForCustomer(id).Where(r => r.RefundPending).ToList(),
+                Submissions = BookPaymentSubmissionRepository.ForCustomer(id).Where(x => !x.OrderId.HasValue).Take(10).ToList(),
                 Accounts = BookOrderRepository.Accounts(true), CanPay = actor.Can("books.payments"), CanOrders = actor.Can("books.orders"),
                 Notice = notice == "returned" ? "Return " + Request.QueryString["rn"] + " recorded. The books are back in stock."
-                       : notice == "refund" ? "Refund recorded as paid." : notice == "sent" ? "Message marked as sent." : null
+                       : notice == "refund" ? "Refund recorded as paid."
+                       : notice == "sentconfirmed" ? "Payment confirmed and applied to the oldest unpaid orders first."
+                       : notice == "sentrejected" ? "Payment marked as not accepted. A message for the customer is ready under Messages." : notice == "sent" ? "Message marked as sent." : null
             });
         }
 
@@ -194,16 +197,35 @@ namespace TheArqamSchools.Web.Controllers
         {
             var customerId = BookMessageRepository.MarkSent(id, sent, AdminAuth.Current(HttpContext).Id);
             if (customerId == null) return HttpNotFound();
-            if (back == "list") return Redirect("/admin/books/messages");
+            if (back == "list")
+            {
+                // Back to the same filtered list (only our own query string, rebuilt from known keys).
+                var r = Request.Unvalidated.Form;
+                var qs = new List<string>();
+                foreach (var k in new[] { "status", "q", "kind", "from", "to" })
+                    if (!string.IsNullOrEmpty(r["f_" + k])) qs.Add(k + "=" + Uri.EscapeDataString(r["f_" + k].Length > 60 ? r["f_" + k].Substring(0, 60) : r["f_" + k]));
+                return Redirect("/admin/books/messages" + (qs.Count > 0 ? "?" + string.Join("&", qs) : "") + "#m-" + id.ToString("N"));
+            }
             return Redirect("/admin/books/customer-accounts/" + customerId.Value.ToString("D") + "?view=messages&notice=sent");
         }
 
-        /// <summary>GET /admin/books/messages: messages waiting to be sent, for all customers.</summary>
+        /// <summary>GET /admin/books/messages?status=unsent|sent|all&amp;q&amp;kind&amp;from&amp;to: the Messages tab (all customers).</summary>
         [HttpGet]
-        public ActionResult Messages()
+        public ActionResult Messages(string status, string kind, string from, string to)
         {
+            var q = Trim(Request.Unvalidated.QueryString["q"]);
+            var f = new BookMessageRepository.Filter
+            {
+                Status = status == "sent" || status == "all" ? status : "unsent",
+                Kind = BookMessageRepository.Kinds.Contains(kind) ? kind : null,
+                Query = q == null ? null : (q.Length > 60 ? q.Substring(0, 60) : q),
+                From = ParseDate(from), To = ParseDate(to)
+            };
+            if (f.From.HasValue && f.To.HasValue && f.To < f.From) { var x = f.From; f.From = f.To; f.To = x; }
+            ViewBag.Filter = f;
             ViewBag.CanOrders = AdminAuth.Current(HttpContext).Can("books.orders");
-            return View("~/Views/Admin/Books/Messages.cshtml", BookMessageRepository.Unsent(300));
+            ViewBag.Wide = true;
+            return View("~/Views/Admin/Books/Messages.cshtml", BookMessageRepository.Search(f));
         }
     }
 }

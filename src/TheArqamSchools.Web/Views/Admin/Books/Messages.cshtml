@@ -1,14 +1,37 @@
 @model IList<TheArqamSchools.Web.Data.BookMessageRepository.Message>
+@using TheArqamSchools.Web.Data
 @{
     Layout = "~/Views/Admin/_AdminLayout.cshtml";
-    ViewBag.Title = "Messages to send";
+    ViewBag.Title = "Messages";
+    var f = ViewBag.Filter as BookMessageRepository.Filter;
+    Func<DateTime?, string> d = x => x.HasValue ? x.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) : "";
+    var keep = new ViewDataDictionary { { "back", "list" }, { "f_status", f.Status }, { "f_q", f.Query }, { "f_kind", f.Kind }, { "f_from", d(f.From) }, { "f_to", d(f.To) } };
+    var filtered = f.Status != "unsent" || f.Kind != null || f.Query != null || f.From.HasValue || f.To.HasValue;
 }
-<div class="admin-page-head"><h1>Messages to send</h1></div>
-@Html.Partial("~/Views/Admin/Books/_Tabs.cshtml", "home")
-<p class="admin-muted">Messages written by the website for customers. Copy each one into WhatsApp or SMS, then mark it as sent. The full history is on each customer's account (Messages).</p>
-@if (Model.Count == 0) { <section class="admin-card"><p>No messages waiting.</p></section> }
+<div class="admin-page-head"><h1>Messages</h1></div>
+@Html.Partial("~/Views/Admin/Books/_Tabs.cshtml", "messages")
+<p class="admin-muted">Messages written by the website for customers. Copy each one into WhatsApp or SMS (or open it in WhatsApp), then mark it as sent.</p>
+<form method="get" action="/admin/books/messages" class="admin-filters admin-filters--messages">
+    <div class="admin-field"><label for="m-status">Status</label>
+        <select id="m-status" name="status">
+            <option value="unsent" @(f.Status == "unsent" ? "selected" : null)>To send</option>
+            <option value="sent" @(f.Status == "sent" ? "selected" : null)>Sent</option>
+            <option value="all" @(f.Status == "all" ? "selected" : null)>All</option>
+        </select></div>
+    <div class="admin-field admin-field--grow"><label for="m-q">Customer</label><input type="search" id="m-q" name="q" value="@f.Query" maxlength="60" placeholder="Name, mobile or C-number" autocomplete="off" /></div>
+    <div class="admin-field"><label for="m-kind">Kind</label>
+        <select id="m-kind" name="kind"><option value="">All kinds</option>@foreach (var k in BookMessageRepository.Kinds) { <option value="@k" @(f.Kind == k ? "selected" : null)>@BookMessageRepository.LabelFor(k)</option> }</select></div>
+    <div class="admin-field"><label for="m-from">From</label><input type="date" id="m-from" name="from" value="@d(f.From)" /></div>
+    <div class="admin-field"><label for="m-to">To</label><input type="date" id="m-to" name="to" value="@d(f.To)" /></div>
+    <div class="admin-filter-buttons">
+        <button type="submit" class="admin-button">Filter</button>
+        @if (filtered) { <a class="admin-button admin-button--secondary" href="/admin/books/messages">Clear</a> }
+    </div>
+</form>
+<p class="admin-muted" role="status">@Model.Count @(Model.Count == 1 ? "message" : "messages")@(Model.Count >= 500 ? " (the newest 500; narrow the filter to see older ones)" : "")</p>
+@if (Model.Count == 0) { <section class="admin-card"><p>@(f.Status == "unsent" && !filtered ? "No messages waiting." : "No messages match the filter.")</p></section> }
 @foreach (var m in Model)
 {
-    @Html.Partial("~/Views/Admin/Books/_Message.cshtml", m, new ViewDataDictionary { { "back", "list" } })
+    @Html.Partial("~/Views/Admin/Books/_Message.cshtml", m, keep)
 }
 <script src="/Scripts/admin-form.js?v=20261120c" defer></script>

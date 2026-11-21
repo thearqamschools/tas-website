@@ -411,6 +411,88 @@ const BOOKS = [
   await admin.goto(B + '/admin/books/customer-accounts'); await admin.locator('tr', { hasText: 'DEMO Customer (test)' }).locator('a').first().click(); await admin.waitForLoadState();
   const adminBal = (await admin.locator('.admin-summary .admin-stat').first().locator('.admin-stat-value').innerText()).trim();
   ok('customer statement balance = office balance', finalLedger.includes(adminBal));
+  // --- Notes 41-46 and 51 (21 November 2026) -------------------------------------------------------
+  await cust.goto(B + '/books/dashboard');
+  ok('dashboard has no extra buttons under the figures', (await cust.locator('main .books-actions').count()) === 0);
+  ok('menu order: Dashboard, New order, My orders, Returns, My payments, Sign out',
+    (await cust.locator('.books-who-links').innerText()).replace(/\s+/g, ' ').trim() === 'Dashboard New order My orders Returns My payments Sign out');
+  const whoText = await cust.locator('.books-who-facts').innerText();
+  ok('customer box lists customer no., mobile and campus', /Customer no\.\s*C-\d+/i.test(whoText) && whoText.includes('0300-1234567') && whoText.includes('DEMO Campus'));
+  const cNo = (whoText.match(/C-\d+/) || [])[0];
+  // Two new unpaid orders: the payment goes to the oldest unpaid orders first.
+  await cust.goto(B + '/books/order'); await q('DEMO Colours and Shapes', 3); await cust.click('button:has-text("Preview order")'); await cust.waitForLoadState(); await cust.click('button:has-text("Place order")'); await cust.waitForLoadState();
+  const olderNo = Number((cust.url().match(/orders\/(\d+)/) || [])[1]);
+  await cust.goto(B + '/books/order'); await q('DEMO Alphabet Book', 4); await cust.click('button:has-text("Preview order")'); await cust.waitForLoadState(); await cust.click('button:has-text("Place order")'); await cust.waitForLoadState();
+  const newestNo = Number((cust.url().match(/orders\/(\d+)/) || [])[1]);   // 4 x 260 (any credit is used by the older order first)
+  await cust.goto(B + '/books/payments');
+  const mpBox = cust.locator('#make-payment');
+  ok('make a payment is under the figures and above payments you sent', await cust.evaluate(() => {
+    const s = document.querySelector('.books-stats'), m = document.querySelector('#make-payment'), h = [...document.querySelectorAll('h2')].find(x => x.textContent.includes('Payments you sent'));
+    return !!(s && m && h) && (s.compareDocumentPosition(m) & 4) && (m.compareDocumentPosition(h) & 4); }));
+  ok('both bank details shown on my payments', (await mpBox.innerText()).includes('12345678901'));
+  const owedNow = money((await mpBox.locator('p strong').first().innerText()));
+  await cust.screenshot({ path: OUT + '/m-make-payment.png', fullPage: true });
+  const payBalance = async amount => { await mpBox.locator('.books-bank', { hasText: 'DEMO Customer Bank' }).locator('input').check(); await cust.fill('#mp-amount', String(amount));
+    await cust.setInputFiles('#mp-receipt', JPEG); await Promise.all([cust.waitForNavigation(), cust.click('#make-payment button:has-text("Send payment")')]); };
+  await payBalance(owedNow + 1);
+  ok('cannot pay more than I owe', (await cust.locator('#make-payment').innerText()).includes('more than the'));
+  await payBalance(owedNow - 100);
+  ok('balance payment sent', (await cust.content()).includes('used for your oldest unpaid order first') && (await cust.locator('.books-sent').innerText()).includes('towards your balance'));
+  ok('only one payment waiting at a time', (await cust.locator('#mp-amount').count()) === 0 && (await cust.locator('#make-payment').innerText()).includes('checking the payment'));
+  await cust.goto(B + '/books/orders/' + newestNo);
+  ok('orders cannot be changed while the payment is checked', (await cust.locator('button:has-text("Cancel this order")').count()) === 0);
+  await admin.goto(B + '/admin/books/orders/' + newestNo);
+  ok('office sees the balance payment on the order', /towards the balance/i.test(await admin.locator('#sent').innerText()) && (await admin.content()).includes('Please confirm or reject it before recording another payment'));
+  await admin.goto(B + '/admin/books/customer-accounts'); await admin.locator('tr', { hasText: 'DEMO Customer (test)' }).locator('a').first().click(); await admin.waitForLoadState();
+  await admin.screenshot({ path: OUT + '/admin-balance-payment.png', fullPage: true });
+  await admin.locator('#sent button:has-text("Confirm payment")').click(); await admin.waitForLoadState();
+  ok('office confirmed the balance payment', (await admin.content()).includes('applied to the oldest unpaid orders first'));
+  await admin.goto(B + '/admin/books/orders/' + newestNo);
+  ok('newest order keeps the rest (Rs. 100)', money(await admin.locator('tr.is-total td').innerText()) === 100);
+  await admin.goto(B + '/admin/books/orders/' + olderNo);
+  ok('older order fully paid and confirmed', money(await admin.locator('tr.is-total td').innerText()) === 0 && (await admin.locator('.admin-order-head').innerText()).includes('Confirmed'));
+  await cust.goto(B + '/books/payments');
+  ok('customer now owes Rs. 100', money(await cust.locator('#make-payment p strong').first().innerText()) === 100);
+  // Statement PDF.
+  const custPdf = await cust.context().request.get(B + '/books/statement.pdf');
+  const pdfBody = await custPdf.body();
+  ok('statement downloads as PDF', custPdf.status() === 200 && custPdf.headers()['content-type'].includes('application/pdf') && pdfBody.slice(0, 4).toString() === '%PDF');
+  ok('statement PDF never says discount', !/discount/i.test(pdfBody.toString('latin1')));
+  const anonPdf = await (await browser.newContext()).request.get(B + '/books/statement.pdf', { maxRedirects: 0 });
+  ok('statement needs the customer to be signed in', anonPdf.status() === 302);
+  // Messages tab with filters.
+  await admin.goto(B + '/admin/books');
+  ok('Messages tab after Reports', (await admin.locator('.admin-tabs').innerText()).replace(/\s+/g, ' ').includes('Reports Messages'));
+  await admin.goto(B + '/admin/books/messages?status=all&kind=payment_received&q=' + encodeURIComponent(cNo));
+  const msgList = admin.locator('.admin-msg');
+  ok('messages filtered by customer and kind', (await msgList.count()) >= 2 && (await admin.locator('.admin-msg p strong').allInnerTexts()).every(t => t === 'Payment received'));
+  await admin.goto(B + '/admin/books/messages?q=' + encodeURIComponent('0311-0000000'));
+  ok('filter with no match says so', (await admin.content()).includes('No messages match the filter'));
+  await admin.goto(B + '/admin/books/messages?status=unsent&q=' + encodeURIComponent(cNo));
+  const msgBefore = await msgList.count();
+  ok('copy and WhatsApp buttons', (await msgList.first().locator('button:has-text("Copy")').count()) === 1 && /^https:\/\/wa\.me\/923001234567\?text=/.test(await msgList.first().locator('a:has-text("Open in WhatsApp")').getAttribute('href')));
+  await msgList.first().locator('button:has-text("Mark as sent")').click(); await admin.waitForLoadState();
+  ok('mark as sent keeps the filter', admin.url().includes('q=' + encodeURIComponent(cNo)) && (await msgList.count()) === msgBefore - 1);
+  await admin.goto(B + '/admin/books/messages?status=sent&q=' + encodeURIComponent(cNo));
+  ok('sent filter shows it', (await msgList.count()) >= 1);
+  await admin.goto(B + '/admin/books/messages?from=2001-01-01&to=2001-01-31&status=all');
+  ok('date filter', (await msgList.count()) === 0);
+  await admin.screenshot({ path: OUT + '/admin-messages.png', fullPage: true });
+  // Super Admin removes a cancelled order (archived, hidden everywhere); a paid order cannot be removed.
+  await admin.goto(B + '/admin/books/orders/' + payNo);
+  ok('no remove button on a paid order', (await admin.locator('button:has-text("Remove this order")').count()) === 0);
+  await admin.goto(B + '/admin/books/orders/' + cancelNo);
+  await admin.screenshot({ path: OUT + '/admin-remove-order.png', fullPage: true });
+  await admin.locator('button:has-text("Remove this order")').click(); await admin.waitForLoadState();
+  ok('cancelled order removed', (await admin.content()).includes('The cancelled order was removed'));
+  ok('removed order not in the list', !(await admin.locator('.admin-table').innerText()).includes('BK-' + cancelNo));
+  const gone = await admin.context().request.get(B + '/admin/books/orders/' + cancelNo); ok('removed order page is gone for the office', gone.status() === 404);
+  const goneC = await cust.context().request.get(B + '/books/orders/' + cancelNo); ok('removed order page is gone for the customer', goneC.status() === 404);
+  await cust.goto(B + '/books/orders'); ok('removed order not in my orders', !(await cust.locator('main').innerText()).includes('BK-' + cancelNo));
+  await cust.goto(B + '/books/payments');
+  const ledger2 = await cust.locator('.books-ledger tbody tr').last().innerText();
+  await admin.goto(B + '/admin/books/customer-accounts'); await admin.locator('tr', { hasText: 'DEMO Customer (test)' }).locator('a').first().click(); await admin.waitForLoadState();
+  ok('statement still equals the office balance', ledger2.includes((await admin.locator('.admin-summary .admin-stat').first().locator('.admin-stat-value').innerText()).trim()));
   ok('no script errors ' + errors.join(' | '), errors.length === 0);
   console.log(results.join('\n'));
   console.log((results.filter(r => r.startsWith('FAIL')).length === 0 ? 'ALL PASSED' : 'SOME FAILED') + ' (' + results.length + ' checks)');

@@ -66,6 +66,24 @@ namespace TheArqamSchools.Web.Data
             Add(db, tx, o.CustomerId, o.Id, null, kind, text + Sign);
         }
 
+        /// <summary>A message about a payment the customer sent towards their whole balance (Database/28).</summary>
+        internal static void ForBalance(IDbConnection db, IDbTransaction tx, Guid customerId, string kind, decimal amount, decimal credit, string reason = null)
+        {
+            var name = db.ExecuteScalar<string>("SELECT name FROM dbo.book_customers WHERE id = @customerId", new { customerId }, tx);
+            var hi = "Assalamualaikum " + name + ",\n";
+            string text;
+            switch (kind)
+            {
+                case "payment_not_accepted":
+                    text = hi + "Your payment of " + BookFormat.Money(amount) + " could not be accepted"
+                         + (string.IsNullOrEmpty(reason) ? "." : ": " + reason + ".") + " Please contact the office."; break;
+                case "payment_credit":
+                    text = hi + BookFormat.Money(credit) + " from your payment of " + BookFormat.Money(amount) + " is added to your credit for the next order."; break;
+                default: return;
+            }
+            Add(db, tx, customerId, null, null, kind, text + Sign);
+        }
+
         internal static void ForReturn(IDbConnection db, IDbTransaction tx, Guid customerId, long returnNo, string kind, decimal value, decimal credit, decimal refund, string extra = null)
         {
             var name = db.ExecuteScalar<string>("SELECT name FROM dbo.book_customers WHERE id = @customerId", new { customerId }, tx);
@@ -101,7 +119,7 @@ namespace TheArqamSchools.Web.Data
                         case "order_placed": return "Order placed"; case "order_confirmed": return "Order confirmed"; case "order_packed": return "Packed";
                         case "order_delivered": return "Delivered"; case "order_collected": return "Collected"; case "order_cancelled": return "Cancelled";
                         case "payment_received": return "Payment received"; case "payment_not_accepted": return "Payment not accepted";
-                        case "return_received": return "Return received"; case "refund_paid": return "Refund paid";
+                        case "payment_credit": return "Payment to credit"; case "return_received": return "Return received"; case "refund_paid": return "Refund paid";
                         case "return_approved": return "Return approved"; case "return_rejected": return "Return not approved";
                         default: return Kind;
                     }
@@ -128,6 +146,56 @@ namespace TheArqamSchools.Web.Data
         {
             using (var db = Db.Open())
                 return db.Query<Message>("SELECT TOP (200) " + Columns + From + " WHERE m.customer_id = @customerId ORDER BY m.created_at DESC", new { customerId }).ToList();
+        }
+
+        /// <summary>Every kind of message, in the order the office meets them (for the Messages filter).</summary>
+        public static readonly string[] Kinds =
+        {
+            "order_placed", "order_confirmed", "order_packed", "order_delivered", "order_collected", "order_cancelled",
+            "payment_received", "payment_not_accepted", "payment_credit",
+            "return_approved", "return_rejected", "return_received", "refund_paid"
+        };
+
+        public static string LabelFor(string kind) { return new Message { Kind = kind }.KindLabel; }
+
+        public class Filter
+        {
+            /// <summary>"unsent" (default), "sent" or "all".</summary>
+            public string Status { get; set; }
+            public string Query { get; set; }
+            public string Kind { get; set; }
+            public DateTime? From { get; set; }
+            public DateTime? To { get; set; }
+        }
+
+        /// <summary>The Messages tab (owner's request, 21 November 2026): all customers' messages with filters. At most 500 rows.</summary>
+        public static IList<Message> Search(Filter f)
+        {
+            var where = new List<string> { "(o.id IS NULL OR o.archived_at IS NULL)" };
+            if (f.Status == "sent") where.Add("m.sent_at IS NOT NULL");
+            else if (f.Status != "all") where.Add("m.sent_at IS NULL");
+            if (!string.IsNullOrEmpty(f.Kind) && Kinds.Contains(f.Kind)) where.Add("m.kind = @Kind");
+            long no = 0;
+            var q = (f.Query ?? "").Trim();
+            if (q.Length > 0)
+            {
+                var digits = q.StartsWith("C-", StringComparison.OrdinalIgnoreCase) || q.StartsWith("C", StringComparison.OrdinalIgnoreCase) ? q.Substring(1).TrimStart('-', ' ') : q;
+                long.TryParse(digits, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out no);
+                where.Add("(c.name LIKE @like ESCAPE '\\' OR c.mobile LIKE @mobileLike ESCAPE '\\'" + (no > 0 ? " OR c.customer_no = @no" : "") + ")");
+            }
+            var pk = TimeSpan.FromHours(5);
+            if (f.From.HasValue) where.Add("m.created_at >= @fromUtc");
+            if (f.To.HasValue) where.Add("m.created_at < @toUtc");
+            using (var db = Db.Open())
+                return db.Query<Message>("SELECT TOP (500) " + Columns + From + " WHERE " + string.Join(" AND ", where) + " ORDER BY m.created_at DESC",
+                    new
+                    {
+                        f.Kind, no,
+                        like = "%" + CampusRepository.EscapeLike(q) + "%",
+                        mobileLike = "%" + CampusRepository.EscapeLike(Helpers.Mobile.Normalize(q) ?? q) + "%",
+                        fromUtc = f.From.HasValue ? new DateTimeOffset(DateTime.SpecifyKind(f.From.Value.Date, DateTimeKind.Unspecified), pk) : (DateTimeOffset?)null,
+                        toUtc = f.To.HasValue ? new DateTimeOffset(DateTime.SpecifyKind(f.To.Value.Date.AddDays(1), DateTimeKind.Unspecified), pk) : (DateTimeOffset?)null
+                    }).ToList();
         }
 
         public static IList<Message> Unsent(int max)

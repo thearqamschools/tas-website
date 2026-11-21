@@ -10,6 +10,7 @@
 }
 <div class="admin-page-head"><h1>Book orders</h1>@if ((bool)ViewBag.CanOrders) { <a class="admin-button" href="/admin/books/orders/new">New order for a customer</a> }</div>
 @Html.Partial("~/Views/Admin/Books/_Tabs.cshtml", "orders")
+@if (Request.QueryString["notice"] == "removed") { <div class="admin-alert admin-alert--success" role="status"><p>The cancelled order was removed. It is hidden everywhere and kept in the database.</p></div> }
 <form method="get" action="/admin/books/find" class="admin-search admin-scan" role="search">
     <label for="code">Scan the barcode or type the order ID</label>
     <input type="search" id="code" name="code" placeholder="1001" maxlength="30" autocomplete="off" autofocus />

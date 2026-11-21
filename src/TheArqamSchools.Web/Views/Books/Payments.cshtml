@@ -6,6 +6,10 @@
     var ledger = ViewBag.Ledger as IList<TheArqamSchools.Web.Data.BookCustomerAccountRepository.LedgerLine>;
     var pk = TimeSpan.FromHours(5);
     var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var accounts = ViewBag.Accounts as IList<BookAccount>;
+    var owed = (decimal)ViewBag.Owed;
+    var waiting = subs.Any(x => x.Status == "pending");
+    var error = ViewBag.Error as string;
 }
 <section class="page-header tone-warm">
     <div class="container">
@@ -21,18 +25,77 @@
             <div class="books-stat"><p class="books-stat-value">@BookFormat.Money(s.Paid)</p><p class="books-stat-label">You have paid</p></div>
             @if (s.Credit > 0) { <div class="books-stat is-ok"><p class="books-stat-value">@BookFormat.Money(s.Credit)</p><p class="books-stat-label">Your credit</p></div> }
         </div>
+        <section class="books-card books-pay" id="make-payment" aria-labelledby="mp-h">
+            <h2 class="h3" id="mp-h">Make a payment</h2>
+            @if ((bool)(ViewBag.Sent ?? false))
+            {
+                <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p>Thank you. Your payment has been sent. Our office will check the receipt; it will then be used for your oldest unpaid order first.</p></div>
+            }
+            @if (!string.IsNullOrEmpty(error))
+            {
+                <div class="alert alert-error" role="alert" tabindex="-1" data-focus><p>@error</p></div>
+            }
+            @if (waiting)
+            {
+                <p class="form-note">Our office is checking the payment you sent. You can send another payment once it is confirmed.</p>
+            }
+            else if (owed <= 0)
+            {
+                <p>Nothing is left to pay at the moment. Thank you.</p>
+            }
+            else if (accounts.Count == 0)
+            {
+                <p>Please contact the office to pay: Phone 041-2660265, 041-2406479 &middot; Mobile/WhatsApp 0339-2406479.</p>
+            }
+            else
+            {
+                <p>Still to pay: <strong>@BookFormat.Money(owed)</strong>. Please pay into one of these accounts, then tell us the amount and attach the receipt. The payment is used for your oldest unpaid order first.</p>
+                <form method="post" action="/books/payments" enctype="multipart/form-data" class="books-pay-form" novalidate>
+                    @Html.AntiForgeryToken()
+                    <div class="hp" aria-hidden="true"><label for="mp-website">Website</label><input id="mp-website" name="website" type="text" tabindex="-1" autocomplete="off" /></div>
+                    <fieldset class="books-bank-choice">
+                        <legend>Bank account you paid into</legend>
+                        @for (var i = 0; i < accounts.Count; i++)
+                        {
+                            var a = accounts[i];
+                            <label class="books-bank">
+                                <input type="radio" name="PayAccount" value="@a.Id.ToString("D")" @(accounts.Count == 1 ? "checked" : null) required />
+                                <span class="books-bank-body">
+                                    <span class="books-bank-name">@a.Name</span>
+                                    @if (!string.IsNullOrEmpty(a.AccountNumber)) { <span class="books-bank-number">@a.AccountNumber</span> }
+                                    @if (!string.IsNullOrEmpty(a.AccountTitle)) { <span>Account title: @a.AccountTitle</span> }
+                                    @if (!string.IsNullOrEmpty(a.Iban)) { <span>IBAN: @a.Iban</span> }
+                                </span>
+                            </label>
+                        }
+                    </fieldset>
+                    <div class="books-pay-fields">
+                        <div class="field">
+                            <label for="mp-amount">Amount paid (Rs.)</label>
+                            <input id="mp-amount" name="PayAmount" type="text" inputmode="decimal" autocomplete="off" placeholder="@owed.ToString("0.##", inv)" required />
+                        </div>
+                        <div class="field">
+                            <label for="mp-receipt">Receipt (photo or PDF, up to 10 MB)</label>
+                            <input id="mp-receipt" name="PayReceipt" type="file" accept="image/jpeg,image/png,application/pdf" required />
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send payment</button>
+                </form>
+            }
+        </section>
         <div class="books-card">
             <h2 class="h3">Payments you sent</h2>
-            @if (subs.Count == 0) { <p>You have not sent a payment online yet. Open an order and use "Send payment".</p> }
+            @if (subs.Count == 0) { <p>You have not sent a payment online yet.</p> }
             else
             {
                 <ul class="books-sent">
                     @foreach (var sp in subs)
                     {
                         <li class="books-sent-item books-sent-@sp.Status">
-                            <span><strong>@BookFormat.Money(sp.Amount)</strong> for <a href="/books/orders/@sp.OrderNo">@BookFormat.OrderLabel(sp.OrderNo)</a> to @sp.AccountName &middot; @sp.CreatedAt.ToOffset(pk).ToString("d MMM yyyy", inv)</span>
+                            <span><strong>@BookFormat.Money(sp.Amount)</strong> @if (sp.OrderNo.HasValue) { <text>for <a href="/books/orders/@sp.OrderNo">@BookFormat.OrderLabel(sp.OrderNo.Value)</a></text> } else { <text>towards your balance</text> } to @sp.AccountName &middot; @sp.CreatedAt.ToOffset(pk).ToString("d MMM yyyy", inv)</span>
                             <span class="books-sent-status">@sp.StatusLabel</span>
                             <a href="/books/receipts/@sp.Id.ToString("D")" target="_blank" rel="noopener">View receipt</a>
+                            @if (sp.Status == "confirmed" && sp.CreditAmount > 0) { <span class="books-sent-reason">@BookFormat.Money(sp.CreditAmount) added to your credit.</span> }
                             @if (sp.Status == "rejected" && !string.IsNullOrEmpty(sp.RejectReason)) { <span class="books-sent-reason">@sp.RejectReason</span> }
                         </li>
                     }
@@ -40,7 +103,10 @@
             }
         </div>
         <div class="books-card">
-            <h2 class="h3">My statement</h2>
+            <div class="books-card-head">
+                <h2 class="h3">My statement</h2>
+                <a class="btn btn-outline btn-sm" href="/books/statement.pdf">Download PDF</a>
+            </div>
             <p class="form-note">Orders add to what you owe; payments and returns take it off.</p>
             <div class="books-table-wrap">
                 <table class="books-table books-ledger">

@@ -6,7 +6,7 @@
     var boxId = "msg-" + Model.Id.ToString("N");
     var back = ViewData["back"] as string;
 }
-<div class="admin-msg@(Model.SentAt == null ? " is-unsent" : "")">
+<div class="admin-msg@(Model.SentAt == null ? " is-unsent" : "")" id="m-@Model.Id.ToString("N")">
     <p><strong>@Model.KindLabel</strong>@if (Model.OrderNo.HasValue) { <text> &middot; @BookFormat.OrderLabel(Model.OrderNo.Value)</text> }@if (Model.ReturnNo.HasValue) { <text> &middot; @BookFormat.ReturnLabel(Model.ReturnNo.Value)</text> }
        &middot; @Model.CreatedAt.ToOffset(pk).ToString("d MMM yyyy, h:mm tt", inv)@if (back == "list") { <text> &middot; @Model.CustomerName (@Mobile.Format(Model.CustomerMobile))</text> }</p>
     <pre id="@boxId">@Model.Body</pre>
@@ -17,6 +17,7 @@
             @Html.AntiForgeryToken()
             <input type="hidden" name="sent" value="@(Model.SentAt == null ? "true" : "false")" />
             @if (back != null) { <input type="hidden" name="back" value="@back" /> }
+            @if (back == "list") { foreach (var k in new[] { "f_status", "f_q", "f_kind", "f_from", "f_to" }) { if (!string.IsNullOrEmpty(ViewData[k] as string)) { <input type="hidden" name="@k" value="@(ViewData[k] as string)" /> } } }
             <button type="submit" class="admin-button@(Model.SentAt == null ? "" : " admin-button--secondary")">@(Model.SentAt == null ? "Mark as sent" : "Mark as not sent")</button>
         </form>
         @if (Model.SentAt != null) { <span class="admin-muted">Sent @Model.SentAt.Value.ToOffset(pk).ToString("d MMM yyyy, h:mm tt", inv)@(Model.SentByName != null ? " by " + Model.SentByName : "")</span> }

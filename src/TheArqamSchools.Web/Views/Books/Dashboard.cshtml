@@ -25,11 +25,6 @@
             @if (s.Credit > 0) { <div class="books-stat is-ok"><p class="books-stat-value">@BookFormat.Money(s.Credit)</p><p class="books-stat-label">Your credit (used on the next order)</p></div> }
             @if (s.RefundPending > 0) { <div class="books-stat"><p class="books-stat-value">@BookFormat.Money(s.RefundPending)</p><p class="books-stat-label">To be paid back to you</p></div> }
         </div>
-        <div class="books-actions books-actions--row">
-            <a class="btn btn-primary" href="/books/order">Place a new order</a>
-            <a class="btn btn-outline" href="/books/payments">Payments and statement</a>
-            <a class="btn btn-outline" href="/books/returns">Return books@(((int)ViewBag.OpenReturns) > 0 ? " (" + ViewBag.OpenReturns + " open)" : "")</a>
-        </div>
         <div class="books-card">
             <h2 class="h3">Recent orders</h2>
             @if (orders.Count == 0) { <p>No orders yet.</p> }

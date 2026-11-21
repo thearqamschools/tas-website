@@ -200,6 +200,7 @@
     <Content Include="Content\admin.css" />
     <Content Include="Global.asax" />
     <Content Include="Scripts\admin-form.js" />
+    <Content Include="Scripts\admin-images.js" />
     <Content Include="Scripts\admin-photos.js" />
     <Content Include="Scripts\books.js" />
     <Content Include="Scripts\site.js" />
@@ -249,6 +250,7 @@
     <Content Include="Views\Admin\Books\CustomerReturn.cshtml" />
     <Content Include="Views\Admin\Books\Messages.cshtml" />
     <Content Include="Views\Admin\Books\_Message.cshtml" />
+    <Content Include="Views\Admin\Books\_SentPayment.cshtml" />
     <Content Include="Views\Admin\Books\ReturnRequests.cshtml" />
     <Content Include="Views\Admin\Books\ReturnRequest.cshtml" />
     <Content Include="Views\Admin\Books\Orders.cshtml" />

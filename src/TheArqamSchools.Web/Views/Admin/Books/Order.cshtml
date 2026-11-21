@@ -53,6 +53,14 @@
             @if (o.OfficeCanEdit) { <a class="admin-button admin-button--secondary" href="/admin/books/orders/@o.OrderNo/edit">Change books</a> }
         </div>
     }
+    @if (Model.CanRemove)
+    {
+        <form method="post" action="/admin/books/orders/@o.OrderNo/remove" class="admin-remove-order">
+            @Html.AntiForgeryToken()
+            <p class="admin-muted">This cancelled order has no payment, stock or return. A Super Admin can remove it: it is then hidden from all lists, reports and the customer's pages (kept in the database, not deleted).</p>
+            <button type="submit" class="admin-button admin-button--secondary admin-danger" data-confirm="Remove cancelled order @o.OrderLabel? It will be hidden everywhere.">Remove this order</button>
+        </form>
+    }
 </section>
 
 <section class="admin-card">
@@ -86,25 +94,7 @@
         <p class="admin-muted">Open the receipt and check that the money has arrived in the account. Confirm records the payment (and takes the books off stock at the first payment) and confirms the order.</p>
         @foreach (var sp in Model.Submissions)
         {
-            <div class="admin-sent-item@(sp.Status == "pending" ? " is-pending" : "")">
-                <p><strong>@BookFormat.Money(sp.Amount)</strong> into <strong>@sp.AccountName</strong> &middot; sent @sp.CreatedAt.ToOffset(TimeSpan.FromHours(5)).ToString("d MMM yyyy, h:mm tt", inv)
-                   &middot; <a href="/admin/books/sent-payments/@sp.Id.ToString("D")/receipt" target="_blank" rel="noopener">View receipt</a></p>
-                <p>Status: <strong>@sp.StatusLabel</strong>@if (sp.ReviewedAt.HasValue) { <text> by @sp.ReviewedByName, @sp.ReviewedAt.Value.ToOffset(TimeSpan.FromHours(5)).ToString("d MMM yyyy", inv)</text> }@if (!string.IsNullOrEmpty(sp.RejectReason)) { <text> &middot; Reason: @sp.RejectReason</text> }</p>
-                @if (sp.Status == "pending" && Model.CanPay)
-                {
-                    <div class="admin-sent-actions">
-                        <form method="post" action="/admin/books/sent-payments/@sp.Id.ToString("D")/confirm">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="admin-button" data-confirm="Confirm @BookFormat.Money(sp.Amount) received in @sp.AccountName?">Confirm payment</button>
-                        </form>
-                        <form method="post" action="/admin/books/sent-payments/@sp.Id.ToString("D")/reject">
-                            @Html.AntiForgeryToken()
-                            <div class="admin-field"><label for="reason-@sp.Id.ToString("N")">Reason, if not accepted</label><input type="text" id="reason-@sp.Id.ToString("N")" name="Reason" maxlength="300" placeholder="For example: amount not received" /></div>
-                            <button type="submit" class="admin-button admin-button--secondary admin-danger">Not accepted</button>
-                        </form>
-                    </div>
-                }
-            </div>
+            @Html.Partial("~/Views/Admin/Books/_SentPayment.cshtml", sp, new ViewDataDictionary { { "CanPay", Model.CanPay }, { "Back", "order" } })
         }
     </section>
 }

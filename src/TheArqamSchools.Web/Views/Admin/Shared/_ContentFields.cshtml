@@ -56,36 +56,69 @@
     }
     else if (fld.Kind == JsonContentFields.FieldKind.Image)
     {
-        <div class="admin-field admin-image-field">
-            <span class="admin-label">@label</span>
-            <div class="admin-image-row">
-                @if (fld.ImageUrl != null)
+        // Pictures (owner's request, 21 November 2026): a card per picture with a preview, "Choose file" below it, an X to
+        // remove it and an instant preview of a new file. Pictures of the same item (a slide's computer and phone photos)
+        // sit side by side. The homepage slides also get "Adjust": drag to move, zoom, reset; the file is not changed.
+        var prevImg = i > 0 && Model.Fields[i - 1].Kind == JsonContentFields.FieldKind.Image && Model.Fields[i - 1].ItemPath == fld.ItemPath;
+        var nextImg = i + 1 < Model.Fields.Count && Model.Fields[i + 1].Kind == JsonContentFields.FieldKind.Image && Model.Fields[i + 1].ItemPath == fld.ItemPath;
+        var slide = System.Text.RegularExpressions.Regex.Match(fld.Path ?? "", @"^slides\[\d+\]\.(image|mobile_image)$");
+        var frame = !slide.Success ? null : slide.Groups[1].Value == "image" ? "desktop" : "mobile";
+        var title = frame == "desktop" ? "For website" : frame == "mobile" ? "For phone" : label;
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        Func<double?, string> num = v => v.HasValue ? v.Value.ToString("0.##", inv) : "";
+        if (!prevImg) { @Html.Raw("<div class=\"admin-img-grid\">") }
+        <div class="admin-img-card@(fld.ImageUrl == null ? " is-empty" : "")" data-img-card @(frame != null ? "data-frame=" + frame : null)>
+            <p class="admin-img-title">@title</p>
+            @if (frame == "desktop") { <p class="admin-hint">A wide photo, about 2000 &times; 800 pixels. Shown behind the text on computers.</p> }
+            else if (frame == "mobile") { <p class="admin-hint">An upright photo, about 660 &times; 800 pixels. Shown at the top on phones.</p> }
+            else if (title != label) { <p class="admin-hint">@label</p> }
+            <div class="admin-img-frame@(frame != null ? " admin-img-frame--" + frame : "")" data-img-frame>
+                <img src="@fld.ImageUrl" alt="@(fld.ImageUrl != null ? "Current picture: " + fld.Alt : "")" data-img-preview @(fld.ImageUrl == null ? "hidden" : null) draggable="false" />
+                <span class="admin-img-none" data-img-none @(fld.ImageUrl != null ? "hidden" : null)>No picture yet</span>
+                @if (Model.CanEdit && fld.ImageUrl != null)
                 {
-                    <a href="@fld.ImageUrl" target="_blank" rel="noopener" class="admin-image-preview"><img src="@fld.ImageUrl" alt="Current picture: @fld.Alt" loading="lazy" /></a>
+                    <button type="button" class="admin-img-x" data-img-remove aria-label="Remove this picture (@title)" title="Remove this picture" hidden>&times;</button>
+                    <div class="admin-img-removed" data-img-removed hidden><p>This picture will be removed when you save.</p><button type="button" class="admin-button admin-button--secondary" data-img-undo>Undo</button></div>
                 }
-                else
-                {
-                    <span class="admin-image-preview admin-image-none">No picture yet</span>
-                }
-                <div class="admin-image-inputs">
-                    @if (Model.CanEdit)
-                    {
-                        <label for="f@(i)" class="admin-hint-label">@(fld.ImageUrl != null ? "Replace with a new picture" : "Add a picture")</label>
-                        <input type="file" id="f@(i)" name="f@(i)" accept="image/jpeg,image/png" aria-describedby="fh@(i)" />
-                        <p class="admin-hint" id="fh@(i)">JPG or PNG, up to 15 MB. Change one or two photos at a time (all photos in one save: up to 18 MB together). A PNG keeps its transparent background.</p>
-                    }
-                    <label for="a@(i)" class="admin-hint-label">Picture description (for blind visitors and Google)</label>
-                    <input type="text" id="a@(i)" name="a@(i)" value="@fld.Alt" maxlength="250" @ro />
-                    @if (Model.CanEdit && fld.ImageUrl != null)
-                    {
-                        <div class="admin-check admin-check-small">
-                            <input type="checkbox" id="r@(i)" name="r@(i)" value="true" />
-                            <label for="r@(i)">Remove this picture</label>
-                        </div>
-                    }
+            </div>
+            @if (Model.CanEdit)
+            {
+                <div class="admin-img-tools">
+                    <input type="file" id="f@(i)" name="f@(i)" accept="image/jpeg,image/png" class="admin-file-input" aria-describedby="fh@(i)" data-img-file />
+                    <label class="admin-button admin-button--secondary admin-file-button" for="f@(i)">@(fld.ImageUrl != null ? "Choose a new file" : "Choose file")</label>
+                    @if (frame != null) { <button type="button" class="admin-button admin-button--secondary" data-img-adjust aria-expanded="false" @(fld.ImageUrl == null ? "hidden" : null)>Adjust</button> }
+                    <span class="admin-img-filename" data-img-filename aria-live="polite"></span>
                 </div>
+                if (frame != null)
+                {
+                    <div class="admin-img-adjust" data-img-adjust-panel hidden>
+                        <p class="admin-hint">Drag the photo (or use the arrow keys) to move it. The frame has the same shape as on the website.</p>
+                        <div class="admin-img-zoom">
+                            <label for="zr@(i)">Zoom</label>
+                            <input type="range" id="zr@(i)" min="1" max="3" step="0.05" value="@(fld.Zoom.HasValue ? num(fld.Zoom) : "1")" data-img-zoom />
+                            <button type="button" class="admin-button admin-button--secondary" data-img-reset>Reset</button>
+                            <button type="button" class="admin-button" data-img-done>Done</button>
+                        </div>
+                    </div>
+                    <input type="hidden" name="x@(i)" value="@num(fld.FocusX)" data-img-x data-default="@(frame == "desktop" ? "70" : "50")" />
+                    <input type="hidden" name="y@(i)" value="@num(fld.FocusY)" data-img-y data-default="@(frame == "desktop" ? "50" : "20")" />
+                    <input type="hidden" name="z@(i)" value="@num(fld.Zoom)" data-img-z />
+                }
+                <p class="admin-hint" id="fh@(i)">JPG or PNG, up to 15 MB. Change one or two photos at a time (all photos in one save: up to 18 MB together).</p>
+                if (fld.ImageUrl != null)
+                {
+                    <div class="admin-check admin-check-small" data-img-nojs>
+                        <input type="checkbox" id="r@(i)" name="r@(i)" value="true" data-img-remove-box />
+                        <label for="r@(i)">Remove this picture</label>
+                    </div>
+                }
+            }
+            <div class="admin-field admin-img-alt">
+                <label for="a@(i)" class="admin-hint-label">Picture description (for blind visitors and Google)</label>
+                <input type="text" id="a@(i)" name="a@(i)" value="@fld.Alt" maxlength="250" @ro />
             </div>
         </div>
+        if (!nextImg) { @Html.Raw("</div>") }
     }
     else
     {
