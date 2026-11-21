@@ -91,7 +91,7 @@ namespace TheArqamSchools.Web.Controllers
 
         /// <summary>
         /// After Confirm / Not accepted: back to the order for an order payment; for a balance payment, back to the
-        /// customer's account (or to the order page it was confirmed from, which shows the new figures).
+        /// customer's account, which shows where the money went.
         /// </summary>
         private ActionResult SentDone(BookPaymentSubmission sub, string back, string notice)
         {

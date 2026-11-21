@@ -116,7 +116,8 @@ namespace TheArqamSchools.Web.Data
                 foreach (var p in db.Query(@"SELECT amount, credit_amount, reviewed_at, created_at FROM dbo.book_payment_submissions
                                              WHERE customer_id = @customerId AND order_id IS NULL AND status = N'confirmed' AND credit_amount > 0", new { customerId }))
                 {
-                    var at = (DateTimeOffset)p.reviewed_at;
+                    // Dated like the parts applied to orders (the day the customer sent it), so one payment stays on one date.
+                    var at = (DateTimeOffset)p.created_at;
                     lines.Add(new LedgerLine { At = at, On = at.ToOffset(pk).Date, Kind = "Payment", Reference = "To credit",
                                                Details = "Bank · part of " + BookFormat.Money((decimal)p.amount), CreditAmount = (decimal)p.credit_amount });
                 }
@@ -161,7 +162,7 @@ namespace TheArqamSchools.Web.Data
                            (SELECT COUNT(*) FROM dbo.book_return_requests WHERE status = N'requested') AS return_requests,
                            (SELECT COUNT(*) FROM dbo.book_return_requests WHERE status = N'approved') AS returns_to_receive,
                            (SELECT COUNT(*) FROM dbo.book_returns WHERE refund_amount > 0 AND refund_paid_at IS NULL) AS refunds_pending,
-                           (SELECT COUNT(*) FROM dbo.book_messages WHERE sent_at IS NULL) AS messages_to_send,
+                           (SELECT COUNT(*) FROM dbo.book_messages m LEFT JOIN dbo.book_orders o ON o.id = m.order_id WHERE m.sent_at IS NULL AND (o.id IS NULL OR o.archived_at IS NULL)) AS messages_to_send,
                            (SELECT COUNT(DISTINCT o.customer_id) FROM dbo.book_orders o JOIN dbo.book_customers c ON c.id = o.customer_id
                              WHERE o.status <> N'cancelled' AND " + Bal + " > 0 AND " + OverdueCond + ") AS overdue_customers");
         }

@@ -68,7 +68,7 @@ namespace TheArqamSchools.Web.Data
             if (f.Payment == "pending") where.Add("o.paid_total = 0 AND o.discount_total = 0 AND o.status <> N'cancelled'");
             else if (f.Payment == "part") where.Add("(o.paid_total > 0 OR o.discount_total > 0) AND " + BalanceSql + " > 0");
             else if (f.Payment == "paid") where.Add("(o.paid_total > 0 OR o.discount_total > 0) AND " + BalanceSql + " <= 0");
-            else if (f.Payment == "tocheck") where.Add("EXISTS (SELECT 1 FROM dbo.book_payment_submissions s WHERE s.order_id = o.id AND s.status = N'pending')");
+            else if (f.Payment == "tocheck") where.Add("EXISTS (SELECT 1 FROM dbo.book_payment_submissions s WHERE (s.order_id = o.id OR (s.order_id IS NULL AND s.customer_id = o.customer_id)) AND s.status = N'pending')");
             else if (f.Payment == "unpaid") where.Add(BalanceSql + " > 0 AND o.status <> N'cancelled'");
             if (f.From.HasValue) where.Add("o.created_at >= @fromUtc");
             if (f.To.HasValue) where.Add("o.created_at < @toUtc");

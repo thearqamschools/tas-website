@@ -145,7 +145,7 @@ namespace TheArqamSchools.Web.Data
         public static IList<Message> ForCustomer(Guid customerId)
         {
             using (var db = Db.Open())
-                return db.Query<Message>("SELECT TOP (200) " + Columns + From + " WHERE m.customer_id = @customerId ORDER BY m.created_at DESC", new { customerId }).ToList();
+                return db.Query<Message>("SELECT TOP (200) " + Columns + From + " WHERE m.customer_id = @customerId AND (o.id IS NULL OR o.archived_at IS NULL) ORDER BY m.created_at DESC", new { customerId }).ToList();
         }
 
         /// <summary>Every kind of message, in the order the office meets them (for the Messages filter).</summary>
@@ -201,13 +201,13 @@ namespace TheArqamSchools.Web.Data
         public static IList<Message> Unsent(int max)
         {
             using (var db = Db.Open())
-                return db.Query<Message>("SELECT TOP (@max) " + Columns + From + " WHERE m.sent_at IS NULL ORDER BY m.created_at DESC", new { max }).ToList();
+                return db.Query<Message>("SELECT TOP (@max) " + Columns + From + " WHERE m.sent_at IS NULL AND (o.id IS NULL OR o.archived_at IS NULL) ORDER BY m.created_at DESC", new { max }).ToList();
         }
 
         public static int UnsentCount()
         {
             using (var db = Db.Open())
-                return db.ExecuteScalar<int>("SELECT COUNT(*) FROM dbo.book_messages WHERE sent_at IS NULL");
+                return db.ExecuteScalar<int>("SELECT COUNT(*) FROM dbo.book_messages m LEFT JOIN dbo.book_orders o ON o.id = m.order_id WHERE m.sent_at IS NULL AND (o.id IS NULL OR o.archived_at IS NULL)");
         }
 
         /// <summary>Marks a message as sent (or not sent again). Returns the customer, for the redirect.</summary>

@@ -46,7 +46,7 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N''book_pay_sub_customer_i
 IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N''CK_book_orders_archived'')
     ALTER TABLE dbo.book_orders DROP CONSTRAINT CK_book_orders_archived;
 ALTER TABLE dbo.book_orders ADD CONSTRAINT CK_book_orders_archived
-    CHECK (archived_at IS NULL OR (status = N''cancelled'' AND paid_total = 0 AND stock_taken_at IS NULL AND returned_total = 0));';
+    CHECK (archived_at IS NULL OR (status = N''cancelled'' AND paid_total = 0 AND discount_total = 0 AND refunded_total = 0 AND stock_taken_at IS NULL AND returned_total = 0));';
 
 INSERT INTO dbo.schema_migrations (id) VALUES (N'28_payments_and_removed_orders');
 COMMIT TRANSACTION;

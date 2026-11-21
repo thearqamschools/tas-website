@@ -203,7 +203,12 @@ namespace TheArqamSchools.Web.Controllers
                 var r = Request.Unvalidated.Form;
                 var qs = new List<string>();
                 foreach (var k in new[] { "status", "q", "kind", "from", "to" })
-                    if (!string.IsNullOrEmpty(r["f_" + k])) qs.Add(k + "=" + Uri.EscapeDataString(r["f_" + k].Length > 60 ? r["f_" + k].Substring(0, 60) : r["f_" + k]));
+                {
+                    var v = r["f_" + k];
+                    if (string.IsNullOrEmpty(v)) continue;
+                    if (v.Length > 60) v = v.Substring(0, char.IsHighSurrogate(v[59]) ? 59 : 60);   // never split an emoji
+                    try { qs.Add(k + "=" + Uri.EscapeDataString(v)); } catch (UriFormatException) { }
+                }
                 return Redirect("/admin/books/messages" + (qs.Count > 0 ? "?" + string.Join("&", qs) : "") + "#m-" + id.ToString("N"));
             }
             return Redirect("/admin/books/customer-accounts/" + customerId.Value.ToString("D") + "?view=messages&notice=sent");

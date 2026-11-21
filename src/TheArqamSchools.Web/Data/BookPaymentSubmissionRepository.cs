@@ -78,12 +78,17 @@ namespace TheArqamSchools.Web.Data
             }
         }
 
-        /// <summary>What the customer owes on orders that are not cancelled (before their credit).</summary>
+        /// <summary>
+        /// What the customer still has to pay: unpaid order balances less their credit (the same figure as the statement).
+        /// The credit is used on the oldest orders when the office confirms the payment.
+        /// </summary>
         public static decimal Owed(System.Data.IDbConnection db, System.Data.IDbTransaction tx, Guid customerId)
         {
-            return db.ExecuteScalar<decimal>(@"SELECT COALESCE(SUM(CASE WHEN b > 0 THEN b ELSE 0 END), 0) FROM (
-                    SELECT subtotal - returned_total - discount_total - credit_applied - paid_total + refunded_total AS b
-                    FROM dbo.book_orders WHERE customer_id = @customerId AND status <> N'cancelled') x", new { customerId }, tx);
+            return db.ExecuteScalar<decimal>(@"SELECT CASE WHEN owed - credit > 0 THEN owed - credit ELSE 0 END FROM (
+                    SELECT COALESCE((SELECT SUM(CASE WHEN b > 0 THEN b ELSE 0 END) FROM (
+                        SELECT subtotal - returned_total - discount_total - credit_applied - paid_total + refunded_total AS b
+                        FROM dbo.book_orders WHERE customer_id = @customerId AND status <> N'cancelled') x), 0) AS owed,
+                           (SELECT credit FROM dbo.book_customers WHERE id = @customerId) AS credit) y", new { customerId }, tx);
         }
 
         public static decimal Owed(Guid customerId)
@@ -113,6 +118,19 @@ namespace TheArqamSchools.Web.Data
                 db.Execute("SELECT id FROM dbo.book_customers WITH (UPDLOCK, HOLDLOCK) WHERE id = @CustomerId", new { sub.CustomerId }, tx);
                 var status = db.ExecuteScalar<string>("SELECT status FROM dbo.book_payment_submissions WITH (UPDLOCK, HOLDLOCK) WHERE id = @Id", new { sub.Id }, tx);
                 if (status != "pending") throw new BookOrderException("This payment has already been checked.");
+                // First the customer's credit goes to the oldest unpaid orders (as it would on a new order), so the money
+                // paid matches "Still to pay" on the statement.
+                var credit = db.ExecuteScalar<decimal>("SELECT credit FROM dbo.book_customers WHERE id = @CustomerId", new { sub.CustomerId }, tx);
+                foreach (var o in orders.Where(o => o.Balance > 0).OrderBy(o => o.CreatedAt).ThenBy(o => o.OrderNo))
+                {
+                    if (credit <= 0) break;
+                    var use = Math.Min(credit, o.Balance);
+                    db.Execute("UPDATE dbo.book_orders SET credit_applied = credit_applied + @use, updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId WHERE id = @Id", new { use, actorId, o.Id }, tx);
+                    db.Execute("UPDATE dbo.book_customers SET credit = credit - @use, updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId WHERE id = @CustomerId", new { use, actorId, sub.CustomerId }, tx);
+                    AuditLog.Write(db, tx, actorId, "update", "book_orders", o.Id.ToString(), new { order_no = o.OrderNo, credit_applied_added = use, via = "customer balance payment confirmed" });
+                    o.CreditApplied += use;
+                    credit -= use;
+                }
                 var left = sub.Amount;
                 Guid? firstPayment = null;
                 var paid = new List<string>();
@@ -125,7 +143,14 @@ namespace TheArqamSchools.Web.Data
                         Amount = part, Discount = 0, Method = "bank", AccountId = sub.AccountId,
                         ReceivedOn = sub.CreatedAt.ToOffset(TimeSpan.FromHours(5)).Date, Note = "Customer payment towards the balance"
                     };
-                    var pid = BookOrderRepository.RecordPaymentTx(db, tx, o.OrderNo, form, sub.ReceiptPath, sub.ReceiptMime, actorId, true);
+                    Guid pid;
+                    try { pid = BookOrderRepository.RecordPaymentTx(db, tx, o.OrderNo, form, sub.ReceiptPath, sub.ReceiptMime, actorId, true); }
+                    catch (BookOrderException ex)
+                    {
+                        // Usually stock: the first payment of an order takes its books off stock. Nothing has been saved.
+                        throw new BookOrderException("Order " + BookFormat.OrderLabel(o.OrderNo) + " (the oldest unpaid order this payment reaches): " + ex.Message
+                            + " Please add the stock first, then confirm again.");
+                    }
                     if (firstPayment == null) firstPayment = pid;
                     if (db.Execute("UPDATE dbo.book_orders SET status = N'checked', updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId WHERE id = @Id AND status = N'new'", new { actorId, o.Id }, tx) > 0)
                         AuditLog.Write(db, tx, actorId, "update", "book_orders", o.Id.ToString(), new { order_no = o.OrderNo, status_from = "new", status_to = "checked", via = "customer payment confirmed" });
