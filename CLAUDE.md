@@ -243,7 +243,7 @@ tools/compile-check/      Mono C# compile check with stub MVC/Dapper types (does
 - "Make a payment" on My payments pays towards the whole balance (`book_payment_submissions.order_id` NULL, `customer_id` set).
   The amount may not be more than owed, one payment waits at a time, and while it waits the customer cannot change orders and
   the office cannot record manual payments. Confirm applies it to the OLDEST unpaid orders first; anything left becomes credit
-  (`credit_amount`, shown in the statement). `/books/statement.pdf` is the customer's statement ("Adjustment", never discount).
+  (`credit_amount`, shown in the statement). `/books/statement` is the customer's statement PDF ("Adjustment", never discount). PDF addresses have no ".pdf" (IIS would serve them as files and answer 404).
 - A Super Admin can remove a cancelled order with no payment, stock or return: it is archived (`book_orders.archived_at`),
   hidden from lists, customer pages and messages; queries that list orders must keep `archived_at IS NULL`.
 - Admin Books has a Messages tab (status, customer, kind, dates). Homepage slides store `fx`, `fy`, `zoom` in the image JSON

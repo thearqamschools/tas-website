@@ -216,7 +216,7 @@ const BOOKS = [
   await admin.goto(orderUrl + '/invoice');
   ok('invoice shows barcode and contact', (await admin.locator('svg.barcode').count()) === 1 && (await admin.content()).includes('WhatsApp: 0339-2406479'));
   await admin.screenshot({ path: OUT + '/invoice.png', fullPage: true });
-  const pdf = await admin.context().request.get(orderUrl + '/invoice.pdf');
+  const pdf = await admin.context().request.get(orderUrl + '/invoice-pdf');
   const body = await pdf.body();
   ok('invoice PDF', pdf.status() === 200 && body.slice(0, 5).toString() === '%PDF-');
   require('fs').writeFileSync(OUT + '/invoice-' + orderNo + '.pdf', body);
@@ -454,11 +454,11 @@ const BOOKS = [
   await cust.goto(B + '/books/payments');
   ok('customer now owes Rs. 100', money(await cust.locator('#make-payment p strong').first().innerText()) === 100);
   // Statement PDF.
-  const custPdf = await cust.context().request.get(B + '/books/statement.pdf');
+  const custPdf = await cust.context().request.get(B + '/books/statement');
   const pdfBody = await custPdf.body();
   ok('statement downloads as PDF', custPdf.status() === 200 && custPdf.headers()['content-type'].includes('application/pdf') && pdfBody.slice(0, 4).toString() === '%PDF');
   ok('statement PDF never says discount', !/discount/i.test(pdfBody.toString('latin1')));
-  const anonPdf = await (await browser.newContext()).request.get(B + '/books/statement.pdf', { maxRedirects: 0 });
+  const anonPdf = await (await browser.newContext()).request.get(B + '/books/statement', { maxRedirects: 0 });
   ok('statement needs the customer to be signed in', anonPdf.status() === 302);
   // Messages tab with filters.
   await admin.goto(B + '/admin/books');

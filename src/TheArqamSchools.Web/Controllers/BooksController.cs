@@ -265,7 +265,7 @@ namespace TheArqamSchools.Web.Controllers
             return Redirect("/books/payments?sent=true#make-payment");
         }
 
-        /// <summary>GET /books/statement.pdf: the customer's own statement (no purchase prices or discounts; discounts show as "Adjustment").</summary>
+        /// <summary>GET /books/statement (a PDF; no ".pdf" in the address, which IIS would treat as a file): the customer's own statement (no purchase prices or discounts; discounts show as "Adjustment").</summary>
         [HttpGet]
         public ActionResult Statement()
         {
