@@ -993,9 +993,7 @@ ul.home-campus-grid { display: grid; grid-template-columns: repeat(auto-fill, mi
 /* Homepage hero: full-width photo. Phone: photo on top, text on navy below. Tablet and up: text over the photo's blue side. */
 .home-hero-photo { position: relative; padding: 0; background: var(--navy-900); color: #fff; overflow: hidden; }
 .home-hero-bg { display: block; overflow: hidden; }
-/* Position and zoom come from the admin panel's "Adjust" (--fx/--fy/--z, -m phone, -d computer); defaults as before. */
-.home-hero-bg img { width: 100%; height: 280px; object-fit: cover; object-position: var(--fx-m, 50%) var(--fy-m, 20%);
-  transform: scale(var(--z-m, 1)); transform-origin: var(--fx-m, 50%) var(--fy-m, 20%); }
+.home-hero-bg img { width: 100%; height: 280px; object-fit: cover; object-position: 50% 20%; }
 .home-hero-photo .home-hero-inner { position: relative; padding-block: 28px 36px; }
 .home-hero-photo .h1 { color: #fff; }
 .home-hero-photo .lead { color: rgba(255,255,255,.88); }
@@ -1004,7 +1002,7 @@ ul.home-campus-grid { display: grid; grid-template-columns: repeat(auto-fill, mi
 @media (min-width: 48rem) {
   .home-hero-photo { min-height: 520px; display: flex; align-items: center; }
   .home-hero-bg { position: absolute; inset: 0; }
-  .home-hero-bg img { height: 100%; object-position: var(--fx-d, 70%) var(--fy-d, 50%); transform: scale(var(--z-d, 1)); transform-origin: var(--fx-d, 70%) var(--fy-d, 50%); }
+  .home-hero-bg img { height: 100%; object-position: 70% 50%; }
   .home-hero-photo::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(90deg, rgba(23,37,84,.92) 0%, rgba(23,37,84,.78) 38%, rgba(23,37,84,.15) 70%, rgba(23,37,84,0) 100%); }
   .home-hero-photo .home-hero-inner { z-index: 2; padding-block: 72px; }
   .home-hero-photo .home-hero-text { max-width: 36rem; }
@@ -1463,6 +1461,16 @@ body:has(.books) .wa-float { display: none; }
 .books-table-wrap { overflow-x: auto; }
 .books-ledger td, .books-ledger th { white-space: nowrap; }
 .books-ledger td:nth-child(2) { white-space: normal; }
+/* Phones (note 53): the statement fits the screen; the year goes under the day and month, so Balance stays in view. */
+@media (max-width: 40rem) {
+  .books-ledger { font-size: .875rem; }
+  .books-ledger th, .books-ledger td { padding: 8px 4px; }
+  .books-ledger th:first-child, .books-ledger td:first-child { padding-left: 0; }
+  .books-ledger th:last-child, .books-ledger td:last-child { padding-right: 0; }
+  .books-ledger thead th { font-size: .6875rem; letter-spacing: .02em; }
+  .books-ledger .books-year { display: block; color: var(--muted); }
+}
+@media (max-width: 24rem) { .books-ledger { font-size: .8125rem; } .books-ledger th, .books-ledger td { padding-inline: 3px; } }
 .books-return-total { margin: 12px 0 4px; font-size: 1.0625rem; }
 .books-who-links { justify-content: flex-end; }
 @media (max-width: 40rem) { .books-who-links { justify-content: flex-start; } .books-nav-btn { padding: 8px 12px; font-size: .875rem; } }
@@ -1484,3 +1492,28 @@ body:has(.books) .wa-float { display: none; }
 .head-office-grid { margin-bottom: 8px; }
 .head-office-card { border-top: 4px solid var(--red); }
 .head-offices-next { margin-top: 32px !important; }
+
+/* Homepage photos placed with "Adjust" in the admin panel (notes 48 and 52), the same formula as Scripts/admin-images.js:
+   the photo just covers the frame, is enlarged by --z, and the chosen point (--cx, --cy, 0-1 of the photo) sits in the
+   middle of the frame, but never so far that an edge of the photo shows. --ar is the photo's width / height.
+   Photos without a setting keep the usual position above. Browsers without container units keep it too. */
+@supports (width: 1cqw) {
+  .home-hero-bg { position: relative; height: 280px; container-type: size; }
+  .home-hero-bg img[data-fm] {
+    --dw: calc(var(--z-m) * max(100cqw, 100cqh * var(--ar-m))); --dh: calc(var(--dw) / var(--ar-m));
+    position: absolute; max-width: none; width: var(--dw); height: var(--dh); object-fit: fill;
+    left: clamp(calc(100cqw - var(--dw)), calc(50cqw - var(--cx-m) * var(--dw)), 0px);
+    top: clamp(calc(100cqh - var(--dh)), calc(50cqh - var(--cy-m) * var(--dh)), 0px);
+  }
+  @media (min-width: 48rem) {
+    .home-hero-bg { position: absolute; height: auto; }
+    .home-hero-bg img[data-fm] { position: static; width: 100%; height: 100%; object-fit: cover; }
+    .home-hero-bg img[data-fd] {
+      --dw: calc(var(--z-d) * max(100cqw, 100cqh * var(--ar-d))); --dh: calc(var(--dw) / var(--ar-d));
+      position: absolute; max-width: none; width: var(--dw); height: var(--dh); object-fit: fill;
+      left: clamp(calc(100cqw - var(--dw)), calc(50cqw - var(--cx-d) * var(--dw)), 0px);
+      top: clamp(calc(100cqh - var(--dh)), calc(50cqh - var(--cy-d) * var(--dh)), 0px);
+    }
+  }
+}
+.books-ref { white-space: nowrap; }

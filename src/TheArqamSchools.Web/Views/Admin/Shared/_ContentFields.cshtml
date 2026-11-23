@@ -75,6 +75,7 @@
             <div class="admin-img-frame@(frame != null ? " admin-img-frame--" + frame : "")" data-img-frame>
                 <img src="@fld.ImageUrl" alt="@(fld.ImageUrl != null ? "Current picture: " + fld.Alt : "")" data-img-preview @(fld.ImageUrl == null ? "hidden" : null) draggable="false" />
                 <span class="admin-img-none" data-img-none @(fld.ImageUrl != null ? "hidden" : null)>No picture yet</span>
+                @if (frame == "desktop") { <span class="admin-img-shade" aria-hidden="true"></span><span class="admin-img-textmark" aria-hidden="true">Heading and buttons</span> }
                 @if (Model.CanEdit && fld.ImageUrl != null)
                 {
                     <button type="button" class="admin-img-x" data-img-remove aria-label="Remove this picture (@title)" title="Remove this picture" hidden>&times;</button>
@@ -92,7 +93,16 @@
                 if (frame != null)
                 {
                     <div class="admin-img-adjust" data-img-adjust-panel hidden>
-                        <p class="admin-hint">Drag the photo (or use the arrow keys) to move it. The frame has the same shape as on the website.</p>
+                        <p class="admin-hint">Drag the photo to move it (or use the arrow keys), and use Zoom to make it bigger. What you see in the frame is what the website shows.</p>
+                        @if (frame == "desktop")
+                        {
+                            <div class="admin-img-sizes" role="group" aria-label="Screen to preview">
+                                <span>Preview on:</span>
+                                <button type="button" class="admin-chip" data-img-size="1024x520" aria-pressed="false">Small laptop</button>
+                                <button type="button" class="admin-chip" data-img-size="1366x616" aria-pressed="true">Laptop</button>
+                                <button type="button" class="admin-chip" data-img-size="1920x623" aria-pressed="false">Wide screen</button>
+                            </div>
+                        }
                         <div class="admin-img-zoom">
                             <label for="zr@(i)">Zoom</label>
                             <input type="range" id="zr@(i)" min="1" max="3" step="0.05" value="@(fld.Zoom.HasValue ? num(fld.Zoom) : "1")" data-img-zoom />
@@ -102,6 +112,7 @@
                     </div>
                     <input type="hidden" name="x@(i)" value="@num(fld.FocusX)" data-img-x data-default="@(frame == "desktop" ? "70" : "50")" />
                     <input type="hidden" name="y@(i)" value="@num(fld.FocusY)" data-img-y data-default="@(frame == "desktop" ? "50" : "20")" />
+                    <p class="admin-hint" data-img-note>@(fld.FocusX.HasValue ? "Position chosen with Adjust." : "Usual position (not adjusted).")</p>
                     <input type="hidden" name="z@(i)" value="@num(fld.Zoom)" data-img-z />
                 }
                 <p class="admin-hint" id="fh@(i)">JPG or PNG, up to 15 MB. Change one or two photos at a time (all photos in one save: up to 18 MB together).</p>

@@ -25,21 +25,23 @@ namespace TheArqamSchools.Web.Helpers
         }
 
         /// <summary>
-        /// Where a photo sits in its frame and how far it is zoomed (owner's request, 21 November 2026): the admin panel's
-        /// "Adjust" stores fx / fy (0 to 100, as in CSS object-position) and zoom (1 to 3) in the image object; the file itself
-        /// is never changed. Returns CSS custom properties such as "--fx-d:40%;--fy-d:50%;--z-d:1.2;" (empty when not set),
-        /// read by the stylesheet. <paramref name="suffix"/> keeps the computer and phone settings apart.
+        /// The part of a photo chosen with "Adjust" in the admin panel (owner's notes 48 and 52), like Facebook's
+        /// "Reposition": fx / fy is the point of the photo (0-100 % of its width / height) that sits in the middle of the
+        /// frame, and zoom (1-3) enlarges it beyond "just covers the frame". The file itself is never changed.
+        /// Returns CSS custom properties for the stylesheet, which places the photo with the same formula as the admin
+        /// preview: "--cx-d:0.4;--cy-d:0.2;--z-d:1.3;--ar-d:2.438;" (empty when nothing was chosen, or the photo's size
+        /// is not known, so the website keeps its usual position). <paramref name="suffix"/> is d (computer) or m (phone).
         /// </summary>
         public static string FocusVars(JToken image, string suffix)
         {
             if (image == null || image.Type != JTokenType.Object) return "";
-            double fx, fy, z;
-            var sb = new System.Text.StringBuilder();
+            double fx, fy, z, w, h;
+            if (!TryNumber(image["fx"], 0, 100, out fx) || !TryNumber(image["fy"], 0, 100, out fy)) return "";
+            if (!TryNumber(image["width"], 1, 100000, out w) || !TryNumber(image["height"], 1, 100000, out h)) return "";
+            if (!TryNumber(image["zoom"], 1, 3, out z)) z = 1;
             var inv = System.Globalization.CultureInfo.InvariantCulture;
-            if (TryNumber(image["fx"], 0, 100, out fx)) sb.Append("--fx-").Append(suffix).Append(':').Append(fx.ToString("0.#", inv)).Append("%;");
-            if (TryNumber(image["fy"], 0, 100, out fy)) sb.Append("--fy-").Append(suffix).Append(':').Append(fy.ToString("0.#", inv)).Append("%;");
-            if (TryNumber(image["zoom"], 1, 3, out z)) sb.Append("--z-").Append(suffix).Append(':').Append(z.ToString("0.##", inv)).Append(';');
-            return sb.ToString();
+            return "--cx-" + suffix + ":" + (fx / 100).ToString("0.####", inv) + ";--cy-" + suffix + ":" + (fy / 100).ToString("0.####", inv)
+                 + ";--z-" + suffix + ":" + z.ToString("0.##", inv) + ";--ar-" + suffix + ":" + (w / h).ToString("0.####", inv) + ";";
         }
 
         internal static bool TryNumber(JToken t, double min, double max, out double value)

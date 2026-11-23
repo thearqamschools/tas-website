@@ -116,8 +116,8 @@
                         @foreach (var l in ledger)
                         {
                             <tr>
-                                <td>@l.On.ToString("d MMM yyyy", inv)</td>
-                                <td>@l.Kind @l.Reference@if (!string.IsNullOrEmpty(l.Details) && l.Kind != "Order") { <span class="books-class"> @l.Details</span> }</td>
+                                <td class="books-date">@l.On.ToString("d MMM", inv)<span class="books-year"> @l.On.ToString("yyyy", inv)</span></td>
+                                <td>@l.Kind <span class="books-ref">@l.Reference</span>@if (!string.IsNullOrEmpty(l.Details) && l.Kind != "Order") { <span class="books-class"> @l.Details</span> }</td>
                                 <td class="num">@(l.Debit > 0 ? BookFormat.Money(l.Debit) : l.CreditAmount > 0 ? "− " + BookFormat.Money(l.CreditAmount) : "")</td>
                                 <td class="num">@BookFormat.Money(l.Balance)</td>
                             </tr>

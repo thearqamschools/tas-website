@@ -55,10 +55,12 @@
             var desk = Media.Url(sl["image"]);
             var mob = Media.Url(sl["mobile_image"]) ?? desk;
             // Position and zoom chosen in the admin panel ("Adjust"), separately for computers and phones.
-            var focus = Media.FocusVars(sl["image"], "d") + Media.FocusVars(Media.Url(sl["mobile_image"]) != null ? sl["mobile_image"] : null, "m");
+            var focusD = Media.FocusVars(sl["image"], "d");
+            var focusM = Media.FocusVars(Media.Url(sl["mobile_image"]) != null ? sl["mobile_image"] : null, "m");
+            var focus = focusD + focusM;
             <picture class="home-hero-bg@(si == 0 ? " is-active" : "")" @(si > 0 ? "data-lazy" : null)>
                 <source media="(min-width: 48rem)" srcset="@(si == 0 ? desk : null)" data-srcset="@desk" />
-                <img src="@(si == 0 ? mob : null)" data-src="@mob" alt="" @(si == 0 ? "fetchpriority=high" : "loading=lazy") decoding="async" style="@(focus.Length > 0 ? focus : null)" />
+                <img src="@(si == 0 ? mob : null)" data-src="@mob" alt="" @(si == 0 ? "fetchpriority=high" : "loading=lazy") decoding="async" style="@(focus.Length > 0 ? focus : null)" data-fd="@(focusD.Length > 0 ? "1" : null)" data-fm="@(focusM.Length > 0 ? "1" : null)" />
             </picture>
         }
         <div class="container home-hero-inner">

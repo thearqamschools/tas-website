@@ -246,6 +246,11 @@ tools/compile-check/      Mono C# compile check with stub MVC/Dapper types (does
   (`credit_amount`, shown in the statement). `/books/statement` is the customer's statement PDF ("Adjustment", never discount). PDF addresses have no ".pdf" (IIS would serve them as files and answer 404).
 - A Super Admin can remove a cancelled order with no payment, stock or return: it is archived (`book_orders.archived_at`),
   hidden from lists, customer pages and messages; queries that list orders must keep `archived_at IS NULL`.
-- Admin Books has a Messages tab (status, customer, kind, dates). Homepage slides store `fx`, `fy`, `zoom` in the image JSON
-  ("Adjust" in the admin panel; separate for computer and phone); the homepage finder is only search + "Show all campuses";
+- Admin Books has a Messages tab (status, customer, kind, dates). The homepage finder is only search + "Show all campuses";
   the Campuses page lists the two head offices first.
+- Homepage slide photos: "Adjust" in the admin panel works like Facebook's Reposition (note 52, 24 November 2026). The image
+  JSON keeps `fx`, `fy` (0-100: the point of the photo in the middle of the frame) and `zoom` (1-3), separately for the
+  computer and phone photos; `Helpers/Media.FocusVars` turns them into CSS variables, and `Content/site.css` and
+  `Content/admin.css` place the photo with the same container-unit formula (needs the photo's width/height in the JSON).
+  The admin preview sizes (1024x520, 1366x616, 1920x623) are the hero's measured sizes with the current text; if the hero
+  text or height changes, measure again and update `_ContentFields.cshtml`. The original file is never changed.

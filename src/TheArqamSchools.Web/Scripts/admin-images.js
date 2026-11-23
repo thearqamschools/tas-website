@@ -2,9 +2,10 @@
  * Picture cards in the admin content forms (owner's request, 21 November 2026).
  * - "Choose file" shows the new picture at once (nothing is uploaded before Save).
  * - The X marks a picture to be removed (Undo brings it back); without JavaScript the tick box does the same.
- * - "Adjust" (homepage slides): drag the photo or use the arrow keys to move it, zoom with the slider, Reset.
- *   The frame has the same shape as on the website, and the same CSS (object-position + scale) is used, so what you
- *   see here is what visitors see. Only the position and zoom are saved (x/y/z fields); the file is not changed.
+ * - "Adjust" (homepage slides), like Facebook's "Reposition" (notes 48 and 52): drag the photo or use the arrow keys,
+ *   zoom with the slider, Reset. x / y (0-100) is the point of the photo in the middle of the frame and z the zoom;
+ *   the photo is placed with the same formula as the website (Content/site.css, "Adjust"), in a frame of the same
+ *   shape as the website at the chosen screen size, so the frame shows what visitors see. The file is not changed.
  */
 (function () {
   'use strict';
@@ -38,12 +39,40 @@
     if (nojs) nojs.hidden = true;
     if (removeBtn) removeBtn.hidden = false;
 
+    var note = card.querySelector('[data-img-note]');
+    // The photo's size and the frame's size, in screen pixels: the photo just covers the frame, times the zoom.
+    function geom() {
+      var fw = frame.clientWidth, fh = frame.clientHeight;
+      var ar = (img.naturalWidth && img.naturalHeight) ? img.naturalWidth / img.naturalHeight : fw / fh;
+      var dw = num(z, 1) * Math.max(fw, fh * ar);
+      return { fw: fw, fh: fh, ar: ar, dw: dw, dh: dw / ar };
+    }
+    // Keeps the chosen point where the photo still covers the whole frame (no empty edge), as the website does.
+    function clampFocus() {
+      if (!x.value) return;
+      var g = geom();
+      var cx = clamp(num(x, 50) / 100, g.fw / (2 * g.dw), 1 - g.fw / (2 * g.dw));
+      var cy = clamp(num(y, 50) / 100, g.fh / (2 * g.dh), 1 - g.fh / (2 * g.dh));
+      x.value = (cx * 100).toFixed(2); y.value = (cy * 100).toFixed(2);
+    }
     function apply() {
       if (!adjustable || !img) return;
-      var fx = num(x, dx0), fy = num(y, dy0), zz = num(z, 1);
-      img.style.objectPosition = fx + '% ' + fy + '%';
-      img.style.transformOrigin = fx + '% ' + fy + '%';
-      img.style.transform = 'scale(' + zz + ')';
+      var framed = !!x.value && !!img.naturalWidth;
+      img.classList.toggle('is-framed', framed);
+      if (framed) {
+        img.style.setProperty('--cx', String(num(x, 50) / 100));
+        img.style.setProperty('--cy', String(num(y, 50) / 100));
+        img.style.setProperty('--z', String(num(z, 1)));
+        img.style.setProperty('--ar', String(img.naturalWidth / img.naturalHeight));
+      }
+      if (note) note.textContent = x.value ? 'Position chosen with Adjust (saved when you press Save).' : 'Usual position (not adjusted).';
+    }
+    // When Adjust opens on a photo in its usual position, start from exactly what the website shows now.
+    function startFromUsual() {
+      if (x.value) return;
+      var g = geom(), px = dx0 / 100, py = dy0 / 100;
+      x.value = (((g.fw / 2) - (g.fw - g.dw) * px) / g.dw * 100).toFixed(2);
+      y.value = (((g.fh / 2) - (g.fh - g.dh) * py) / g.dh * 100).toFixed(2);
     }
 
     function setRemoved(on) {
@@ -81,6 +110,7 @@
     });
 
     if (!adjustable) return;
+    img.addEventListener('load', apply);
     apply();
 
     function openAdjust() {
@@ -88,8 +118,9 @@
       card.classList.add('is-adjusting');
       frame.setAttribute('tabindex', '0');
       frame.setAttribute('role', 'application');
-      frame.setAttribute('aria-label', 'Photo position. Use the arrow keys to move the photo.');
+      frame.setAttribute('aria-label', 'Photo position. Drag, or use the arrow keys, to move the photo.');
       adjustBtn.setAttribute('aria-expanded', 'true');
+      if (img.naturalWidth) { startFromUsual(); apply(); }
       frame.focus();
     }
     function closeAdjust() {
@@ -104,36 +135,29 @@
     adjustBtn.addEventListener('click', function () { if (panel.hidden) openAdjust(); else { closeAdjust(); adjustBtn.focus(); } });
     card.querySelector('[data-img-done]').addEventListener('click', function () { closeAdjust(); adjustBtn.focus(); });
     card.querySelector('[data-img-reset]').addEventListener('click', function () {
-      x.value = ''; y.value = ''; z.value = ''; zoom.value = '1'; apply();
+      x.value = ''; y.value = ''; z.value = ''; zoom.value = '1'; apply();   // back to the usual position
     });
     zoom.addEventListener('input', function () {
       var v = clamp(parseFloat(zoom.value) || 1, 1, 3);
+      startFromUsual();
       z.value = v === 1 ? '' : v.toFixed(2);
-      if (!x.value) x.value = String(dx0);
-      if (!y.value) y.value = String(dy0);
-      apply();
+      clampFocus(); apply();
+    });
+    // Screen sizes for the computer photo: the frame takes the shape of the website's top photo on that screen.
+    var sizes = card.querySelectorAll('[data-img-size]');
+    for (var k = 0; k < sizes.length; k++) sizes[k].addEventListener('click', function () {
+      var wh = this.getAttribute('data-img-size').split('x');
+      frame.style.aspectRatio = wh[0] + ' / ' + wh[1];
+      for (var j = 0; j < sizes.length; j++) sizes[j].setAttribute('aria-pressed', sizes[j] === this ? 'true' : 'false');
     });
 
-    // How far the picture moves on screen for one percent of fx (or fy): object-position moves the part that does
-    // not fit (cover), and the zoom around the same point moves it by (1 - zoom). Both are negative, so dragging
-    // right lowers fx. Returns 0 when the picture cannot move that way.
-    function rate(frameSize, shownSize, zz) {
-      return (frameSize * (1 - zz) + zz * (frameSize - shownSize)) / 100;
-    }
-    function shown() {
-      var fw = frame.clientWidth, fh = frame.clientHeight;
-      var nw = img.naturalWidth || fw, nh = img.naturalHeight || fh;
-      var s = Math.max(fw / nw, fh / nh);
-      return { fw: fw, fh: fh, w: nw * s, h: nh * s };
-    }
+    // Facebook-style dragging: the photo follows the pointer one to one.
     function moveBy(px, py) {
-      var m = shown(), zz = num(z, 1);
-      var rx = rate(m.fw, m.w, zz), ry = rate(m.fh, m.h, zz);
-      var fx = num(x, dx0), fy = num(y, dy0);
-      if (Math.abs(rx) > 0.0001) fx = clamp(fx + px / rx, 0, 100);
-      if (Math.abs(ry) > 0.0001) fy = clamp(fy + py / ry, 0, 100);
-      x.value = fx.toFixed(1); y.value = fy.toFixed(1);
-      apply();
+      startFromUsual();
+      var g = geom();
+      x.value = ((num(x, 50) / 100 - px / g.dw) * 100).toFixed(2);
+      y.value = ((num(y, 50) / 100 - py / g.dh) * 100).toFixed(2);
+      clampFocus(); apply();
     }
 
     var dragging = null;
@@ -153,15 +177,14 @@
     frame.addEventListener('pointercancel', stop);
     frame.addEventListener('keydown', function (e) {
       if (panel.hidden) return;
-      var step = e.shiftKey ? 2 : 0.5, fx = num(x, dx0), fy = num(y, dy0), done = true;
-      // Arrow keys move the photo in the arrow's direction (so the point shown moves the other way).
-      if (e.key === 'ArrowLeft') fx = clamp(fx + step, 0, 100);
-      else if (e.key === 'ArrowRight') fx = clamp(fx - step, 0, 100);
-      else if (e.key === 'ArrowUp') fy = clamp(fy + step, 0, 100);
-      else if (e.key === 'ArrowDown') fy = clamp(fy - step, 0, 100);
-      else if (e.key === 'Escape') { done = false; closeAdjust(); adjustBtn.focus(); }
-      else done = false;
-      if (done) { e.preventDefault(); x.value = fx.toFixed(1); y.value = fy.toFixed(1); apply(); }
+      var step = e.shiftKey ? 20 : 5;   // pixels; the arrow moves the photo that way
+      if (e.key === 'ArrowLeft') moveBy(-step, 0);
+      else if (e.key === 'ArrowRight') moveBy(step, 0);
+      else if (e.key === 'ArrowUp') moveBy(0, -step);
+      else if (e.key === 'ArrowDown') moveBy(0, step);
+      else if (e.key === 'Escape') { closeAdjust(); adjustBtn.focus(); return; }
+      else return;
+      e.preventDefault();
     });
   }
 

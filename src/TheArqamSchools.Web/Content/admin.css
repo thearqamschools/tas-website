@@ -335,15 +335,30 @@ body.invoice-page { display: block; background: var(--grey); font-family: var(--
 .admin-img-card { display: grid; gap: .5rem; padding: .875rem; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--white); min-width: 0; }
 .admin-img-title { margin: 0; font-weight: 700; color: var(--ink); }
 .admin-img-card > .admin-hint { margin: -.25rem 0 0; }
-.admin-img-frame { position: relative; height: 170px; border-radius: var(--r-sm); overflow: hidden; border: 1px solid var(--line);
+.admin-img-frame { position: relative; height: 170px; border-radius: var(--r-sm); overflow: hidden; outline: 1px solid var(--line); outline-offset: 0;
   background: var(--grey) repeating-conic-gradient(#eef0f4 0% 25%, #fff 0% 50%) 50% / 16px 16px; display: grid; place-items: center; touch-action: none; }
 .admin-img-frame img { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; }
-/* Slides: the same shape and fit as on the website (computer about 1440 x 600, phone 390 x 280). */
-.admin-img-frame--desktop { height: auto; aspect-ratio: 12 / 5; }
-.admin-img-frame--mobile { height: auto; aspect-ratio: 39 / 28; max-width: 22rem; width: 100%; }
+/* Slides: the same shape, fit and "Adjust" formula as the website (Content/site.css). Computer: a laptop's top photo
+   (1366 x 616, as measured with the current text) by default, with the dark shade where the heading sits; phone: 390 x 280. */
+.admin-img-frame--desktop { height: auto; aspect-ratio: 1366 / 616; container-type: size; }
+.admin-img-frame--mobile { height: auto; aspect-ratio: 39 / 28; max-width: 22rem; width: 100%; container-type: size; }
 .admin-img-frame--desktop img, .admin-img-frame--mobile img { width: 100%; height: 100%; max-width: none; max-height: none; object-fit: cover; }
 .admin-img-frame--desktop img { object-position: 70% 50%; }
 .admin-img-frame--mobile img { object-position: 50% 20%; }
+.admin-img-frame img.is-framed {
+  --dw: calc(var(--z) * max(100cqw, 100cqh * var(--ar))); --dh: calc(var(--dw) / var(--ar));
+  position: absolute; width: var(--dw); height: var(--dh); object-fit: fill;
+  left: clamp(calc(100cqw - var(--dw)), calc(50cqw - var(--cx) * var(--dw)), 0px);
+  top: clamp(calc(100cqh - var(--dh)), calc(50cqh - var(--cy) * var(--dh)), 0px);
+}
+.admin-img-shade { position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(90deg, rgba(23,37,84,.92) 0%, rgba(23,37,84,.78) 38%, rgba(23,37,84,.15) 70%, rgba(23,37,84,0) 100%); }
+.admin-img-textmark { position: absolute; left: 6%; top: 50%; transform: translateY(-50%); max-width: 34%; pointer-events: none;
+  color: #fff; font-size: .75rem; font-weight: 600; line-height: 1.3; opacity: .85; border-left: 3px solid #fff; padding-left: .5rem; }
+.admin-img-sizes { display: flex; flex-wrap: wrap; align-items: center; gap: .375rem .5rem; font-size: .875rem; }
+.admin-chip { min-height: 2rem; padding: .25rem .75rem; border: 1px solid var(--line); border-radius: 999px; background: var(--white); color: var(--ink); font: inherit; font-size: .8125rem; cursor: pointer; }
+.admin-chip[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: #fff; }
+.admin-chip:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
 .admin-img-none { color: var(--muted); font-size: .875rem; }
 .admin-img-x { position: absolute; top: .375rem; right: .375rem; width: 2rem; height: 2rem; display: inline-flex; align-items: center; justify-content: center;
   border: 0; border-radius: 50%; background: rgba(27,29,69,.78); color: #fff; font-size: 1.25rem; line-height: 1; cursor: pointer; }
@@ -369,3 +384,6 @@ body.invoice-page { display: block; background: var(--grey); font-family: var(--
 .admin-img-zoom input[type="range"] { flex: 1 1 8rem; accent-color: var(--blue); }
 .admin-img-card [hidden] { display: none !important; }
 .admin-img-alt { margin: 0; }
+/* While adjusting, the picture takes the whole row so the frame is big (like Facebook's Reposition). */
+.admin-img-card.is-adjusting { grid-column: 1 / -1; }
+.admin-img-card.is-adjusting .admin-img-frame--mobile { max-width: 26rem; }
