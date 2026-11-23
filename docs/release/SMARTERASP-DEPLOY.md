@@ -201,3 +201,11 @@ admin inbox, campus and page editing, on a phone and a computer.
   Accounts with ledger and reports, customer-wise returns and refunds, Payment Accounts, messages, work-to-do list,
   aging and campus reports, customer dashboard / My payments / Returns on the website) went up straight after it.
   `/`, `/books`, `/about`, `/campuses`, `/admin/login` answered 200; `/books/dashboard` sends a signed-out visitor to `/books`.
+- 23 November 2026: `28_payments_and_removed_orders` ran through `deploy/smarterasp-db` (balance payments, removed
+  cancelled orders; archive `book_payment_submissions_20261121`). The site (commit 5ecef8b: Make a payment towards the
+  balance, statement PDF, Super Admin removes cancelled orders, Messages tab, customer menu and box, picture cards with
+  Adjust, homepage finder, head offices on Campuses) went up straight after it. Then commit e2a1ae1: PDF addresses
+  without ".pdf" (`/books/statement`, `/admin/books/orders/{no}/invoice-pdf`), because IIS answered 404 for addresses
+  ending in .pdf (the admin invoice PDF link had the same problem before). Its first upload stopped on an FTP 550 for
+  `bin/roslyn/VBCSCompiler.exe` and left the "being updated" page for a few minutes; re-running the workflow fixed it.
+  `/`, `/campuses`, `/books`, `/about`, `/admin/login` answered 200; the PDF addresses send signed-out visitors to sign in.
