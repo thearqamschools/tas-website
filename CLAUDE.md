@@ -113,7 +113,7 @@ tools/compile-check/      Mono C# compile check with stub MVC/Dapper types (does
   Do not invent or change figures, fees, dates, results, addresses, programmes or phone numbers.
   Do not advertise transport or smart classrooms; do not publish fees or board results.
 - Official contacts: Head Office, Lahore: 163-Tufail Block, Canal Bank Housing Scheme, Lahore 54000; 042-36520008;
-  mobile 0331-1304001; https://www.facebook.com/TASHeadOffice. Head Office, Faisalabad: Sanora Colony, Samanabad,
+  mobile/WhatsApp 0331-1304001 (WhatsApp confirmed by the owner, 23 November 2026); https://www.facebook.com/TASHeadOffice. Head Office, Faisalabad: Sanora Colony, Samanabad,
   Faisalabad; 041-2660265, 041-2406479; mobile/WhatsApp 0339-2406479; https://www.facebook.com/thearqamschoolsfsd.
   Email thearqamschools@gmail.com; www.thearqam.com. Never use the old Lahore number 042-36520235.
 - Colours: Arqam Red #EC3237, Arqam Blue #3E4095, Seal Navy #2B3990, Deep Red #D62839 (buttons), Ink #1B1D45,
