@@ -209,3 +209,6 @@ admin inbox, campus and page editing, on a phone and a computer.
   ending in .pdf (the admin invoice PDF link had the same problem before). Its first upload stopped on an FTP 550 for
   `bin/roslyn/VBCSCompiler.exe` and left the "being updated" page for a few minutes; re-running the workflow fixed it.
   `/`, `/campuses`, `/books`, `/about`, `/admin/login` answered 200; the PDF addresses send signed-out visitors to sign in.
+- 24 November 2026: site only (commit a227a9b, no database change): Lahore head office WhatsApp button on Campuses,
+  Facebook-style photo Adjust that matches the website (notes 52; photos adjusted before this should be adjusted again),
+  My statement fits phone screens (note 53). `/`, `/campuses`, `/books`, `/about`, `/admin/login` answered 200.
