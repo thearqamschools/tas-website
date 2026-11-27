@@ -446,6 +446,8 @@ namespace TheArqamSchools.Web.Controllers
             ViewBag.Error = error;
             ViewBag.Accounts = BookPaymentSubmissionRepository.CustomerAccounts();
             ViewBag.Submissions = order == null ? new List<BookPaymentSubmission>() : BookPaymentSubmissionRepository.ForOrder(order.Id);
+            // Payments sent from Payments (Pay now) that are still being checked also count against this order.
+            ViewBag.BalanceWaiting = BookPaymentSubmissionRepository.ForCustomer(customer.Id).Where(x => !x.OrderId.HasValue && x.Status == "pending").Sum(x => x.Amount);
             ViewBag.Meta = Meta();
             return View("~/Views/Books/Detail.cshtml", order);
         }

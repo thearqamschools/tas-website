@@ -39,7 +39,7 @@ namespace TheArqamSchools.Web.Data
                 if (o.Status == "cancelled") throw new BookOrderException("This order is cancelled.");
                 if (o.Balance <= 0) throw new BookOrderException("Nothing is left to pay on this order.");
                 // What is still to pay less payments for this order already waiting for the office (no double counting).
-                var amount = o.Balance - db.ExecuteScalar<decimal>("SELECT COALESCE(SUM(amount), 0) FROM dbo.book_payment_submissions WHERE order_id = @Id AND status = N'pending'", new { o.Id }, tx);
+                var amount = o.Balance - db.ExecuteScalar<decimal>("SELECT COALESCE(SUM(amount), 0) FROM dbo.book_payment_submissions WHERE (order_id = @Id OR (order_id IS NULL AND customer_id = @CustomerId)) AND status = N'pending'", new { o.Id, o.CustomerId }, tx);
                 if (amount <= 0) throw new BookOrderException("Your payment for this order is being checked by the office. Nothing more to pay for now.");
                 var account = db.QuerySingleOrDefault<BookAccount>("SELECT id, kind, is_active, show_to_customers FROM dbo.book_accounts WHERE id = @accountId", new { accountId }, tx);
                 if (account == null || !account.IsActive || account.Kind != "bank" || !account.ShowToCustomers)

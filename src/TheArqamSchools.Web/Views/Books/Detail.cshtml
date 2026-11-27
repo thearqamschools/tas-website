@@ -11,7 +11,7 @@
     var paid = Request.QueryString["paid"];
     var payError = paid == "failed" ? "Your order is placed, but the payment could not be saved. Please send it again below." : null;
     var waiting = submissions.Any(x => x.Status == "pending");
-    var toSend = Model.Balance - submissions.Where(x => x.Status == "pending").Sum(x => x.Amount);
+    var toSend = Model.Balance - submissions.Where(x => x.Status == "pending").Sum(x => x.Amount) - (decimal)(ViewBag.BalanceWaiting ?? 0m);
     // Tracking line: Placed, Payment, Packed, Ready (or Delivered / Collected).
     var paidDone = Model.Status != "new" || Model.PaidTotal > 0;
     var packedDone = Model.Status == "packed" || Model.Status == "delivered" || Model.Status == "collected";
