@@ -218,3 +218,8 @@ admin inbox, campus and page editing, on a phone and a computer.
   amount on the receipt when confirming and sees "Payments to check" on the Books overview. Errors after a redirect now
   travel in the address (session state is off, so TempData never worked). `/`, `/campuses`, `/books`, `/about`,
   `/admin/login` answered 200; the signed-in Books pages send signed-out visitors to `/books`.
+- 30 November 2026: site only (commit 6211446, no database change): customer order form back to classes one after the
+  other with quantity boxes; simpler Books admin (tabs Today / Orders / Customers / Books & stock / Reports / More,
+  search on every page, Today work lists, Orders quick filters, order page with one next-step button and More menu).
+  `/`, `/campuses`, `/books`, `/about`, `/admin/login` answered 200; `/books/order` and `/admin/books` send signed-out
+  visitors to sign in.
