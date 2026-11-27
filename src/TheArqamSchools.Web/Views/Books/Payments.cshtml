@@ -36,7 +36,7 @@
         @Html.Partial("~/Views/Books/_Who.cshtml", customer)
         <h1 class="sr-only">Payments</h1>
         @if ((bool)(ViewBag.Sent ?? false)) { <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p>Thank you. Your payment has been sent. The office will check the receipt; it is used for your oldest unpaid order first.</p></div> }
-        @if (Request.QueryString["cash"] == "true") { <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p>Please pay @BookFormat.Money(Math.Max(0m, owed)) in cash at the office or when your books are delivered.</p></div> }
+        @if (Request.QueryString["cash"] == "true") { <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p>Please pay @BookFormat.Money(Math.Max(0m, toSend)) in cash at the office or when your books are delivered.</p></div> }
         @if (!string.IsNullOrEmpty(error)) { <div class="alert alert-error" role="alert" tabindex="-1" data-focus><p>@error</p></div> }
 
         <div class="books-due-box@(owed > 0 ? " is-due" : " is-ok")">
@@ -83,4 +83,4 @@
         }
     </div>
 </section>
-<script src="~/Scripts/books.js?v=20261127a" defer></script>
+<script src="~/Scripts/books.js?v=20261127b" defer></script>

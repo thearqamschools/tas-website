@@ -11,16 +11,18 @@
     @for (var i = 0; i < accounts.Count; i++)
     {
         var a = accounts[i];
-        <label class="books-pay-opt">
-            <input type="radio" name="pay" value="@a.Id.ToString("D")" required @(i == 0 ? "checked" : null) data-pay-bank />
-            <span class="books-pay-body">
-                <span class="books-pay-name">@a.Name</span>
-                @if (!string.IsNullOrEmpty(a.AccountNumber)) { <span class="books-pay-acc" id="@id-acc-@i">@a.AccountNumber</span> }
-                @if (!string.IsNullOrEmpty(a.AccountTitle)) { <span class="books-pay-sub">@a.AccountTitle</span> }
-                @if (!string.IsNullOrEmpty(a.Iban)) { <span class="books-pay-sub">IBAN @a.Iban</span> }
-            </span>
+        <div class="books-pay-opt">
+            <label class="books-pay-main">
+                <input type="radio" name="pay" value="@a.Id.ToString("D")" required @(i == 0 ? "checked" : null) data-pay-bank />
+                <span class="books-pay-body">
+                    <span class="books-pay-name">@a.Name</span>
+                    @if (!string.IsNullOrEmpty(a.AccountNumber)) { <span class="books-pay-acc">@a.AccountNumber</span> }
+                    @if (!string.IsNullOrEmpty(a.AccountTitle)) { <span class="books-pay-sub">@a.AccountTitle</span> }
+                    @if (!string.IsNullOrEmpty(a.Iban)) { <span class="books-pay-sub">IBAN @a.Iban</span> }
+                </span>
+            </label>
             @if (!string.IsNullOrEmpty(a.AccountNumber)) { <button type="button" class="books-copy" data-copy-text="@a.AccountNumber" aria-label="Copy the @a.Name account number">Copy</button> }
-        </label>
+        </div>
     }
     <label class="books-pay-opt">
         <input type="radio" name="pay" value="cash" required @(accounts.Count == 0 ? "checked" : null) />
@@ -30,10 +32,10 @@
 <div class="books-receipt" data-receipt>
     <p class="books-receipt-label">Receipt <span>(for a bank payment)</span></p>
     <div class="books-receipt-btns">
-        <label class="books-receipt-btn" for="@id-photo">@TheArqamSchools.Web.Helpers.Icons.Svg("eye", 20) Take photo</label>
-        <input type="file" id="@id-photo" name="PayPhoto" accept="image/*" capture="environment" class="books-file" data-receipt-input />
-        <label class="books-receipt-btn" for="@id-file">Choose file</label>
-        <input type="file" id="@id-file" name="PayReceipt" accept="image/jpeg,image/png,application/pdf" class="books-file" data-receipt-input />
+        <span class="books-receipt-cell"><input type="file" id="@id-photo" name="PayPhoto" accept="image/*" capture="environment" class="books-file" data-receipt-input />
+        <label class="books-receipt-btn" for="@id-photo">@TheArqamSchools.Web.Helpers.Icons.Svg("eye", 20) Take photo</label></span>
+        <span class="books-receipt-cell"><input type="file" id="@id-file" name="PayReceipt" accept="image/jpeg,image/png,application/pdf" class="books-file" data-receipt-input />
+        <label class="books-receipt-btn" for="@id-file">Choose file</label></span>
     </div>
     <p class="books-receipt-name" data-receipt-name aria-live="polite"></p>
     <p class="form-note">A photo (JPG or PNG) or a PDF, up to 10 MB.</p>

@@ -1673,3 +1673,8 @@ body:has(.books) .wa-float { display: none; }
 .books-app .books-row-name { flex: 1; min-width: 0; display: grid; gap: 2px; margin: 0; }
 .books-app .books-row-name .books-row-price { display: block; text-align: left; justify-self: start; grid-column: auto; }
 .books-app .books-qty input { height: 40px; min-height: 40px; box-sizing: border-box; padding: 0 4px; }
+/* Review fixes (27 November 2026): the Copy button sits beside the choice, not inside its label. */
+.books-pay-opt { align-items: center; }
+.books-pay-main { flex: 1; display: flex; align-items: flex-start; gap: 12px; min-width: 0; cursor: pointer; }
+.books-receipt-cell { position: relative; display: grid; }
+.books-receipt-cell .books-receipt-btn { height: 100%; }

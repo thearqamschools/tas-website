@@ -174,9 +174,11 @@ const BOOKS = [
   ok('customer sees the reason and can send again', (await cust.content()).includes('DEMO amount not received') && (await cust.locator('button:has-text("Send payment")').count()) === 1);
   await cust.locator('#payment .books-pay-opt', { hasText: 'DEMO Customer Bank' }).locator('input').check(); await cust.setInputFiles('#bp-file', JPEG);
   await go('button:has-text("Send payment")');
-  ok('a second payment can be sent while one is checked', (await cust.locator('button:has-text("Send payment")').count()) === 1);
+  ok('nothing more to send while the whole amount is being checked', (await cust.locator('button:has-text("Send payment")').count()) === 0 && (await cust.locator('#payment').innerText()).includes('being checked by the office'));
   const before = await stockOf('DEMO Retail Book');
-  await admin.goto(B + '/admin/books/orders/' + payNo); await admin.click('#sent button:has-text("Confirm payment")'); await admin.waitForLoadState();
+  await admin.goto(B + '/admin/books/orders/' + payNo);
+  ok('the amount on the receipt must be typed', (await admin.locator('#sent input[name=Amount]').getAttribute('required')) !== null && (await admin.locator('#sent input[name=Amount]').inputValue()) === '');
+  await admin.goto(B + '/admin/books/orders/' + payNo); await admin.fill('#sent input[name=Amount]', '900'); await admin.click('#sent button:has-text("Confirm payment")'); await admin.waitForLoadState();
   ok('office confirmed: payment recorded and order confirmed', (await admin.content()).includes('Payment confirmed and recorded') && (await admin.locator('.admin-order-head').innerText()).includes('Confirmed') && (await admin.locator('#payments table').innerText()).includes('900'));
   await admin.screenshot({ path: OUT + '/admin-sent-payment.png', fullPage: true });
   ok('stock taken at the confirmed payment', (await stockOf('DEMO Retail Book')) === before - 2);
@@ -459,7 +461,11 @@ const BOOKS = [
   ok('Books overview lists payments to check with the receipt', (await admin.locator('#sent .admin-sent-item').count()) >= 1 && (await admin.locator('#sent .admin-receipt-thumb img').count()) >= 1);
   await admin.screenshot({ path: OUT + '/admin-payments-to-check.png', fullPage: true });
   await admin.goto(B + '/admin/books/customer-accounts'); await admin.locator('tr', { hasText: 'DEMO Customer (test)' }).locator('a').first().click(); await admin.waitForLoadState();
-  ok('confirm form has the amount filled in (still to pay)', money(await admin.locator('#sent input[name=Amount]').inputValue()) === owedNow);
+  ok('confirm form shows what was still to pay, the box is empty', money(await admin.locator('#sent input[name=Amount]').getAttribute('placeholder')) === owedNow && (await admin.locator('#sent input[name=Amount]').inputValue()) === '');
+  await admin.fill('#sent input[name=Amount]', String(owedNow + 500));
+  await admin.locator('#sent button:has-text("Confirm payment")').click(); await admin.waitForLoadState();
+  ok('more than owed is refused unless the office ticks credit ' + (await admin.locator('.admin-alert').allInnerTexts()).join(' | '), (await admin.content()).includes('more than the customer owes'));
+  await admin.goto(B + '/admin/books/customer-accounts'); await admin.locator('tr', { hasText: 'DEMO Customer (test)' }).locator('a').first().click(); await admin.waitForLoadState();
   // The receipt shows Rs. 100 less than what was still to pay: the office enters what the receipt shows.
   await admin.fill('#sent input[name=Amount]', String(owedNow - 100));
   await admin.locator('#sent button:has-text("Confirm payment")').click(); await admin.waitForLoadState();

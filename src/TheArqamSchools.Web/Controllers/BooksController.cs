@@ -164,14 +164,14 @@ namespace TheArqamSchools.Web.Controllers
             if (paid == "bank")
             {
                 try { BookPaymentSubmissionRepository.Submit(no, customer.Id, accountId, path, mime); }
-                catch (BookOrderException ex)
+                catch (Exception ex)
                 {
-                    // The order is placed; the payment can be sent again from the order page.
+                    // The order is placed whatever happens here: never show an error page (the customer would order again).
+                    // The payment can be sent again from the order page.
                     ReceiptStore.Delete(path);
-                    TempData["BooksPayError"] = ex.Message;
-                    paid = "later";
+                    if (!(ex is BookOrderException)) System.Diagnostics.Trace.TraceError("Books: payment for order " + no + " not saved: " + ex);
+                    paid = "failed";   // the order page says so (session state is off, so no TempData)
                 }
-                catch { ReceiptStore.Delete(path); throw; }
             }
             return Redirect("/books/orders/" + no.ToString(CultureInfo.InvariantCulture) + "?placed=true&paid=" + paid);
         }

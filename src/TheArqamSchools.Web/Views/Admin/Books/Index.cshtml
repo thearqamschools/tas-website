@@ -5,7 +5,7 @@
 }
 <div class="admin-page-head"><h1>Books</h1><a href="/books" target="_blank" rel="noopener">Open the order page</a></div>
 @Html.Partial("~/Views/Admin/Books/_Tabs.cshtml", "home")
-@if (TempData["BooksError"] is string) { <div class="admin-alert admin-alert--error" role="alert"><p>@TempData["BooksError"]</p></div> }
+@if (!string.IsNullOrEmpty(Request.Unvalidated.QueryString["error"])) { <div class="admin-alert admin-alert--error" role="alert"><p>@Request.Unvalidated.QueryString["error"]</p></div> }
 @if (Request.QueryString["notice"] == "sentconfirmed") { <div class="admin-alert admin-alert--success" role="status"><p>Payment confirmed and recorded.</p></div> }
 @if (Request.QueryString["notice"] == "sentrejected") { <div class="admin-alert admin-alert--success" role="status"><p>Payment marked as not accepted. A message for the customer is ready under Messages.</p></div> }
 @{ var td = TheArqamSchools.Web.Data.BookCustomerAccountRepository.GetToDo(); }
@@ -25,7 +25,7 @@
 @if (toCheck.Count > 0)
 {
     <section class="admin-card" id="sent" aria-labelledby="tocheck-h">
-        <h2 id="tocheck-h">Payments to check (@toCheck.Count)</h2>
+        <h2 id="tocheck-h">Payments to check (@td.PaymentsToCheck)</h2>
         <p class="admin-muted">Open the receipt, check the money in the bank, enter the amount on the receipt and confirm. Oldest first.</p>
         @foreach (var sp in toCheck)
         {

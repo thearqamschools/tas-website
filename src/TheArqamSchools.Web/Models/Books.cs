@@ -333,6 +333,8 @@ namespace TheArqamSchools.Web.Models
         public Guid CustomerId { get; set; }
         public long CustomerNo { get; set; }
         public string CustomerLabel { get { return BookFormat.CustomerLabel(CustomerNo); } }
+        /// <summary>Other payments of the same customer waiting for the office (a warning against counting one receipt twice).</summary>
+        public int OtherWaiting { get; set; }
         /// <summary>Part of a balance payment that became credit when it was confirmed.</summary>
         public decimal CreditAmount { get; set; }
         public Guid AccountId { get; set; }

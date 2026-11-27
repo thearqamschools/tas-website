@@ -11,7 +11,7 @@
     var baseUrl = "/admin/books/customer-accounts/" + c.Id.ToString("D");
     Func<DateTime?, string> d = x => x.HasValue ? x.Value.ToString("yyyy-MM-dd", inv) : "";
     var range = (Model.From.HasValue ? "&from=" + d(Model.From) : "") + (Model.To.HasValue ? "&to=" + d(Model.To) : "");
-    var error = (TempData["BooksError"] as string) ?? Request.Unvalidated.QueryString["error"];
+    var error = Request.Unvalidated.QueryString["error"];
     var today = DateTime.UtcNow.AddHours(5);
     var firstSession = 2025;
     var lastSession = today.Month >= 4 ? today.Year : today.Year - 1;

@@ -9,8 +9,9 @@
     var accounts = (ViewBag.Accounts as IList<BookAccount>) ?? new List<BookAccount>();
     var submissions = (ViewBag.Submissions as IList<BookPaymentSubmission>) ?? new List<BookPaymentSubmission>();
     var paid = Request.QueryString["paid"];
-    var payError = TempData["BooksPayError"] as string;
+    var payError = paid == "failed" ? "Your order is placed, but the payment could not be saved. Please send it again below." : null;
     var waiting = submissions.Any(x => x.Status == "pending");
+    var toSend = Model.Balance - submissions.Where(x => x.Status == "pending").Sum(x => x.Amount);
     // Tracking line: Placed, Payment, Packed, Ready (or Delivered / Collected).
     var paidDone = Model.Status != "new" || Model.PaidTotal > 0;
     var packedDone = Model.Status == "packed" || Model.Status == "delivered" || Model.Status == "collected";
@@ -95,9 +96,13 @@
                 {
                     <p class="books-sent-line books-sent-@sp.Status"><strong>@sp.StatusLabel</strong> &middot; @sp.AccountName &middot; @sp.CreatedAt.ToOffset(pk).ToString("d MMM", inv)@if (sp.Status == "confirmed") { <text> &middot; @BookFormat.Money(sp.Amount)</text> }@if (sp.Status == "rejected" && !string.IsNullOrEmpty(sp.RejectReason)) { <text> &middot; @sp.RejectReason</text> } &middot; <a href="/books/receipts/@sp.Id.ToString("D")" target="_blank" rel="noopener">View receipt</a></p>
                 }
-                @if (Model.Balance > 0 && Model.Status != "cancelled")
+                @if (Model.Balance > 0 && Model.Status != "cancelled" && toSend <= 0)
                 {
-                    <p class="books-pay-total">Still to pay <strong>@BookFormat.Money(Model.Balance)</strong></p>
+                    <p class="form-note">Your payment is being checked by the office.</p>
+                }
+                @if (Model.Balance > 0 && Model.Status != "cancelled" && toSend > 0)
+                {
+                    <p class="books-pay-total">Still to pay <strong>@BookFormat.Money(toSend)</strong></p>
                     <form method="post" action="/books/orders/@Model.OrderNo/pay" enctype="multipart/form-data" class="books-pay-form" novalidate>
                         @Html.AntiForgeryToken()
                         <div class="hp" aria-hidden="true"><label for="bp-website">Website</label><input id="bp-website" name="website" type="text" tabindex="-1" autocomplete="off" /></div>
@@ -109,4 +114,4 @@
         }
     </div>
 </section>
-<script src="~/Scripts/books.js?v=20261127a" defer></script>
+<script src="~/Scripts/books.js?v=20261127b" defer></script>

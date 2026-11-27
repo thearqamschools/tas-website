@@ -84,16 +84,13 @@ namespace TheArqamSchools.Web.Controllers
         {
             var sub = BookPaymentSubmissionRepository.Get(id);
             if (sub == null) return HttpNotFound();
+            // The amount on the receipt must always be typed (review of 27 November 2026): the customer types none.
             decimal received;
             var raw = (Request.Unvalidated.Form["Amount"] ?? "").Replace(",", "").Trim();
-            decimal? amount = null;
-            if (raw.Length > 0)
-            {
-                if (!decimal.TryParse(raw, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out received) || received <= 0)
-                    return SentError(sub, back, "Please enter the amount received, in rupees.");
-                amount = received;
-            }
-            try { BookPaymentSubmissionRepository.Confirm(id, AdminAuth.Current(HttpContext).Id, amount); }
+            if (!decimal.TryParse(raw, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out received) || received <= 0)
+                return SentError(sub, back, "Please enter the amount shown on the receipt.");
+            var allowCredit = (Request.Form["AllowCredit"] ?? "").Split(',').Contains("true");
+            try { BookPaymentSubmissionRepository.Confirm(id, AdminAuth.Current(HttpContext).Id, received, allowCredit); }
             catch (BookOrderException ex) { return SentError(sub, back, ex.Message); }
             return SentDone(sub, back, "sentconfirmed");
         }
@@ -112,10 +109,12 @@ namespace TheArqamSchools.Web.Controllers
 
         private ActionResult SentError(BookPaymentSubmission sub, string back, string error)
         {
-            TempData["BooksError"] = error;
-            if (back == "home") return Redirect("/admin/books#sent");
+            // Session state is off on this site, so TempData does not survive a redirect: the message goes in the address
+            // (it is only ever shown HTML-encoded, on admin pages).
+            var q = "?error=" + Uri.EscapeDataString(error.Length > 400 ? error.Substring(0, 400) : error) + "#sent";
+            if (back == "home") return Redirect("/admin/books" + q);
             if (sub.OrderNo.HasValue) return OrderView(BookRepository.Order(sub.OrderNo.Value), null, null, error);
-            return Redirect("/admin/books/customer-accounts/" + sub.CustomerId.ToString("D") + "#sent");
+            return Redirect("/admin/books/customer-accounts/" + sub.CustomerId.ToString("D") + q);
         }
 
         /// <summary>POST /admin/books/sent-payments/{id}/reject: the payment is not accepted; the customer sees the reason.</summary>

@@ -42,10 +42,11 @@
     add.setAttribute("aria-label", "Add one: " + name.replace(/^Quantity of /, ""));
     var minus = document.createElement("button");
     minus.type = "button"; minus.className = "books-qty-btn books-qty-minus"; minus.textContent = "−";
-    minus.setAttribute("aria-label", "One less");
+    var book = name.replace(/^Quantity of /, "");
+    minus.setAttribute("aria-label", "One less: " + book);
     var plus = document.createElement("button");
     plus.type = "button"; plus.className = "books-qty-btn books-qty-plus"; plus.textContent = "+";
-    plus.setAttribute("aria-label", "One more");
+    plus.setAttribute("aria-label", "One more: " + book);
     inp.parentNode.insertBefore(wrap, inp);
     wrap.appendChild(add); wrap.appendChild(minus); wrap.appendChild(inp); wrap.appendChild(plus);
     function set(q) { q = Math.max(0, Math.min(max(inp), q)); inp.value = q > 0 ? String(q) : ""; show(); update(); }
@@ -87,8 +88,31 @@
     });
   });
 
+  if (totalEl) totalEl.setAttribute("aria-live", "polite");
   form.addEventListener("input", update);
   update();
+})();
+
+/* Pressing a button twice must not place two orders or send a payment twice (review, 27 November 2026): after the
+   first press the buttons are switched off. This happens just after the form is sent, so the pressed button's value
+   still goes with it. Without JavaScript the server's rate limit still applies. */
+(function () {
+  "use strict";
+  Array.prototype.forEach.call(document.querySelectorAll(".books-form, .books-pay-form"), function (form) {
+    form.addEventListener("submit", function (e) {
+      if (e.defaultPrevented || (form.checkValidity && !form.checkValidity())) return;   // site.js shows the errors
+      if (form.getAttribute("data-busy")) { e.preventDefault(); return; }
+      form.setAttribute("data-busy", "1");
+      setTimeout(function () {
+        Array.prototype.forEach.call(form.querySelectorAll("button[type=submit]"), function (b) { b.disabled = true; });
+      }, 0);
+      // If the page is shown again from the browser's history, the buttons work again.
+      window.addEventListener("pageshow", function () {
+        form.removeAttribute("data-busy");
+        Array.prototype.forEach.call(form.querySelectorAll("button[type=submit]"), function (b) { b.disabled = false; });
+      }, { once: true });
+    });
+  });
 })();
 
 /* Copy a bank account number; show the chosen receipt's name. */

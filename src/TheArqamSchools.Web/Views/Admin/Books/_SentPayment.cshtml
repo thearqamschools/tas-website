@@ -17,6 +17,7 @@
     {
         <a class="admin-receipt-thumb" href="/admin/books/sent-payments/@sp.Id.ToString("D")/receipt" target="_blank" rel="noopener"><img src="/admin/books/sent-payments/@sp.Id.ToString("D")/receipt" alt="Receipt sent by @sp.CustomerName" loading="lazy" /></a>
     }
+    @if (sp.Status == "pending" && sp.OtherWaiting > 0) { <p class="admin-alert admin-alert--warn">This customer has @sp.OtherWaiting other @(sp.OtherWaiting == 1 ? "payment" : "payments") waiting. Check it is not the same receipt sent twice.</p> }
     @if (!sp.OrderNo.HasValue && sp.Status == "pending") { <p class="admin-muted">Confirm applies it to the customer's oldest unpaid orders first; anything left becomes credit.</p> }
     <p>Status: <strong>@sp.StatusLabel</strong>@if (sp.ReviewedAt.HasValue) { <text> by @sp.ReviewedByName, @sp.ReviewedAt.Value.ToOffset(TimeSpan.FromHours(5)).ToString("d MMM yyyy", inv)</text> }@if (sp.CreditAmount > 0) { <text> &middot; @BookFormat.Money(sp.CreditAmount) to credit</text> }@if (!string.IsNullOrEmpty(sp.RejectReason)) { <text> &middot; Reason: @sp.RejectReason</text> }</p>
     @if (sp.Status == "pending" && canPay)
@@ -25,8 +26,12 @@
             <form method="post" action="/admin/books/sent-payments/@sp.Id.ToString("D")/confirm">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="back" value="@back" />
-                <div class="admin-field"><label for="amt-@sp.Id.ToString("N")">Amount received (Rs.)</label><input type="text" inputmode="decimal" id="amt-@sp.Id.ToString("N")" name="Amount" value="@sp.Amount.ToString("0.##", inv)" maxlength="12" autocomplete="off" />
-                    <p class="admin-hint">The customer does not type an amount; this is what was still to pay. Change it to what the receipt shows.</p></div>
+                <div class="admin-field"><label for="amt-@sp.Id.ToString("N")">Amount on the receipt (Rs.)</label><input type="text" inputmode="decimal" id="amt-@sp.Id.ToString("N")" name="Amount" maxlength="12" autocomplete="off" required placeholder="@sp.Amount.ToString("0.##", inv)" />
+                    <p class="admin-hint">Type what the receipt shows. Still to pay when the customer sent it: @BookFormat.Money(sp.Amount).</p></div>
+                @if (!sp.OrderNo.HasValue)
+                {
+                    <div class="admin-check admin-check-small"><input type="checkbox" id="cr-@sp.Id.ToString("N")" name="AllowCredit" value="true" /><label for="cr-@sp.Id.ToString("N")">Put the extra in the customer's credit, if the amount is more than they owe</label></div>
+                }
                 <button type="submit" class="admin-button" data-confirm="Confirm this payment received in @sp.AccountName?">Confirm payment</button>
             </form>
             <form method="post" action="/admin/books/sent-payments/@sp.Id.ToString("D")/reject">

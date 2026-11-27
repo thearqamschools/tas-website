@@ -38,7 +38,9 @@ namespace TheArqamSchools.Web.Data
                 if (o == null || o.CustomerId != customerId) throw new BookOrderException("The order was not found.");
                 if (o.Status == "cancelled") throw new BookOrderException("This order is cancelled.");
                 if (o.Balance <= 0) throw new BookOrderException("Nothing is left to pay on this order.");
-                var amount = o.Balance;
+                // What is still to pay less payments for this order already waiting for the office (no double counting).
+                var amount = o.Balance - db.ExecuteScalar<decimal>("SELECT COALESCE(SUM(amount), 0) FROM dbo.book_payment_submissions WHERE order_id = @Id AND status = N'pending'", new { o.Id }, tx);
+                if (amount <= 0) throw new BookOrderException("Your payment for this order is being checked by the office. Nothing more to pay for now.");
                 var account = db.QuerySingleOrDefault<BookAccount>("SELECT id, kind, is_active, show_to_customers FROM dbo.book_accounts WHERE id = @accountId", new { accountId }, tx);
                 if (account == null || !account.IsActive || account.Kind != "bank" || !account.ShowToCustomers)
                     throw new BookOrderException("Please choose the bank account you paid into.");
@@ -125,7 +127,7 @@ namespace TheArqamSchools.Web.Data
         /// payment; the first payment of an order takes its books off stock and a New order becomes Confirmed). Anything left
         /// becomes the customer's credit and is kept on the submission (credit_amount) so the statement shows it.
         /// </summary>
-        private static void ConfirmBalancePayment(BookPaymentSubmission sub, Guid actorId)
+        private static void ConfirmBalancePayment(BookPaymentSubmission sub, Guid actorId, decimal sent, bool allowCredit)
         {
             using (var db = Db.Open())
             using (var tx = db.BeginTransaction())
@@ -178,21 +180,24 @@ namespace TheArqamSchools.Web.Data
                 }
                 if (firstPayment == null)
                     throw new BookOrderException("This customer owes nothing at the moment, so the payment cannot be applied. Mark it as not accepted and pay the money back, or add it as credit by hand.");
+                if (left > 0 && !allowCredit)
+                    throw new BookOrderException(BookFormat.Money(left) + " of this amount is more than the customer owes. Check the amount; if it is right, tick \"Put the extra in the customer's credit\" and confirm again.");
                 if (left > 0)
                     BookMessageRepository.ForBalance(db, tx, sub.CustomerId, "payment_credit", sub.Amount, left);
                 if (left > 0)
                     db.Execute("UPDATE dbo.book_customers SET credit = credit + @left, updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId WHERE id = @CustomerId",
                         new { left, actorId, sub.CustomerId }, tx);
-                db.Execute(@"UPDATE dbo.book_payment_submissions SET status = N'confirmed', payment_id = @firstPayment, credit_amount = @left, reviewed_by = @actorId, reviewed_at = SYSDATETIMEOFFSET()
-                             WHERE id = @Id", new { firstPayment, left, actorId, sub.Id }, tx);
+                db.Execute(@"UPDATE dbo.book_payment_submissions SET status = N'confirmed', amount = @Amount, payment_id = @firstPayment, credit_amount = @left, reviewed_by = @actorId, reviewed_at = SYSDATETIMEOFFSET()
+                             WHERE id = @Id", new { sub.Amount, firstPayment, left, actorId, sub.Id }, tx);
                 AuditLog.Write(db, tx, actorId, "update", "book_payment_submissions", sub.Id.ToString(),
-                    new { status = "confirmed", amount = sub.Amount, applied = paid, to_credit = left });
+                    new { status = "confirmed", amount = sub.Amount, amount_when_sent = sent, applied = paid, to_credit = left });
                 tx.Commit();
             }
         }
 
         private const string Columns = @"s.id, s.order_id, o.order_no, s.customer_id, c.customer_no, s.account_id, a.name AS account_name, s.amount, s.credit_amount, s.receipt_path, s.receipt_mime,
-            s.status, s.reject_reason, u.full_name AS reviewed_by_name, s.reviewed_at, s.created_at, c.name AS customer_name";
+            s.status, s.reject_reason, u.full_name AS reviewed_by_name, s.reviewed_at, s.created_at, c.name AS customer_name,
+            (SELECT COUNT(*) FROM dbo.book_payment_submissions s2 WHERE s2.customer_id = s.customer_id AND s2.status = N'pending' AND s2.id <> s.id) AS other_waiting";
         private const string From = @" FROM dbo.book_payment_submissions s
             LEFT JOIN dbo.book_orders o ON o.id = s.order_id
             JOIN dbo.book_customers c ON c.id = s.customer_id
@@ -223,26 +228,18 @@ namespace TheArqamSchools.Web.Data
         /// </summary>
         /// <summary>
         /// The office confirms a payment. <paramref name="received"/> is what the receipt really shows (the customer types
-        /// no amount); when it differs, the submission is corrected first and the change is kept in the audit log.
+        /// no amount, review of 27 November 2026): it must always be entered, and it is written inside the same transaction
+        /// as the payment, after the locks, so a failed confirm changes nothing. For a balance payment, money beyond what the
+        /// customer owes becomes credit only when <paramref name="allowCredit"/> is set (a typing mistake cannot make credit).
         /// </summary>
-        public static void Confirm(Guid id, Guid actorId, decimal? received = null)
+        public static void Confirm(Guid id, Guid actorId, decimal received, bool allowCredit = false)
         {
+            if (received <= 0 || decimal.Round(received, 2) != received) throw new BookOrderException("Please enter the amount received, as shown on the receipt.");
             var sub = Get(id);
             if (sub == null) throw new BookOrderException("The payment was not found.");
-            if (received.HasValue && received.Value != sub.Amount)
-            {
-                if (received.Value <= 0 || decimal.Round(received.Value, 2) != received.Value) throw new BookOrderException("Please enter the amount received, in rupees.");
-                using (var db = Db.Open())
-                using (var tx = db.BeginTransaction())
-                {
-                    if (db.Execute("UPDATE dbo.book_payment_submissions SET amount = @r WHERE id = @id AND status = N'pending'", new { r = received.Value, id }, tx) == 0)
-                        throw new BookOrderException("This payment has already been checked.");
-                    AuditLog.Write(db, tx, actorId, "update", "book_payment_submissions", id.ToString(), new { amount_from = sub.Amount, amount_to = received.Value, reason = "amount on the receipt" });
-                    tx.Commit();
-                }
-                sub.Amount = received.Value;
-            }
-            if (!sub.OrderId.HasValue) { ConfirmBalancePayment(sub, actorId); return; }
+            var sent = sub.Amount;
+            sub.Amount = received;
+            if (!sub.OrderId.HasValue) { ConfirmBalancePayment(sub, actorId, sent, allowCredit); return; }
             using (var db = Db.Open())
             using (var tx = db.BeginTransaction())
             {
@@ -256,8 +253,8 @@ namespace TheArqamSchools.Web.Data
                     ReceivedOn = sub.CreatedAt.ToOffset(TimeSpan.FromHours(5)).Date, Note = "Sent by the customer online"
                 };
                 var paymentId = BookOrderRepository.RecordPaymentTx(db, tx, sub.OrderNo.Value, form, sub.ReceiptPath, sub.ReceiptMime, actorId, true);
-                db.Execute(@"UPDATE dbo.book_payment_submissions SET status = N'confirmed', payment_id = @paymentId, reviewed_by = @actorId, reviewed_at = SYSDATETIMEOFFSET()
-                             WHERE id = @id", new { paymentId, actorId, id }, tx);
+                db.Execute(@"UPDATE dbo.book_payment_submissions SET status = N'confirmed', amount = @received, payment_id = @paymentId, reviewed_by = @actorId, reviewed_at = SYSDATETIMEOFFSET()
+                             WHERE id = @id", new { received, paymentId, actorId, id }, tx);
                 var moved = db.Execute("UPDATE dbo.book_orders SET status = N'checked', updated_at = SYSDATETIMEOFFSET(), updated_by = @actorId WHERE id = @OrderId AND status = N'new'",
                     new { actorId, sub.OrderId }, tx);
                 if (moved > 0)
@@ -265,7 +262,7 @@ namespace TheArqamSchools.Web.Data
                         new { order_no = sub.OrderNo, status_from = "new", status_to = "checked", via = "customer payment confirmed" });
                 BookMessageRepository.ForOrder(db, tx, sub.OrderId.Value, "payment_received", sub.Amount);
                 AuditLog.Write(db, tx, actorId, "update", "book_payment_submissions", id.ToString(),
-                    new { order_no = sub.OrderNo, status = "confirmed", payment_id = paymentId, amount = sub.Amount, order_confirmed = moved > 0 });
+                    new { order_no = sub.OrderNo, status = "confirmed", payment_id = paymentId, amount = sub.Amount, amount_when_sent = sent, order_confirmed = moved > 0 });
                 tx.Commit();
             }
         }
