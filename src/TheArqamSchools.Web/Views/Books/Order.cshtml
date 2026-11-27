@@ -2,6 +2,8 @@
 @using System.Globalization
 @using TheArqamSchools.Web.Helpers
 @{
+    // New order (owner's notes 56-59, 27 November 2026): 1. choose books (class tabs, whole set, + / -),
+    // 2. check the order and choose Pick up or Delivery, 3. payment (bank or cash, receipt) which places the order.
     var editing = Model.Editing;
     var action = editing == null ? "/books/order" : "/books/orders/" + editing.OrderNo.ToString(CultureInfo.InvariantCulture) + "/edit";
     Func<Guid, int> qty = id => Model.Quantities.ContainsKey(id) ? Model.Quantities[id] : 0;
@@ -10,73 +12,112 @@
     var credit = Math.Min(Model.Customer.Credit + (editing != null ? editing.CreditApplied : 0), total);
     var groups = Model.Items.GroupBy(i => i.ClassName).ToList();
     var canDeliver = !string.IsNullOrWhiteSpace(Model.Customer.Address);
+    var step = Model.Step ?? "form";
+    var title = step == "payment" ? "Payment" : step == "preview" ? (editing == null ? "Check your order" : "Check your changes") : (editing == null ? "New order" : "Change order " + editing.OrderLabel);
+    // The class shown first: the first one with a chosen book, else the first class.
+    var firstClass = groups.Select(g => g.Key).FirstOrDefault(k => groups.First(g => g.Key == k).Any(i => qty(i.Id) > 0)) ?? (groups.Count > 0 ? groups[0].Key : null);
+    var s = Model.Summary;
 }
-<section class="page-header tone-warm">
-    <div class="container">
-        <h1 class="h1">@(editing == null ? (Model.Preview ? "Check your order" : "Order books") : (Model.Preview ? "Check your changes" : "Change order " + editing.OrderLabel))</h1>
-        <p class="lead">@(Model.Preview ? "Please check the books and the total, then place the order." : "Type how many copies you need of each book. The total updates as you type.")</p>
-    </div>
-</section>
-<section class="section tone-white books">
+<section class="section tone-white books books-app">
     <div class="container books-wide">
         @Html.Partial("~/Views/Books/_Who.cshtml", Model.Customer)
+        @if (s != null && (s.Balance > 0 || s.Orders > 0))
+        {
+            <div class="books-summary@(s.Balance > 0 ? " is-due" : "")">
+                <div><span class="books-summary-label">Still to pay</span><strong class="books-summary-due">@BookFormat.Money(Math.Max(0m, s.Balance))</strong></div>
+                <div class="books-summary-side">@s.Orders @(s.Orders == 1 ? "order" : "orders")<br />Value <strong>@BookFormat.Money(s.OrderTotal)</strong></div>
+                @if (s.Balance > 0) { <a class="btn btn-primary btn-sm" href="/books/payments">Pay</a> }
+            </div>
+        }
+        <h1 class="books-title">@title</h1>
         @if (Model.Errors != null && Model.Errors.Count > 0)
         {
             <div class="alert alert-error" role="alert" tabindex="-1" data-focus>@foreach (var e in Model.Errors) { <p>@e</p> }</div>
         }
-        <form method="post" action="@action" class="books-form" data-books-form novalidate>
+        <form method="post" action="@action" class="books-form" data-books-form novalidate @(step == "payment" ? "enctype=multipart/form-data" : null)>
             @Html.AntiForgeryToken()
             <div class="hp" aria-hidden="true"><label for="bo-website">Website</label><input id="bo-website" name="website" type="text" tabindex="-1" autocomplete="off" /></div>
-            @if (Model.Preview)
+            @if (step == "preview" || step == "payment")
             {
                 foreach (var i in Model.Items) { if (qty(i.Id) > 0) { <input type="hidden" name="@("q_" + i.Id.ToString("N"))" value="@qty(i.Id)" /> } }
+            }
+            @if (step == "payment")
+            {
                 <input type="hidden" name="fulfilment" value="@Model.Fulfilment" />
-                <div class="books-card">
-                    <h2 class="h3">Your books</h2>
-                    <table class="books-table">
-                        <thead><tr><th scope="col">Book</th><th scope="col" class="num">Qty</th><th scope="col" class="num">Price</th><th scope="col" class="num">Total</th></tr></thead>
-                        <tbody>
-                            @foreach (var i in chosen)
-                            {
-                                <tr><td><span class="books-class">@i.ClassName</span> @i.Name</td><td class="num">@qty(i.Id)</td><td class="num">@BookFormat.Money(i.SalePrice)</td><td class="num">@BookFormat.Money(i.SalePrice * qty(i.Id))</td></tr>
-                            }
-                        </tbody>
-                        <tfoot>
-                            @if (credit > 0)
-                            {
-                                <tr><th scope="row" colspan="3">Books</th><td class="num">@BookFormat.Money(total)</td></tr>
-                                <tr><th scope="row" colspan="3">Your credit</th><td class="num">&minus; @BookFormat.Money(credit)</td></tr>
-                            }
-                            <tr class="books-total-row"><th scope="row" colspan="3">Total</th><td class="num">@BookFormat.Money(total - credit)</td></tr>
-                        </tfoot>
-                    </table>
-                    <p class="books-fulfil">@Icons.Svg(Model.Fulfilment == "delivery" ? "map-pin" : "graduation-cap", 18) <span><strong>@BookFormat.FulfilmentLabel(Model.Fulfilment):</strong> @(Model.Fulfilment == "delivery" ? Model.Customer.Address : "you collect the books from the office.")</span></p>
+                <p class="books-pay-total">Total <strong>@BookFormat.Money(total - credit)</strong></p>
+                <p class="books-pay-lead">Pay into one of these accounts and attach the receipt, or choose Cash.</p>
+                @Html.Partial("~/Views/Books/_PayOptions.cshtml", Model.Accounts, new ViewDataDictionary { { "Id", "op" } })
+                <button type="submit" name="step" value="place" class="btn btn-primary books-btn-block">Place order</button>
+                <p class="books-later">No payment now? <button type="submit" name="step" value="later" class="books-link-btn" formnovalidate>Place order, pay later</button></p>
+                <p class="books-later"><button type="submit" name="step" value="preview" class="books-link-btn" formnovalidate>&larr; Back to my order</button></p>
+            }
+            else if (step == "preview")
+            {
+                <div class="books-review">
+                    <div class="books-card books-review-order">
+                        <table class="books-table books-lines">
+                            <tbody>
+                                @foreach (var i in chosen)
+                                {
+                                    <tr><td>@i.Name <span class="books-class">@i.ClassName</span></td><td class="num">&times; @qty(i.Id)</td><td class="num">@BookFormat.Money(i.SalePrice * qty(i.Id))</td></tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                @if (credit > 0)
+                                {
+                                    <tr><th scope="row" colspan="2">Books</th><td class="num">@BookFormat.Money(total)</td></tr>
+                                    <tr><th scope="row" colspan="2">Your credit</th><td class="num">&minus; @BookFormat.Money(credit)</td></tr>
+                                }
+                                <tr class="books-total-row"><th scope="row" colspan="2">Total</th><td class="num">@BookFormat.Money(total - credit)</td></tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <fieldset class="books-review-get">
+                        <legend>How will you get the books?</legend>
+                        <label class="books-pay-opt"><input type="radio" name="fulfilment" value="pickup" @(Model.Fulfilment != "delivery" ? "checked" : null) /><span class="books-pay-body"><span class="books-pay-name">Pick up from the office</span><span class="books-pay-sub">Sanora Colony, Samanabad, Faisalabad</span></span></label>
+                        <label class="books-pay-opt@(canDeliver ? "" : " is-disabled")"><input type="radio" name="fulfilment" value="delivery" @(Model.Fulfilment == "delivery" ? "checked" : null) @(canDeliver ? null : "disabled") /><span class="books-pay-body"><span class="books-pay-name">Deliver to my address</span><span class="books-pay-sub">@(canDeliver ? Model.Customer.Address : "No address registered. Please contact the office.")</span></span></label>
+                    </fieldset>
                 </div>
-                <div class="books-actions">
+                <div class="books-actions books-actions--stack">
+                    @if (editing == null)
+                    {
+                        <button type="submit" name="step" value="payment" class="btn btn-primary">Continue to payment @Icons.Svg("arrow-right", 18)</button>
+                    }
+                    else
+                    {
+                        <button type="submit" name="step" value="place" class="btn btn-primary">Save changes</button>
+                    }
                     <button type="submit" name="step" value="back" class="btn btn-outline">Change order</button>
-                    <button type="submit" name="step" value="place" class="btn btn-primary">@(editing == null ? "Place order" : "Save changes")</button>
                 </div>
             }
             else
             {
+                <input type="hidden" name="fulfilment" value="@Model.Fulfilment" />
                 if (Model.Items.Count == 0)
                 {
                     <div class="books-card"><p>No books are available to order at the moment. Please check again later or contact the office.</p></div>
                 }
+                if (groups.Count > 1)
+                {
+                    <div class="books-classes" role="group" aria-label="Class" data-books-classes hidden>
+                        @foreach (var g in groups)
+                        {
+                            <button type="button" class="books-class-chip" data-class="@g.Key" aria-pressed="@(g.Key == firstClass ? "true" : "false")">@g.Key</button>
+                        }
+                    </div>
+                }
                 foreach (var g in groups)
                 {
-                    <fieldset class="books-class-group">
+                    <fieldset class="books-class-group" data-class-group="@g.Key">
                         <legend>@g.Key</legend>
-                        <div class="books-row books-row--head" aria-hidden="true"><span>Book</span><span class="num">Price</span><span class="num-c">Quantity</span><span class="num">Total</span></div>
+                        @if (g.Count() > 1) { <button type="button" class="books-set" data-add-set hidden><span>Whole @g.Key set &middot; @g.Count() books</span><strong>+ Add all</strong></button> }
                         <ul class="books-rows">
                             @foreach (var i in g)
                             {
                                 var id = "q_" + i.Id.ToString("N");
                                 <li class="books-row">
-                                    <label for="@id" class="books-row-name">@i.Name</label>
-                                    <span class="books-row-price">@BookFormat.Money(i.SalePrice)</span>
+                                    <label for="@id" class="books-row-name">@i.Name<span class="books-row-price">@BookFormat.Money(i.SalePrice)</span></label>
                                     <input type="number" id="@id" name="@id" value="@(qty(i.Id) > 0 ? qty(i.Id).ToString(CultureInfo.InvariantCulture) : "")" min="0" max="@BookRepositoryMax()" inputmode="numeric" placeholder="0" data-price="@i.SalePrice.ToString(CultureInfo.InvariantCulture)" aria-label="Quantity of @i.Name, @g.Key" />
-                                    <output class="books-row-total" for="@id" data-line-total>@(qty(i.Id) > 0 ? BookFormat.Money(i.SalePrice * qty(i.Id)) : "")</output>
                                 </li>
                             }
                         </ul>
@@ -84,15 +125,10 @@
                 }
                 if (Model.Items.Count > 0)
                 {
-                    <fieldset class="books-card books-fulfil-choice">
-                        <legend>How will you get the books?</legend>
-                        <label class="books-radio"><input type="radio" name="fulfilment" value="pickup" @(Model.Fulfilment != "delivery" ? "checked" : null) /> <span><strong>Pick up</strong> I will collect them</span></label>
-                        <label class="books-radio"><input type="radio" name="fulfilment" value="delivery" @(Model.Fulfilment == "delivery" ? "checked" : null) @(canDeliver ? null : "disabled") /> <span><strong>Delivery</strong> @(canDeliver ? "to " + Model.Customer.Address : "(no address registered; please contact the office)")</span></label>
-                    </fieldset>
                     <div class="books-sticky" data-books-sticky>
                         <div class="books-sticky-inner">
-                            <p class="books-sticky-total"><span>Total</span> <strong data-books-total>@BookFormat.Money(total)</strong></p>
-                            <button type="submit" name="step" value="preview" class="btn btn-primary">Preview order @Icons.Svg("arrow-right", 18)</button>
+                            <p class="books-sticky-total"><span data-books-count>@chosen.Sum(i => qty(i.Id)) books</span> <strong data-books-total>@BookFormat.Money(total)</strong></p>
+                            <button type="submit" name="step" value="preview" class="btn btn-primary">Continue @Icons.Svg("arrow-right", 18)</button>
                         </div>
                     </div>
                 }
@@ -100,7 +136,7 @@
         </form>
     </div>
 </section>
-<script src="~/Scripts/books.js?v=20261120b" defer></script>
+<script src="~/Scripts/books.js?v=20261127a" defer></script>
 @functions {
     static int BookRepositoryMax() { return TheArqamSchools.Web.Data.BookRepository.MaxQuantityPerBook; }
 }

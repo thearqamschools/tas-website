@@ -21,9 +21,13 @@ namespace TheArqamSchools.Web.Data
             return BookOrderRepository.Accounts(true).Where(a => a.Kind == "bank" && a.ShowToCustomers).ToList();
         }
 
-        public static Guid Submit(long orderNo, Guid customerId, Guid accountId, decimal amount, string receiptPath, string receiptMime)
+        /// <summary>
+        /// The customer sends a receipt for one order. Owner's decision (27 November 2026): the customer does not type an
+        /// amount; the payment is taken as what is still to pay on the order, and the office enters what the receipt
+        /// really shows when it confirms. More than one payment may wait for the office at the same time.
+        /// </summary>
+        public static Guid Submit(long orderNo, Guid customerId, Guid accountId, string receiptPath, string receiptMime)
         {
-            if (amount <= 0 || decimal.Round(amount, 2) != amount) throw new BookOrderException("Please enter the amount you paid, in rupees.");
             using (var db = Db.Open())
             using (var tx = db.BeginTransaction())
             {
@@ -33,9 +37,8 @@ namespace TheArqamSchools.Web.Data
                     FROM dbo.book_orders o WITH (UPDLOCK, HOLDLOCK) WHERE order_no = @orderNo", new { orderNo }, tx);
                 if (o == null || o.CustomerId != customerId) throw new BookOrderException("The order was not found.");
                 if (o.Status == "cancelled") throw new BookOrderException("This order is cancelled.");
-                if (o.PendingPayments > 0) throw new BookOrderException("Your earlier payment is still being checked by the office. Please wait for it first.");
                 if (o.Balance <= 0) throw new BookOrderException("Nothing is left to pay on this order.");
-                if (amount > o.Balance) throw new BookOrderException("The amount is more than the " + BookFormat.Money(o.Balance) + " still to pay.");
+                var amount = o.Balance;
                 var account = db.QuerySingleOrDefault<BookAccount>("SELECT id, kind, is_active, show_to_customers FROM dbo.book_accounts WHERE id = @accountId", new { accountId }, tx);
                 if (account == null || !account.IsActive || account.Kind != "bank" || !account.ShowToCustomers)
                     throw new BookOrderException("Please choose the bank account you paid into.");
@@ -52,20 +55,17 @@ namespace TheArqamSchools.Web.Data
         /// "Make a payment" on My payments (owner's decision, 21 November 2026): one payment towards everything the customer
         /// owes. It must not be more than they owe; only one such payment can wait for the office at a time.
         /// </summary>
-        public static Guid SubmitForBalance(Guid customerId, Guid accountId, decimal amount, string receiptPath, string receiptMime)
+        public static Guid SubmitForBalance(Guid customerId, Guid accountId, string receiptPath, string receiptMime)
         {
-            if (amount <= 0 || decimal.Round(amount, 2) != amount) throw new BookOrderException("Please enter the amount you paid, in rupees.");
             using (var db = Db.Open())
             using (var tx = db.BeginTransaction())
             {
                 // The customer's orders first (by id), then the customer: the same lock order as everywhere.
                 db.Execute("SELECT id FROM dbo.book_orders WITH (UPDLOCK, HOLDLOCK) WHERE customer_id = @customerId AND status <> N'cancelled' ORDER BY id", new { customerId }, tx);
                 db.Execute("SELECT id FROM dbo.book_customers WITH (UPDLOCK, HOLDLOCK) WHERE id = @customerId", new { customerId }, tx);
-                if (db.ExecuteScalar<int>("SELECT COUNT(*) FROM dbo.book_payment_submissions WHERE customer_id = @customerId AND status = N'pending'", new { customerId }, tx) > 0)
-                    throw new BookOrderException("Your earlier payment is still being checked by the office. Please wait for it first.");
-                var owed = Owed(db, tx, customerId);
-                if (owed <= 0) throw new BookOrderException("Nothing is left to pay at the moment.");
-                if (amount > owed) throw new BookOrderException("The amount is more than the " + BookFormat.Money(owed) + " you owe.");
+                // No amount is typed (27 November 2026): it is what is still to pay less payments already waiting for the office.
+                var amount = Owed(db, tx, customerId) - Waiting(db, tx, customerId);
+                if (amount <= 0) throw new BookOrderException("Nothing is left to pay at the moment. Payments you sent are being checked by the office.");
                 var account = db.QuerySingleOrDefault<BookAccount>("SELECT id, kind, is_active, show_to_customers FROM dbo.book_accounts WHERE id = @accountId", new { accountId }, tx);
                 if (account == null || !account.IsActive || account.Kind != "bank" || !account.ShowToCustomers)
                     throw new BookOrderException("Please choose the bank account you paid into.");
@@ -89,6 +89,24 @@ namespace TheArqamSchools.Web.Data
                         SELECT subtotal - returned_total - discount_total - credit_applied - paid_total + refunded_total AS b
                         FROM dbo.book_orders WHERE customer_id = @customerId AND status <> N'cancelled') x), 0) AS owed,
                            (SELECT credit FROM dbo.book_customers WHERE id = @customerId) AS credit) y", new { customerId }, tx);
+        }
+
+        /// <summary>Payments the customer sent that the office has not checked yet.</summary>
+        public static decimal Waiting(System.Data.IDbConnection db, System.Data.IDbTransaction tx, Guid customerId)
+        {
+            return db.ExecuteScalar<decimal>("SELECT COALESCE(SUM(amount), 0) FROM dbo.book_payment_submissions WHERE customer_id = @customerId AND status = N'pending'", new { customerId }, tx);
+        }
+
+        public static decimal Waiting(Guid customerId)
+        {
+            using (var db = Db.Open()) return Waiting(db, null, customerId);
+        }
+
+        /// <summary>All payments waiting for the office, oldest first (Books overview).</summary>
+        public static IList<BookPaymentSubmission> Pending(int max)
+        {
+            using (var db = Db.Open())
+                return db.Query<BookPaymentSubmission>("SELECT TOP (@max) " + Columns + From + " WHERE s.status = N'pending' AND (o.id IS NULL OR o.archived_at IS NULL) ORDER BY s.created_at", new { max }).ToList();
         }
 
         public static decimal Owed(Guid customerId)
@@ -203,10 +221,27 @@ namespace TheArqamSchools.Web.Data
         /// The office confirms: the payment is recorded (bank, the chosen account, the date it was sent, the receipt),
         /// and a New order becomes Confirmed. Throws <see cref="BookOrderException"/> with a message for the office.
         /// </summary>
-        public static void Confirm(Guid id, Guid actorId)
+        /// <summary>
+        /// The office confirms a payment. <paramref name="received"/> is what the receipt really shows (the customer types
+        /// no amount); when it differs, the submission is corrected first and the change is kept in the audit log.
+        /// </summary>
+        public static void Confirm(Guid id, Guid actorId, decimal? received = null)
         {
             var sub = Get(id);
             if (sub == null) throw new BookOrderException("The payment was not found.");
+            if (received.HasValue && received.Value != sub.Amount)
+            {
+                if (received.Value <= 0 || decimal.Round(received.Value, 2) != received.Value) throw new BookOrderException("Please enter the amount received, in rupees.");
+                using (var db = Db.Open())
+                using (var tx = db.BeginTransaction())
+                {
+                    if (db.Execute("UPDATE dbo.book_payment_submissions SET amount = @r WHERE id = @id AND status = N'pending'", new { r = received.Value, id }, tx) == 0)
+                        throw new BookOrderException("This payment has already been checked.");
+                    AuditLog.Write(db, tx, actorId, "update", "book_payment_submissions", id.ToString(), new { amount_from = sub.Amount, amount_to = received.Value, reason = "amount on the receipt" });
+                    tx.Commit();
+                }
+                sub.Amount = received.Value;
+            }
             if (!sub.OrderId.HasValue) { ConfirmBalancePayment(sub, actorId); return; }
             using (var db = Db.Open())
             using (var tx = db.BeginTransaction())

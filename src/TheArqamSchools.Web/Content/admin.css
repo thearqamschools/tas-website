@@ -387,3 +387,6 @@ body.invoice-page { display: block; background: var(--grey); font-family: var(--
 /* While adjusting, the picture takes the whole row so the frame is big (like Facebook's Reposition). */
 .admin-img-card.is-adjusting { grid-column: 1 / -1; }
 .admin-img-card.is-adjusting .admin-img-frame--mobile { max-width: 26rem; }
+/* Receipt preview next to a payment to check (27 November 2026). */
+.admin-receipt-thumb { display: inline-block; margin: .25rem 0 .5rem; border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden; background: var(--grey); }
+.admin-receipt-thumb img { display: block; max-width: 220px; max-height: 160px; object-fit: contain; }

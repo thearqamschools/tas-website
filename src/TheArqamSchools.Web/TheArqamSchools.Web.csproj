@@ -238,7 +238,8 @@
     <Content Include="Views\Books\Order.cshtml" />
     <Content Include="Views\Books\Orders.cshtml" />
     <Content Include="Views\Books\Detail.cshtml" />
-    <Content Include="Views\Books\Dashboard.cshtml" />
+    <Content Include="Views\Books\More.cshtml" />
+    <Content Include="Views\Books\_PayOptions.cshtml" />
     <Content Include="Views\Books\Payments.cshtml" />
     <Content Include="Views\Books\Returns.cshtml" />
     <Content Include="Views\Books\_Who.cshtml" />

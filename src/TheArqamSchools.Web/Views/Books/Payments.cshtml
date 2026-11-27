@@ -1,131 +1,86 @@
 @using TheArqamSchools.Web.Helpers
 @{
+    // Payments (owner's note, 27 November 2026): one simple screen. "Still to pay" with Pay now (bank or cash, receipt,
+    // no amount typed), then the recent entries of the statement in one list, newest first, and the full statement as PDF.
     var customer = ViewBag.Customer as BookCustomer;
-    var s = ViewBag.Summary as TheArqamSchools.Web.Data.BookCustomerAccountRepository.Summary;
     var subs = ViewBag.Submissions as IList<BookPaymentSubmission>;
     var ledger = ViewBag.Ledger as IList<TheArqamSchools.Web.Data.BookCustomerAccountRepository.LedgerLine>;
-    var pk = TimeSpan.FromHours(5);
-    var inv = System.Globalization.CultureInfo.InvariantCulture;
     var accounts = ViewBag.Accounts as IList<BookAccount>;
     var owed = (decimal)ViewBag.Owed;
-    var waiting = subs.Any(x => x.Status == "pending");
+    var waitingAmount = (decimal)ViewBag.Waiting;
     var error = ViewBag.Error as string;
+    var pk = TimeSpan.FromHours(5);
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var toSend = owed - waitingAmount;
+    // Recent: payments waiting or not accepted (not in the statement yet), then the statement, newest first.
+    var recent = new List<Tuple<DateTimeOffset, string, string, string, string, string>>();   // when, icon class, title, detail, amount, amount class
+    foreach (var sp in subs.Where(x => x.Status != "confirmed"))
+    {
+        recent.Add(Tuple.Create(sp.CreatedAt, sp.Status == "pending" ? "w" : "x", sp.Status == "pending" ? "Payment being checked" : "Payment not accepted",
+            sp.CreatedAt.ToOffset(pk).ToString("d MMM", inv) + " \u00b7 " + sp.AccountName + (sp.OrderNo.HasValue ? " \u00b7 for " + BookFormat.OrderLabel(sp.OrderNo.Value) : "") + (sp.Status == "rejected" && !string.IsNullOrEmpty(sp.RejectReason) ? " \u00b7 " + sp.RejectReason : ""),
+            BookFormat.Money(sp.Amount), ""));
+    }
+    foreach (var l in ledger)
+    {
+        var isOrder = l.Kind == "Order";
+        var minus = l.CreditAmount > 0;
+        recent.Add(Tuple.Create(l.At, isOrder ? "o" : minus ? "p" : "o",
+            l.Kind == "Payment" ? "Payment received" : l.Kind == "Return" ? "Books returned" : l.Kind + (isOrder ? " " + l.Reference : ""),
+            l.On.ToString("d MMM yyyy", inv) + (isOrder ? "" : " \u00b7 " + l.Reference) + (!string.IsNullOrEmpty(l.Details) && !isOrder ? " \u00b7 " + l.Details : ""),
+            (minus ? "− " : "") + BookFormat.Money(minus ? l.CreditAmount : l.Debit), minus ? "is-minus" : ""));
+    }
+    recent = recent.OrderByDescending(r => r.Item1).Take(15).ToList();
 }
-<section class="page-header tone-warm">
-    <div class="container">
-        <h1 class="h1">My payments</h1>
-        <p class="lead">Payments you sent, and your statement with The Arqam Schools.</p>
-    </div>
-</section>
-<section class="section tone-white books">
+<section class="section tone-white books books-app">
     <div class="container books-wide">
         @Html.Partial("~/Views/Books/_Who.cshtml", customer)
-        <div class="books-stats">
-            <div class="books-stat@(s.Balance > 0 ? " is-due" : " is-ok")"><p class="books-stat-value">@BookFormat.Money(Math.Max(0m, s.Balance))</p><p class="books-stat-label">Still to pay</p></div>
-            <div class="books-stat"><p class="books-stat-value">@BookFormat.Money(s.Paid)</p><p class="books-stat-label">You have paid</p></div>
-            @if (s.Credit > 0) { <div class="books-stat is-ok"><p class="books-stat-value">@BookFormat.Money(s.Credit)</p><p class="books-stat-label">Your credit</p></div> }
-        </div>
-        <section class="books-card books-pay" id="make-payment" aria-labelledby="mp-h">
-            <h2 class="h3" id="mp-h">Make a payment</h2>
-            @if ((bool)(ViewBag.Sent ?? false))
+        <h1 class="sr-only">Payments</h1>
+        @if ((bool)(ViewBag.Sent ?? false)) { <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p>Thank you. Your payment has been sent. The office will check the receipt; it is used for your oldest unpaid order first.</p></div> }
+        @if (Request.QueryString["cash"] == "true") { <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p>Please pay @BookFormat.Money(Math.Max(0m, owed)) in cash at the office or when your books are delivered.</p></div> }
+        @if (!string.IsNullOrEmpty(error)) { <div class="alert alert-error" role="alert" tabindex="-1" data-focus><p>@error</p></div> }
+
+        <div class="books-due-box@(owed > 0 ? " is-due" : " is-ok")">
+            <p class="books-due-label">Still to pay</p>
+            <p class="books-due-value">@BookFormat.Money(Math.Max(0m, owed))</p>
+            @if (waitingAmount > 0) { <p class="books-due-note">@BookFormat.Money(waitingAmount) sent by you is being checked by the office.</p> }
+            @if (toSend > 0 && accounts != null)
             {
-                <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p>Thank you. Your payment has been sent. Our office will check the receipt; it will then be used for your oldest unpaid order first.</p></div>
-            }
-            @if (!string.IsNullOrEmpty(error))
-            {
-                <div class="alert alert-error" role="alert" tabindex="-1" data-focus><p>@error</p></div>
-            }
-            @if (waiting)
-            {
-                <p class="form-note">Our office is checking the payment you sent. You can send another payment once it is confirmed.</p>
+                <details class="books-paynow" id="make-payment" @(error != null ? "open" : null)>
+                    <summary class="btn btn-primary books-btn-block">Pay now</summary>
+                    <form method="post" action="/books/payments" enctype="multipart/form-data" class="books-pay-form" novalidate>
+                        @Html.AntiForgeryToken()
+                        <div class="hp" aria-hidden="true"><label for="mp-website">Website</label><input id="mp-website" name="website" type="text" tabindex="-1" autocomplete="off" /></div>
+                        <p class="books-pay-lead">Pay @BookFormat.Money(toSend) into one of these accounts and attach the receipt, or choose Cash. It is used for your oldest unpaid order first.</p>
+                        @Html.Partial("~/Views/Books/_PayOptions.cshtml", accounts, new ViewDataDictionary { { "Id", "mp" } })
+                        <button type="submit" class="btn btn-primary books-btn-block">Send payment</button>
+                    </form>
+                </details>
             }
             else if (owed <= 0)
             {
-                <p>Nothing is left to pay at the moment. Thank you.</p>
-            }
-            else if (accounts.Count == 0)
-            {
-                <p>Please contact the office to pay: Phone 041-2660265, 041-2406479 &middot; Mobile/WhatsApp 0339-2406479.</p>
-            }
-            else
-            {
-                <p>Still to pay: <strong>@BookFormat.Money(owed)</strong>. Please pay into one of these accounts, then tell us the amount and attach the receipt. The payment is used for your oldest unpaid order first.</p>
-                <form method="post" action="/books/payments" enctype="multipart/form-data" class="books-pay-form" novalidate>
-                    @Html.AntiForgeryToken()
-                    <div class="hp" aria-hidden="true"><label for="mp-website">Website</label><input id="mp-website" name="website" type="text" tabindex="-1" autocomplete="off" /></div>
-                    <fieldset class="books-bank-choice">
-                        <legend>Bank account you paid into</legend>
-                        @for (var i = 0; i < accounts.Count; i++)
-                        {
-                            var a = accounts[i];
-                            <label class="books-bank">
-                                <input type="radio" name="PayAccount" value="@a.Id.ToString("D")" @(accounts.Count == 1 ? "checked" : null) required />
-                                <span class="books-bank-body">
-                                    <span class="books-bank-name">@a.Name</span>
-                                    @if (!string.IsNullOrEmpty(a.AccountNumber)) { <span class="books-bank-number">@a.AccountNumber</span> }
-                                    @if (!string.IsNullOrEmpty(a.AccountTitle)) { <span>Account title: @a.AccountTitle</span> }
-                                    @if (!string.IsNullOrEmpty(a.Iban)) { <span>IBAN: @a.Iban</span> }
-                                </span>
-                            </label>
-                        }
-                    </fieldset>
-                    <div class="books-pay-fields">
-                        <div class="field">
-                            <label for="mp-amount">Amount paid (Rs.)</label>
-                            <input id="mp-amount" name="PayAmount" type="text" inputmode="decimal" autocomplete="off" placeholder="@owed.ToString("0.##", inv)" required />
-                        </div>
-                        <div class="field">
-                            <label for="mp-receipt">Receipt (photo or PDF, up to 10 MB)</label>
-                            <input id="mp-receipt" name="PayReceipt" type="file" accept="image/jpeg,image/png,application/pdf" required />
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Send payment</button>
-                </form>
-            }
-        </section>
-        <div class="books-card">
-            <h2 class="h3">Payments you sent</h2>
-            @if (subs.Count == 0) { <p>You have not sent a payment online yet.</p> }
-            else
-            {
-                <ul class="books-sent">
-                    @foreach (var sp in subs)
-                    {
-                        <li class="books-sent-item books-sent-@sp.Status">
-                            <span><strong>@BookFormat.Money(sp.Amount)</strong> @if (sp.OrderNo.HasValue) { <text>for <a href="/books/orders/@sp.OrderNo">@BookFormat.OrderLabel(sp.OrderNo.Value)</a></text> } else { <text>towards your balance</text> } to @sp.AccountName &middot; @sp.CreatedAt.ToOffset(pk).ToString("d MMM yyyy", inv)</span>
-                            <span class="books-sent-status">@sp.StatusLabel</span>
-                            <a href="/books/receipts/@sp.Id.ToString("D")" target="_blank" rel="noopener">View receipt</a>
-                            @if (sp.Status == "confirmed" && sp.CreditAmount > 0) { <span class="books-sent-reason">@BookFormat.Money(sp.CreditAmount) added to your credit.</span> }
-                            @if (sp.Status == "rejected" && !string.IsNullOrEmpty(sp.RejectReason)) { <span class="books-sent-reason">@sp.RejectReason</span> }
-                        </li>
-                    }
-                </ul>
+                <p class="books-due-note">Nothing to pay. Thank you.</p>
             }
         </div>
-        <div class="books-card">
-            <div class="books-card-head">
-                <h2 class="h3">My statement</h2>
-                <a class="btn btn-outline btn-sm" href="/books/statement">Download PDF</a>
-            </div>
-            <p class="form-note">Orders add to what you owe; payments and returns take it off.</p>
-            <div class="books-table-wrap">
-                <table class="books-table books-ledger">
-                    <thead><tr><th scope="col">Date</th><th scope="col">Entry</th><th scope="col" class="num">Amount</th><th scope="col" class="num">Balance</th></tr></thead>
-                    <tbody>
-                        @if (ledger.Count == 0) { <tr><td colspan="4">Nothing yet.</td></tr> }
-                        @foreach (var l in ledger)
-                        {
-                            <tr>
-                                <td class="books-date">@l.On.ToString("d MMM", inv)<span class="books-year"> @l.On.ToString("yyyy", inv)</span></td>
-                                <td>@l.Kind <span class="books-ref">@l.Reference</span>@if (!string.IsNullOrEmpty(l.Details) && l.Kind != "Order") { <span class="books-class"> @l.Details</span> }</td>
-                                <td class="num">@(l.Debit > 0 ? BookFormat.Money(l.Debit) : l.CreditAmount > 0 ? "− " + BookFormat.Money(l.CreditAmount) : "")</td>
-                                <td class="num">@BookFormat.Money(l.Balance)</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-            <p class="form-note">A balance below zero means the school owes you that amount; it is kept as credit for your next order.</p>
+
+        <div class="books-recent-head">
+            <h2 class="h3">Recent</h2>
+            <a class="btn btn-outline btn-sm" href="/books/statement">Statement (PDF)</a>
         </div>
+        @if (recent.Count == 0) { <p class="form-note">Nothing yet.</p> }
+        else
+        {
+            <ul class="books-recent">
+                @foreach (var r in recent)
+                {
+                    <li>
+                        <span class="books-recent-ic is-@r.Item2" aria-hidden="true">@(r.Item2 == "p" ? "✓" : r.Item2 == "w" ? "…" : r.Item2 == "x" ? "!" : "B")</span>
+                        <span class="books-recent-main">@r.Item3<small>@r.Item4</small></span>
+                        <span class="books-recent-amt @r.Item6">@r.Item5</span>
+                    </li>
+                }
+            </ul>
+            <p class="form-note">The statement (PDF) has every entry and the balance after each one.</p>
+        }
     </div>
 </section>
+<script src="~/Scripts/books.js?v=20261127a" defer></script>

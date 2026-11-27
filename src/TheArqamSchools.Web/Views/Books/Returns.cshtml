@@ -7,15 +7,11 @@
     var pk = TimeSpan.FromHours(5);
     var inv = System.Globalization.CultureInfo.InvariantCulture;
 }
-<section class="page-header tone-warm">
-    <div class="container">
-        <h1 class="h1">Return books</h1>
-        <p class="lead">Ask to return books you received. The office checks your request; when it is approved, send the books to the office.</p>
-    </div>
-</section>
-<section class="section tone-white books">
+<section class="section tone-white books books-app">
     <div class="container books-wide">
         @Html.Partial("~/Views/Books/_Who.cshtml", customer)
+        <h1 class="books-title">Return books</h1>
+        <p class="books-lead">Ask to return books you received. When the office approves, send the books to the office.</p>
         @if (ViewBag.Sent == true)
         {
             <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p>Thank you. Your return request has been sent. The office will check it and tell you when to send the books.</p></div>
@@ -79,4 +75,4 @@
         </div>
     </div>
 </section>
-<script src="~/Scripts/books.js?v=20261120b" defer></script>
+<script src="~/Scripts/books.js?v=20261127a" defer></script>

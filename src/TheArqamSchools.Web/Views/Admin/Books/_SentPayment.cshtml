@@ -11,7 +11,12 @@
     <p><strong>@BookFormat.Money(sp.Amount)</strong> into <strong>@sp.AccountName</strong>
        @if (sp.OrderNo.HasValue) { <text>for <a href="/admin/books/orders/@sp.OrderNo">@BookFormat.OrderLabel(sp.OrderNo.Value)</a></text> } else { <span class="admin-tag admin-tag--warn">towards the balance</span> }
        &middot; sent @sp.CreatedAt.ToOffset(TimeSpan.FromHours(5)).ToString("d MMM yyyy, h:mm tt", inv)
-       &middot; <a href="/admin/books/sent-payments/@sp.Id.ToString("D")/receipt" target="_blank" rel="noopener">View receipt</a></p>
+       &middot; <a href="/admin/books/sent-payments/@sp.Id.ToString("D")/receipt" target="_blank" rel="noopener">View receipt</a>
+       &middot; @sp.CustomerName (@sp.CustomerLabel)</p>
+    @if (sp.Status == "pending" && (sp.ReceiptMime ?? "").StartsWith("image/"))
+    {
+        <a class="admin-receipt-thumb" href="/admin/books/sent-payments/@sp.Id.ToString("D")/receipt" target="_blank" rel="noopener"><img src="/admin/books/sent-payments/@sp.Id.ToString("D")/receipt" alt="Receipt sent by @sp.CustomerName" loading="lazy" /></a>
+    }
     @if (!sp.OrderNo.HasValue && sp.Status == "pending") { <p class="admin-muted">Confirm applies it to the customer's oldest unpaid orders first; anything left becomes credit.</p> }
     <p>Status: <strong>@sp.StatusLabel</strong>@if (sp.ReviewedAt.HasValue) { <text> by @sp.ReviewedByName, @sp.ReviewedAt.Value.ToOffset(TimeSpan.FromHours(5)).ToString("d MMM yyyy", inv)</text> }@if (sp.CreditAmount > 0) { <text> &middot; @BookFormat.Money(sp.CreditAmount) to credit</text> }@if (!string.IsNullOrEmpty(sp.RejectReason)) { <text> &middot; Reason: @sp.RejectReason</text> }</p>
     @if (sp.Status == "pending" && canPay)
@@ -20,7 +25,9 @@
             <form method="post" action="/admin/books/sent-payments/@sp.Id.ToString("D")/confirm">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="back" value="@back" />
-                <button type="submit" class="admin-button" data-confirm="Confirm @BookFormat.Money(sp.Amount) received in @sp.AccountName?">Confirm payment</button>
+                <div class="admin-field"><label for="amt-@sp.Id.ToString("N")">Amount received (Rs.)</label><input type="text" inputmode="decimal" id="amt-@sp.Id.ToString("N")" name="Amount" value="@sp.Amount.ToString("0.##", inv)" maxlength="12" autocomplete="off" />
+                    <p class="admin-hint">The customer does not type an amount; this is what was still to pay. Change it to what the receipt shows.</p></div>
+                <button type="submit" class="admin-button" data-confirm="Confirm this payment received in @sp.AccountName?">Confirm payment</button>
             </form>
             <form method="post" action="/admin/books/sent-payments/@sp.Id.ToString("D")/reject">
                 @Html.AntiForgeryToken()

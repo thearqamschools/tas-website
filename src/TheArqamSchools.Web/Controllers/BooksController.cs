@@ -27,10 +27,20 @@ namespace TheArqamSchools.Web.Controllers
         private const string Purpose = "books-customer-v1";
         private static readonly TimeSpan Lifetime = TimeSpan.FromHours(2);
 
+        /// <summary>
+        /// Every Books page is an "app" page (owner's notes 54-62, 27 November 2026): no admissions band above the footer,
+        /// and on phones a tab bar at the bottom (New order, My orders, Payments, More).
+        /// </summary>
+        protected override void OnActionExecuting(ActionExecutingContext filterContext)
+        {
+            ViewBag.HideFooterCta = true;
+            base.OnActionExecuting(filterContext);
+        }
+
         [HttpGet]
         public ActionResult Index()
         {
-            if (CurrentCustomer() != null) return Redirect("/books/dashboard");
+            if (CurrentCustomer() != null) return Redirect("/books/order");
             return View("~/Views/Books/Index.cshtml", Meta());
         }
 
@@ -54,7 +64,7 @@ namespace TheArqamSchools.Web.Controllers
                 return StartError("This number is not registered for book orders. Please contact the office to register.", mobile);
             }
             SetCookie(customer.Id);
-            return Redirect("/books/dashboard");
+            return Redirect("/books/order");
         }
 
         [HttpPost]
@@ -72,7 +82,7 @@ namespace TheArqamSchools.Web.Controllers
         {
             var customer = CurrentCustomer();
             if (customer == null) return Redirect("/books");
-            return FormView(customer, null, new Dictionary<Guid, int>(), "pickup", null, false);
+            return FormView(customer, null, new Dictionary<Guid, int>(), "pickup", null, "form");
         }
 
         [HttpGet]
@@ -83,12 +93,15 @@ namespace TheArqamSchools.Web.Controllers
             var order = OwnOrder(customer, orderNo);
             if (order == null) return HttpNotFound();
             if (!order.CustomerCanEdit) return Redirect("/books/orders/" + orderNo.ToString(CultureInfo.InvariantCulture));
-            return FormView(customer, order, order.Lines.ToDictionary(l => l.ItemId, l => l.Quantity), order.Fulfilment, null, false);
+            return FormView(customer, order, order.Lines.ToDictionary(l => l.ItemId, l => l.Quantity), order.Fulfilment, null, "form");
         }
 
         /// <summary>
-        /// POST /books/order and /books/orders/{no}/edit. step = "preview" shows the summary,
-        /// "back" returns to the form with the same quantities, "place" saves the order.
+        /// POST /books/order and /books/orders/{no}/edit (owner's notes 57-59, 27 November 2026). Steps:
+        /// "preview" shows the books, the total and "How will you get the books?"; "back" returns to the form;
+        /// "payment" (new orders) shows the bank accounts and Cash with the receipt; "place" places the order together
+        /// with the payment (a bank payment needs the receipt; the customer types no amount); "later" places it without
+        /// a payment. For a change to an existing order, "place" saves the change.
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -106,30 +119,72 @@ namespace TheArqamSchools.Web.Controllers
             fulfilment = fulfilment == "delivery" ? "delivery" : "pickup";
             var errors = new List<string>();
             var quantities = ReadQuantities(errors);
-            if (errors.Count > 0) return FormView(customer, editing, quantities, fulfilment, errors, false);
-            if (quantities.Values.All(q => q == 0)) return FormView(customer, editing, quantities, fulfilment, new[] { "Please enter a quantity for at least one book." }, false);
+            if (errors.Count > 0) return FormView(customer, editing, quantities, fulfilment, errors, "form");
+            if (quantities.Values.All(q => q == 0)) return FormView(customer, editing, quantities, fulfilment, new[] { "Please add at least one book." }, "form");
+            if (step == "back") return FormView(customer, editing, quantities, fulfilment, null, "form");
+            if (step != "payment" && step != "place" && step != "later") return FormView(customer, editing, quantities, fulfilment, null, "preview");
             if (fulfilment == "delivery" && string.IsNullOrWhiteSpace(customer.Address))
-                return FormView(customer, editing, quantities, fulfilment, new[] { "There is no delivery address for this number. Please choose Pick up, or ask the office to add your address." }, false);
-
-            if (step == "back") return FormView(customer, editing, quantities, fulfilment, null, false);
-            if (step != "place") return FormView(customer, editing, quantities, fulfilment, null, true);
+                return FormView(customer, editing, quantities, fulfilment, new[] { "There is no delivery address for this number. Please choose Pick up, or ask the office to add your address." }, "preview");
+            if (editing == null && step == "payment") return FormView(customer, null, quantities, fulfilment, null, "payment");
 
             if (!RateLimiter.Allow("books-place", PageBuilder.ClientKey(Request), 20, TimeSpan.FromHours(1)))
-                return FormView(customer, editing, quantities, fulfilment, new[] { "Too many orders from this network. Please wait and try again, or call the office." }, true);
-            try
+                return FormView(customer, editing, quantities, fulfilment, new[] { "Too many orders from this network. Please wait and try again, or call the office." }, editing == null ? "payment" : "preview");
+            if (editing != null)
             {
-                if (editing != null)
-                {
-                    BookRepository.EditOrder(editing.OrderNo, customer.Id, quantities, fulfilment, null);
-                    return Redirect("/books/orders/" + editing.OrderNo.ToString(CultureInfo.InvariantCulture) + "?changed=true");
-                }
-                var no = BookRepository.PlaceOrder(customer.Id, quantities, fulfilment, true, null);
-                return Redirect("/books/orders/" + no.ToString(CultureInfo.InvariantCulture) + "?placed=true");
+                try { BookRepository.EditOrder(editing.OrderNo, customer.Id, quantities, fulfilment, null); }
+                catch (BookOrderException ex) { return FormView(customer, editing, quantities, fulfilment, new[] { ex.Message }, "form"); }
+                return Redirect("/books/orders/" + editing.OrderNo.ToString(CultureInfo.InvariantCulture) + "?changed=true");
             }
+
+            // New order: read the payment first, so a missing or refused receipt never leaves an order behind.
+            Guid accountId = Guid.Empty;
+            string path = null, mime = null, paid = "later";
+            if (step == "place")
+            {
+                var pay = Request.Form["pay"] ?? "";
+                if (pay == "cash") paid = "cash";
+                else if (Guid.TryParse(pay, out accountId)) paid = "bank";
+                else return FormView(customer, null, quantities, fulfilment, new[] { "Please choose how you paid: one of the bank accounts, or Cash." }, "payment");
+                if (paid == "bank")
+                {
+                    var file = ReceiptFile();
+                    if (file == null) return FormView(customer, null, quantities, fulfilment, new[] { "Please attach the receipt (a photo or a PDF)." }, "payment");
+                    try { path = ReceiptStore.Save(file.InputStream, file.ContentLength, out mime); }
+                    catch (ImageRejectedException ex) { return FormView(customer, null, quantities, fulfilment, new[] { ex.Message }, "payment"); }
+                }
+            }
+            long no;
+            try { no = BookRepository.PlaceOrder(customer.Id, quantities, fulfilment, true, null); }
             catch (BookOrderException ex)
             {
-                return FormView(customer, editing, quantities, fulfilment, new[] { ex.Message }, false);
+                if (path != null) ReceiptStore.Delete(path);
+                return FormView(customer, null, quantities, fulfilment, new[] { ex.Message }, "form");
             }
+            catch { if (path != null) ReceiptStore.Delete(path); throw; }
+            if (paid == "bank")
+            {
+                try { BookPaymentSubmissionRepository.Submit(no, customer.Id, accountId, path, mime); }
+                catch (BookOrderException ex)
+                {
+                    // The order is placed; the payment can be sent again from the order page.
+                    ReceiptStore.Delete(path);
+                    TempData["BooksPayError"] = ex.Message;
+                    paid = "later";
+                }
+                catch { ReceiptStore.Delete(path); throw; }
+            }
+            return Redirect("/books/orders/" + no.ToString(CultureInfo.InvariantCulture) + "?placed=true&paid=" + paid);
+        }
+
+        /// <summary>The receipt from "Take photo" or "Choose file" (either may be used).</summary>
+        private HttpPostedFileBase ReceiptFile()
+        {
+            foreach (var name in new[] { "PayPhoto", "PayReceipt" })
+            {
+                var f = Request.Files[name];
+                if (f != null && f.ContentLength > 0) return f;
+            }
+            return null;
         }
 
         // ---- History ------------------------------------------------------------------------
@@ -159,21 +214,18 @@ namespace TheArqamSchools.Web.Controllers
             if (order == null) return HttpNotFound();
             if (!RateLimiter.Allow("books-pay", PageBuilder.ClientKey(Request), 10, TimeSpan.FromHours(1)))
                 return DetailView(customer, order, false, false, false, "Too many payments sent from this network. Please wait and try again, or call the office.");
-            var form = Request.Unvalidated.Form;
+            var pay = Request.Form["pay"] ?? "";
+            if (pay == "cash") return Redirect("/books/orders/" + orderNo.ToString(CultureInfo.InvariantCulture) + "?cash=true#payment");
             Guid accountId;
-            decimal amount;
-            var rawAmount = (form["PayAmount"] ?? "").Replace(",", "").Trim();
-            if (!Guid.TryParse(form["PayAccount"], out accountId))
-                return DetailView(customer, order, false, false, false, "Please choose the bank account you paid into.");
-            if (!decimal.TryParse(rawAmount, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out amount) || amount <= 0)
-                return DetailView(customer, order, false, false, false, "Please enter the amount you paid, in rupees.");
-            var file = Request.Files["PayReceipt"];
-            if (file == null || file.ContentLength <= 0)
+            if (!Guid.TryParse(pay, out accountId))
+                return DetailView(customer, order, false, false, false, "Please choose how you paid: one of the bank accounts, or Cash.");
+            var file = ReceiptFile();
+            if (file == null)
                 return DetailView(customer, order, false, false, false, "Please attach the receipt (a photo or a PDF).");
             string path, mime;
             try { path = ReceiptStore.Save(file.InputStream, file.ContentLength, out mime); }
             catch (ImageRejectedException ex) { return DetailView(customer, order, false, false, false, ex.Message); }
-            try { BookPaymentSubmissionRepository.Submit(orderNo, customer.Id, accountId, amount, path, mime); }
+            try { BookPaymentSubmissionRepository.Submit(orderNo, customer.Id, accountId, path, mime); }
             catch (BookOrderException ex)
             {
                 ReceiptStore.Delete(path);
@@ -189,17 +241,23 @@ namespace TheArqamSchools.Web.Controllers
 
         // ---- Customer area: dashboard, payments, returns (owner's request, 20 November 2026) -------------
 
+        /// <summary>The dashboard was removed (note 56): the old address opens New order.</summary>
         [HttpGet]
         public ActionResult Dashboard()
+        {
+            return Redirect(CurrentCustomer() == null ? "/books" : "/books/order");
+        }
+
+        /// <summary>GET /books/more: the customer's details, Return books, statement, contacts and Sign out.</summary>
+        [HttpGet]
+        public ActionResult More()
         {
             var customer = CurrentCustomer();
             if (customer == null) return Redirect("/books");
             ViewBag.Customer = customer;
             ViewBag.Meta = Meta();
-            ViewBag.Summary = BookCustomerAccountRepository.GetSummary(customer.Id);
-            ViewBag.Orders = BookRepository.CustomerOrders(customer.Id).Take(5).ToList();
             ViewBag.OpenReturns = BookReturnRequestRepository.OpenCount(customer.Id);
-            return View("~/Views/Books/Dashboard.cshtml");
+            return View("~/Views/Books/More.cshtml");
         }
 
         [HttpGet]
@@ -221,6 +279,7 @@ namespace TheArqamSchools.Web.Controllers
             ViewBag.Ledger = BookCustomerAccountRepository.Ledger(customer.Id, null, null, true);
             ViewBag.Accounts = BookPaymentSubmissionRepository.CustomerAccounts();
             ViewBag.Owed = BookPaymentSubmissionRepository.Owed(customer.Id);
+            ViewBag.Waiting = BookPaymentSubmissionRepository.Waiting(customer.Id);
             return View("~/Views/Books/Payments.cshtml");
         }
 
@@ -237,21 +296,18 @@ namespace TheArqamSchools.Web.Controllers
             if (!string.IsNullOrEmpty(website)) return Redirect("/books");
             if (!RateLimiter.Allow("books-pay", PageBuilder.ClientKey(Request), 10, TimeSpan.FromHours(1)))
                 return PaymentsView(customer, "Too many payments sent from this network. Please wait and try again, or call the office.");
-            var form = Request.Unvalidated.Form;
+            var pay = Request.Form["pay"] ?? "";
+            if (pay == "cash") return Redirect("/books/payments?cash=true");
             Guid accountId;
-            decimal amount;
-            var rawAmount = (form["PayAmount"] ?? "").Replace(",", "").Trim();
-            if (!Guid.TryParse(form["PayAccount"], out accountId))
-                return PaymentsView(customer, "Please choose the bank account you paid into.");
-            if (!decimal.TryParse(rawAmount, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out amount) || amount <= 0)
-                return PaymentsView(customer, "Please enter the amount you paid, in rupees.");
-            var file = Request.Files["PayReceipt"];
-            if (file == null || file.ContentLength <= 0)
+            if (!Guid.TryParse(pay, out accountId))
+                return PaymentsView(customer, "Please choose how you paid: one of the bank accounts, or Cash.");
+            var file = ReceiptFile();
+            if (file == null)
                 return PaymentsView(customer, "Please attach the receipt (a photo or a PDF).");
             string path, mime;
             try { path = ReceiptStore.Save(file.InputStream, file.ContentLength, out mime); }
             catch (ImageRejectedException ex) { return PaymentsView(customer, ex.Message); }
-            try { BookPaymentSubmissionRepository.SubmitForBalance(customer.Id, accountId, amount, path, mime); }
+            try { BookPaymentSubmissionRepository.SubmitForBalance(customer.Id, accountId, path, mime); }
             catch (BookOrderException ex)
             {
                 ReceiptStore.Delete(path);
@@ -396,7 +452,7 @@ namespace TheArqamSchools.Web.Controllers
 
         // ---- Helpers ------------------------------------------------------------------------
 
-        private ActionResult FormView(BookCustomer customer, BookOrder editing, IDictionary<Guid, int> quantities, string fulfilment, IList<string> errors, bool preview)
+        private ActionResult FormView(BookCustomer customer, BookOrder editing, IDictionary<Guid, int> quantities, string fulfilment, IList<string> errors, string step)
         {
             // Books already in the order being edited stay on the form even when their stock has run out or the
             // office has hidden them, and they keep the price stored on the order (the saved total uses it too).
@@ -409,7 +465,10 @@ namespace TheArqamSchools.Web.Controllers
             return View("~/Views/Books/Order.cshtml", new BookOrderFormViewModel
             {
                 Customer = customer, Items = items, Quantities = quantities ?? new Dictionary<Guid, int>(),
-                Fulfilment = fulfilment, Editing = editing, Errors = errors, Preview = preview && (errors == null || errors.Count == 0)
+                Fulfilment = fulfilment, Editing = editing, Errors = errors, Step = step,
+                Preview = step == "preview" || step == "payment",
+                Summary = editing == null && step == "form" ? BookCustomerAccountRepository.GetSummary(customer.Id) : null,
+                Accounts = step == "payment" ? BookPaymentSubmissionRepository.CustomerAccounts() : null
             });
         }
 

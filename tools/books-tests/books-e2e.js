@@ -72,40 +72,60 @@ const BOOKS = [
   ok('unregistered number refused', (await cust.content()).includes('not registered'));
   ok('contact lines: Phone and Mobile/WhatsApp', (await cust.locator('.alert-error').innerText()).includes('Mobile/WhatsApp: 0339-2406479') && (await cust.locator('.alert-error').innerText()).includes('Phone: 041-2660265, 041-2406479'));
   await cust.fill('#bk-mobile', '0300-1234567'); await cust.click('button:has-text("Continue")'); await cust.waitForLoadState();
-  ok('sign-in opens the customer dashboard', cust.url().endsWith('/books/dashboard') && (await cust.content()).includes('Still to pay'));
-  await cust.goto(B + '/books/order');
-  const q = async (name, v) => cust.fill('#' + await cust.locator('.books-row', { hasText: name }).locator('input').getAttribute('id'), String(v));
+  ok('sign-in opens New order with the tab bar', cust.url().endsWith('/books/order') && (await cust.locator('.books-tabs .books-tab').allInnerTexts()).map(t => t.trim()).join('|') === 'New order|My orders|Payments|More');
+  ok('no greeting heading and no admissions band', !(await cust.content()).includes('Assalamualaikum') && !(await cust.content()).includes('learning journey'));
+  // Quantities are set through the page's own box (hidden behind Add / - + and class tabs).
+  const q = async (name, v) => { const id = await cust.locator('.books-row', { hasText: name }).locator('input[data-price]').getAttribute('id');
+    await cust.evaluate(([i, val]) => { const e = document.getElementById(i); e.value = val ? String(val) : ''; e.dispatchEvent(new Event('input', { bubbles: true })); }, [id, v]); };
+  const go = async sel => { await Promise.all([cust.waitForNavigation(), cust.click(sel)]); };
+  // New order: Continue -> (Pick up / Delivery) -> Continue to payment -> Place order (bank + receipt) or pay later.
+  const placeOrder = async (books, opts) => { opts = opts || {}; await cust.goto(B + '/books/order'); for (const [n, v] of books) await q(n, v);
+    await go('.books-sticky button:has-text("Continue")'); if (cust.url().includes('/books/orders/')) return;
+    if ((await cust.locator('button:has-text("Continue to payment")').count()) === 0) return;
+    if (opts.fulfilment) await cust.check('input[name=fulfilment][value=' + opts.fulfilment + ']');
+    await go('button:has-text("Continue to payment")');
+    if (opts.bank) { await cust.locator('.books-pay-opt', { hasText: opts.bank }).locator('input').check(); if (opts.file !== false) await cust.setInputFiles('#op-file', JPEG); await go('button:has-text("Place order"):not(:has-text("later"))'); }
+    else if (opts.cash) { await cust.locator('.books-pay-opt', { hasText: 'Cash' }).locator('input').check(); await go('button:has-text("Place order"):not(:has-text("later"))'); }
+    else await go('button:has-text("Place order, pay later")'); };
+  const no = () => Number((cust.url().match(/orders\/(\d+)/) || [])[1]);
+  const status = async () => (await cust.locator('.books-order-head .books-status').innerText());
   await q('DEMO English Reader 1', 10); await q('DEMO Alphabet Book', 5); await cust.waitForTimeout(150);
   ok('live total 10×350 + 5×260 = 4,800', money(await cust.locator('[data-books-total]').innerText()) === 4800);
-  await q('DEMO Maths 1', 5); await cust.click('button:has-text("Preview order")'); await cust.waitForLoadState(); await cust.click('button:has-text("Place order")'); await cust.waitForLoadState();
+  ok('steppers instead of number boxes', (await cust.locator('.books-qty-add').count()) > 0 && (await cust.locator('.books-class-chip').count()) > 1);
+  await cust.screenshot({ path: OUT + '/m-order-form.png', fullPage: true });
+  await q('DEMO Maths 1', 5); await go('.books-sticky button:has-text("Continue")');
+  ok('Pick up / Delivery asked on the check screen', (await cust.locator('.books-review-get').count()) === 1 && (await cust.locator('button:has-text("Continue to payment")').count()) === 1 && (await cust.locator('button:has-text("Change order")').count()) === 1);
+  await go('button:has-text("Continue to payment")');
+  ok('payment screen: total, banks and cash, no amount box', (await cust.locator('.books-pay-total').innerText()).includes('6,400') && (await cust.locator('.books-pay-opt', { hasText: 'Cash' }).count()) === 1 && (await cust.locator('input[name=PayAmount]').count()) === 0);
+  await cust.screenshot({ path: OUT + '/m-pay-step.png', fullPage: true });
+  await go('button:has-text("Place order, pay later")');
   ok('cannot order more than stock', (await cust.content()).includes('only 3 in stock'));
-  await q('DEMO Maths 1', 3); await cust.check('input[name=fulfilment][value=delivery]'); await cust.click('button:has-text("Preview order")'); await cust.waitForLoadState();
+  await q('DEMO Maths 1', 3); await go('.books-sticky button:has-text("Continue")'); await cust.check('input[name=fulfilment][value=delivery]');
   await cust.screenshot({ path: OUT + '/m-preview.png', fullPage: true });
-  await cust.click('button:has-text("Place order")'); await cust.waitForLoadState();
-  const orderNo = Number((cust.url().match(/orders\/(\d+)/) || [])[1]);
-  ok('order placed ' + orderNo, orderNo > 0 && (await cust.content()).includes('has been placed'));
+  await go('button:has-text("Continue to payment")'); await go('button:has-text("Place order, pay later")');
+  const orderNo = no();
+  ok('order placed ' + orderNo, orderNo > 0 && (await cust.content()).includes('placed.'));
   ok('placing an order takes no stock', (await stockOf('DEMO Maths 1')) === 3);
   await cust.goto(B + '/books/orders/' + orderNo + '/edit'); await q('DEMO English Reader 1', 12); await q('DEMO Alphabet Book', 0);
-  await cust.click('button:has-text("Preview order")'); await cust.waitForLoadState(); await cust.click('button:has-text("Save changes")'); await cust.waitForLoadState();
-  ok('customer edit saved and recorded', (await cust.content()).includes('changed 1 time'));
+  await go('.books-sticky button:has-text("Continue")'); await go('button:has-text("Save changes")');
+  ok('customer edit saved', (await cust.content()).includes('Your changes to order'));
   ok('full delivery address shown to the customer', (await cust.content()).includes('House 1, Street 2, Example Town, Faisalabad'));
   // Customer sees only the sale price: no vendor, retail price or discount.
   await cust.goto(B + '/books/order');
   const pub = await cust.content();
   ok('customer sees sale price only', pub.includes('Rs. 450') && !pub.includes('DEMO Vendor') && !pub.includes('Rs. 600') && !pub.includes('25%'));
-  ok('order form has Price / Quantity / Total headings', (await cust.locator('.books-row--head').first().innerText()).replace(/\s+/g, ' ').toUpperCase().includes('BOOK PRICE QUANTITY TOTAL'));
-  await cust.screenshot({ path: OUT + '/m-order-form.png', fullPage: true });
   // Customer cancels a New order; after the office checks an order, the customer can no longer change or cancel it.
-  await q('DEMO Rhymes Book', 1); await cust.click('button:has-text("Preview order")'); await cust.waitForLoadState(); await cust.click('button:has-text("Place order")'); await cust.waitForLoadState();
-  const cancelNo = Number((cust.url().match(/orders\/(\d+)/) || [])[1]);
+  await placeOrder([['DEMO Rhymes Book', 1]]);
+  const cancelNo = no();
+  ok('Change and Cancel side by side, no All my orders', (await cust.locator('.books-actions--pair').count()) === 1 && (await cust.locator('a:has-text("All my orders")').count()) === 0);
   cust.once('dialog', d => d.accept());
-  await cust.click('button:has-text("Cancel this order")'); await cust.waitForLoadState();
-  ok('customer cancelled a new order', (await cust.content()).includes('has been cancelled') && (await cust.locator('.books-detail-status').innerText()).includes('Cancelled'));
-  await cust.goto(B + '/books/order'); await q('DEMO Rhymes Book', 1); await cust.click('button:has-text("Preview order")'); await cust.waitForLoadState(); await cust.click('button:has-text("Place order")'); await cust.waitForLoadState();
-  const checkedNo = Number((cust.url().match(/orders\/(\d+)/) || [])[1]);
+  await go('button:has-text("Cancel order")');
+  ok('customer cancelled a new order', (await cust.content()).includes('has been cancelled') && (await status()).includes('Cancelled'));
+  await placeOrder([['DEMO Rhymes Book', 1]]);
+  const checkedNo = no();
   await admin.goto(B + '/admin/books/orders/' + checkedNo); await admin.click('button:has-text("Confirm order")'); await admin.waitForLoadState();
   await cust.goto(B + '/books/orders/' + checkedNo);
-  ok('no change or cancel after the office checks', (await cust.locator('button:has-text("Cancel this order")').count()) === 0 && !(await cust.content()).includes('Change this order'));
+  ok('no change or cancel after the office checks', (await cust.locator('button:has-text("Cancel order")').count()) === 0 && (await cust.locator('a:has-text("Change order")').count()) === 0);
   await cust.goto(B + '/books/orders/' + checkedNo + '/edit'); ok('edit page closed after checked', cust.url().endsWith('/books/orders/' + checkedNo));
   const forced = await cust.evaluate(async (no) => {
     const r = await fetch('/books/orders/' + no); const html = await r.text();
@@ -123,22 +143,18 @@ const BOOKS = [
     await f.locator('input[name=Iban]').fill('PK00DEMO0000012345678901'); await f.locator('input[name=ShowToCustomers][type=checkbox]').check();
     await f.locator('button:has-text("Add account")').click(); await admin.waitForLoadState(); }
   ok('bank account for customers saved', (await admin.content()).includes('PK00DEMO0000012345678901'));
-  await cust.goto(B + '/books/order'); await q('DEMO Retail Book', 2); await cust.click('button:has-text("Preview order")'); await cust.waitForLoadState(); await cust.click('button:has-text("Place order")'); await cust.waitForLoadState();
-  const payNo = Number((cust.url().match(/orders\/(\d+)/) || [])[1]);   // 2 × 450 = 900
-  ok('payment section with the bank account', (await cust.locator('#payment').innerText()).includes('12345678901') && (await cust.locator('.books-detail-status').innerText()).includes('Payment pending'));
-  ok('order buttons in one row', (await cust.locator('.books-actions--row button:has-text("Cancel this order")').count()) === 1);
+  await placeOrder([['DEMO Retail Book', 2]], { bank: 'DEMO Customer Bank', file: false });
+  ok('receipt required for a bank payment', (await cust.content()).includes('attach the receipt') && !cust.url().includes('/books/orders/'));
+  await placeOrder([['DEMO Retail Book', 2]], { bank: 'DEMO Customer Bank' });
+  const payNo = no();   // 2 x 450 = 900, placed together with the payment
+  ok('order placed with its payment', payNo > 0 && (await cust.content()).includes('We will check your payment') && (await status()).includes('Payment being checked'));
+  ok('tracking line shown', (await cust.locator('.books-track li').count()) === 4 && (await cust.locator('.books-track li.is-done').count()) === 1);
   await cust.screenshot({ path: OUT + '/m-payment.png', fullPage: true });
-  const bankRadio = cust.locator('.books-bank', { hasText: 'DEMO Customer Bank' }).locator('input');
-  await bankRadio.check(); await cust.fill('#bp-amount', '400'); await cust.click('button:has-text("Send payment")'); await cust.waitForLoadState();
-  ok('receipt required', (await cust.content()).includes('attach the receipt'));
-  await cust.locator('.books-bank', { hasText: 'DEMO Customer Bank' }).locator('input').check(); await cust.fill('#bp-amount', '1000'); await cust.setInputFiles('#bp-receipt', JPEG);
-  await cust.click('button:has-text("Send payment")'); await cust.waitForLoadState();
-  ok('amount above the total refused', (await cust.content()).includes('more than'));
-  await cust.locator('.books-bank', { hasText: 'DEMO Customer Bank' }).locator('input').check(); await cust.fill('#bp-amount', '400'); await cust.setInputFiles('#bp-receipt', JPEG);
-  await cust.click('button:has-text("Send payment")'); await cust.waitForLoadState();
-  ok('payment sent, waiting for the office', (await cust.content()).includes('Your payment has been sent') && (await cust.locator('.books-detail-status').innerText()).includes('Payment sent'));
-  ok('no change or cancel after sending a payment', (await cust.locator('button:has-text("Cancel this order")').count()) === 0 && !(await cust.content()).includes('Change this order'));
-  ok('no second payment while one is checked', (await cust.locator('button:has-text("Send payment")').count()) === 0);
+  ok('no change or cancel after sending a payment', (await cust.locator('button:has-text("Cancel order")').count()) === 0 && (await cust.locator('a:has-text("Change order")').count()) === 0);
+  await placeOrder([['DEMO Rhymes Book', 1]], { cash: true });
+  const cashNo = no();
+  ok('cash: order placed, pay at the office', (await cust.content()).includes('in cash at the office') && (await status()).includes('Payment pending'));
+  cust.once('dialog', d => d.accept()); await go('button:has-text("Cancel order")');
   await admin.goto(B + '/admin/books/orders?payment=tocheck');
   ok('office list shows payment to check', (await admin.content()).includes('payment to check') && (await admin.content()).includes('>BK-' + payNo + '<'));
   await admin.goto(B + '/admin/books/orders/' + payNo);
@@ -156,15 +172,16 @@ const BOOKS = [
   await admin.fill('#sent input[name=Reason]', 'DEMO amount not received'); await admin.click('#sent button:has-text("Not accepted")'); await admin.waitForLoadState();
   await cust.goto(B + '/books/orders/' + payNo);
   ok('customer sees the reason and can send again', (await cust.content()).includes('DEMO amount not received') && (await cust.locator('button:has-text("Send payment")').count()) === 1);
-  await cust.locator('.books-bank', { hasText: 'DEMO Customer Bank' }).locator('input').check(); await cust.fill('#bp-amount', '900'); await cust.setInputFiles('#bp-receipt', JPEG);
-  await cust.click('button:has-text("Send payment")'); await cust.waitForLoadState();
+  await cust.locator('#payment .books-pay-opt', { hasText: 'DEMO Customer Bank' }).locator('input').check(); await cust.setInputFiles('#bp-file', JPEG);
+  await go('button:has-text("Send payment")');
+  ok('a second payment can be sent while one is checked', (await cust.locator('button:has-text("Send payment")').count()) === 1);
   const before = await stockOf('DEMO Retail Book');
   await admin.goto(B + '/admin/books/orders/' + payNo); await admin.click('#sent button:has-text("Confirm payment")'); await admin.waitForLoadState();
   ok('office confirmed: payment recorded and order confirmed', (await admin.content()).includes('Payment confirmed and recorded') && (await admin.locator('.admin-order-head').innerText()).includes('Confirmed') && (await admin.locator('#payments table').innerText()).includes('900'));
   await admin.screenshot({ path: OUT + '/admin-sent-payment.png', fullPage: true });
   ok('stock taken at the confirmed payment', (await stockOf('DEMO Retail Book')) === before - 2);
   await cust.goto(B + '/books/orders/' + payNo);
-  ok('customer sees confirmed', (await cust.locator('.books-detail-status').innerText()).includes('Confirmed') && (await cust.locator('#payment').innerText()).includes('Confirmed'));
+  ok('customer sees confirmed', (await status()).includes('Confirmed') && (await cust.locator('#payment').innerText()).includes('Confirmed'));
   await admin.goto(B + '/admin/books/orders');
   ok('orders list has campus column', (await admin.locator('thead').first().innerText()).toUpperCase().includes('CAMPUS'));
   // total now 12×350 + 3×320 = 5,160
@@ -193,7 +210,7 @@ const BOOKS = [
   ok('stock taken at first payment (40-12=28)', (await stockOf('DEMO English Reader 1')) === 28);
   ok('stock taken at first payment (3-3=0)', (await stockOf('DEMO Maths 1')) === 0);
   await cust.goto(B + '/books/orders/' + orderNo);
-  ok('customer cannot edit after payment', !(await cust.content()).includes('Change this order'));
+  ok('customer cannot edit after payment', (await cust.locator('a:has-text("Change order")').count()) === 0);
   ok('customer never sees the discount', !(await cust.content()).toLowerCase().includes('discount'));
   await cust.goto(B + '/books/orders/' + orderNo + '/edit'); ok('edit page closed after payment', cust.url().endsWith('/books/orders/' + orderNo));
   await pay(3000, 0, 'bank', 'DEMO Bank account', JPEG);
@@ -367,20 +384,24 @@ const BOOKS = [
   ok('clicking anywhere on a card opens the order', /\/books\/orders\/\d+$/.test(cust.url()));
   await cust.goto(B + '/books/orders'); await cust.screenshot({ path: OUT + '/m-my-orders.png', fullPage: true });
   // --- Customer area: dashboard, payments with own receipts, statement, return requests -------------
-  await cust.goto(B + '/books/dashboard');
-  const dash = await cust.locator('.books-stats').innerText();
-  ok('dashboard shows orders, paid and still to pay', dash.includes('Still to pay') && dash.includes('You have paid') && /C-\d{4}/.test(await cust.locator('.books-who').innerText()));
-  await cust.screenshot({ path: OUT + '/m-dashboard.png', fullPage: true });
+  const dashOld = await cust.context().request.get(B + '/books/dashboard', { maxRedirects: 0 });
+  ok('old dashboard address opens New order', dashOld.status() === 302 && dashOld.headers()['location'].endsWith('/books/order'));
+  await cust.goto(B + '/books/order');
+  ok('New order shows still to pay, orders and value in one box', /still to pay/i.test(await cust.locator('.books-summary').innerText()) && /value/i.test(await cust.locator('.books-summary').innerText()));
+  await cust.goto(B + '/books/more');
+  ok('More shows the customer number and Return books', /C-\d{4}/.test(await cust.locator('.books-me').innerText()) && (await cust.locator('.books-menu a:has-text("Return books")').count()) === 1);
+  await cust.screenshot({ path: OUT + '/m-more.png', fullPage: true });
   await cust.goto(B + '/books/payments');
   const payText = await cust.locator('main').innerText();
-  ok('my payments lists the payments I sent', payText.includes('Payments you sent') && (await cust.locator('a:has-text("View receipt")').count()) >= 1);
-  ok('my statement says Adjustment, never discount', !/discount/i.test(payText) && payText.includes('Adjustment'));
-  const ownReceipt = await cust.locator('a:has-text("View receipt")').first().getAttribute('href');
+  ok('payments: still to pay, pay now and one recent list', /still to pay/i.test(payText) && (await cust.locator('.books-paynow summary').count()) <= 1 && (await cust.locator('.books-recent li').count()) >= 3 && !payText.includes('Payments you sent'));
+  ok('my payments never say discount', !/discount/i.test(payText));
+  await cust.goto(B + '/books/orders/' + payNo);
+  const ownReceipt = await cust.locator('#payment a:has-text("View receipt")').first().getAttribute('href');
   const rOwn = await cust.context().request.get(B + ownReceipt); ok('customer can open their own receipt', rOwn.status() === 200);
   const other = await (await browser.newContext()).newPage();
   await other.goto(B + '/books'); await other.fill('#bk-mobile', '0311-7654321'); await other.click('button:has-text("Continue")'); await other.waitForLoadState();
   const rOther = await other.context().request.get(B + ownReceipt, { maxRedirects: 0 }); ok('another customer cannot open it', rOther.status() === 404);
-  await cust.screenshot({ path: OUT + '/m-payments.png', fullPage: true });
+  await cust.goto(B + '/books/payments'); await cust.screenshot({ path: OUT + '/m-payments.png', fullPage: true });
   // Return request: ask for 2 English Reader 1 as credit, office approves, 1 arrives.
   await cust.goto(B + '/books/returns');
   await cust.fill('#' + await cust.locator('.books-row', { hasText: 'DEMO English Reader 1' }).locator('input').getAttribute('id'), '99');
@@ -406,45 +427,41 @@ const BOOKS = [
   await admin.screenshot({ path: OUT + '/admin-return-request.png', fullPage: true });
   ok('received book back in stock', (await stockOf('DEMO English Reader 1')) === englishBefore + 1);
   await cust.goto(B + '/books/returns'); ok('customer sees received with value', (await cust.content()).includes('Received') && (await cust.content()).includes('Value: Rs.'));
-  await cust.goto(B + '/books/payments');
-  const finalLedger = await cust.locator('.books-ledger tbody tr').last().innerText();
-  await admin.goto(B + '/admin/books/customer-accounts'); await admin.locator('tr', { hasText: 'DEMO Customer (test)' }).locator('a').first().click(); await admin.waitForLoadState();
-  const adminBal = (await admin.locator('.admin-summary .admin-stat').first().locator('.admin-stat-value').innerText()).trim();
-  ok('customer statement balance = office balance', finalLedger.includes(adminBal));
+  const signed = t => (String(t).includes('-') || String(t).includes('\u2212') ? -1 : 1) * money(t);
+  const sameBalance = async () => { await cust.goto(B + '/books/payments'); const due = money(await cust.locator('.books-due-value').innerText());
+    await admin.goto(B + '/admin/books/customer-accounts'); await admin.locator('tr', { hasText: 'DEMO Customer (test)' }).locator('a').first().click(); await admin.waitForLoadState();
+    const bal = signed(await admin.locator('.admin-summary .admin-stat').first().locator('.admin-stat-value').innerText()); return due === Math.max(0, bal); };
+  ok('customer still to pay = office balance', await sameBalance());
   // --- Notes 41-46 and 51 (21 November 2026) -------------------------------------------------------
-  await cust.goto(B + '/books/dashboard');
-  ok('dashboard has no extra buttons under the figures', (await cust.locator('main .books-actions').count()) === 0);
-  ok('menu order: Dashboard, New order, My orders, Returns, My payments, Sign out',
-    (await cust.locator('.books-who-links').innerText()).replace(/\s+/g, ' ').trim() === 'Dashboard New order My orders Returns My payments Sign out');
-  const whoText = await cust.locator('.books-who-facts').innerText();
-  ok('customer box lists customer no., mobile and campus', /Customer no\.\s*C-\d+/i.test(whoText) && whoText.includes('0300-1234567') && whoText.includes('DEMO Campus'));
-  const cNo = (whoText.match(/C-\d+/) || [])[0];
+  await cust.goto(B + '/books/more');
+  const cNo = ((await cust.locator('.books-me').innerText()).match(/C-\d+/) || [])[0];
   // Two new unpaid orders: the payment goes to the oldest unpaid orders first.
-  await cust.goto(B + '/books/order'); await q('DEMO Colours and Shapes', 3); await cust.click('button:has-text("Preview order")'); await cust.waitForLoadState(); await cust.click('button:has-text("Place order")'); await cust.waitForLoadState();
-  const olderNo = Number((cust.url().match(/orders\/(\d+)/) || [])[1]);
-  await cust.goto(B + '/books/order'); await q('DEMO Alphabet Book', 4); await cust.click('button:has-text("Preview order")'); await cust.waitForLoadState(); await cust.click('button:has-text("Place order")'); await cust.waitForLoadState();
-  const newestNo = Number((cust.url().match(/orders\/(\d+)/) || [])[1]);   // 4 x 260 (any credit is used by the older order first)
+  await placeOrder([['DEMO Colours and Shapes', 3]]);
+  const olderNo = no();
+  await placeOrder([['DEMO Alphabet Book', 4]]);
+  const newestNo = no();   // 4 x 260 (any credit is used by the older order first)
   await cust.goto(B + '/books/payments');
+  const owedNow = money(await cust.locator('.books-due-value').innerText());
+  await cust.click('.books-paynow summary');
   const mpBox = cust.locator('#make-payment');
-  ok('make a payment is under the figures and above payments you sent', await cust.evaluate(() => {
-    const s = document.querySelector('.books-stats'), m = document.querySelector('#make-payment'), h = [...document.querySelectorAll('h2')].find(x => x.textContent.includes('Payments you sent'));
-    return !!(s && m && h) && (s.compareDocumentPosition(m) & 4) && (m.compareDocumentPosition(h) & 4); }));
-  ok('both bank details shown on my payments', (await mpBox.innerText()).includes('12345678901'));
-  const owedNow = money((await mpBox.locator('p strong').first().innerText()));
+  ok('pay now shows both bank details and cash, no amount box', (await mpBox.innerText()).includes('12345678901') && (await mpBox.locator('.books-pay-opt', { hasText: 'Cash' }).count()) === 1 && (await mpBox.locator('input[name=PayAmount]').count()) === 0);
   await cust.screenshot({ path: OUT + '/m-make-payment.png', fullPage: true });
-  const payBalance = async amount => { await mpBox.locator('.books-bank', { hasText: 'DEMO Customer Bank' }).locator('input').check(); await cust.fill('#mp-amount', String(amount));
-    await cust.setInputFiles('#mp-receipt', JPEG); await Promise.all([cust.waitForNavigation(), cust.click('#make-payment button:has-text("Send payment")')]); };
-  await payBalance(owedNow + 1);
-  ok('cannot pay more than I owe', (await cust.locator('#make-payment').innerText()).includes('more than the'));
-  await payBalance(owedNow - 100);
-  ok('balance payment sent', (await cust.content()).includes('used for your oldest unpaid order first') && (await cust.locator('.books-sent').innerText()).includes('towards your balance'));
-  ok('only one payment waiting at a time', (await cust.locator('#mp-amount').count()) === 0 && (await cust.locator('#make-payment').innerText()).includes('checking the payment'));
+  await mpBox.locator('.books-pay-opt', { hasText: 'DEMO Customer Bank' }).locator('input').check(); await cust.setInputFiles('#mp-file', JPEG);
+  await go('#make-payment button:has-text("Send payment")');
+  ok('balance payment sent', (await cust.content()).includes('used for your oldest unpaid order first') && (await cust.locator('.books-due-note').first().innerText()).includes('being checked'));
+  ok('the waiting payment is in Recent', (await cust.locator('.books-recent').innerText()).includes('Payment being checked'));
   await cust.goto(B + '/books/orders/' + newestNo);
-  ok('orders cannot be changed while the payment is checked', (await cust.locator('button:has-text("Cancel this order")').count()) === 0);
+  ok('orders cannot be changed while the payment is checked', (await cust.locator('button:has-text("Cancel order")').count()) === 0);
   await admin.goto(B + '/admin/books/orders/' + newestNo);
-  ok('office sees the balance payment on the order', /towards the balance/i.test(await admin.locator('#sent').innerText()) && (await admin.content()).includes('Please confirm or reject it before recording another payment'));
+  ok('office sees the balance payment on the order', /towards the balance/i.test(await admin.locator('#sent').innerText()));
+  ok('office cannot record another payment meanwhile', (await admin.content()).includes('Please confirm or reject it before recording another payment'));
+  await admin.goto(B + '/admin/books');
+  ok('Books overview lists payments to check with the receipt', (await admin.locator('#sent .admin-sent-item').count()) >= 1 && (await admin.locator('#sent .admin-receipt-thumb img').count()) >= 1);
+  await admin.screenshot({ path: OUT + '/admin-payments-to-check.png', fullPage: true });
   await admin.goto(B + '/admin/books/customer-accounts'); await admin.locator('tr', { hasText: 'DEMO Customer (test)' }).locator('a').first().click(); await admin.waitForLoadState();
-  await admin.screenshot({ path: OUT + '/admin-balance-payment.png', fullPage: true });
+  ok('confirm form has the amount filled in (still to pay)', money(await admin.locator('#sent input[name=Amount]').inputValue()) === owedNow);
+  // The receipt shows Rs. 100 less than what was still to pay: the office enters what the receipt shows.
+  await admin.fill('#sent input[name=Amount]', String(owedNow - 100));
   await admin.locator('#sent button:has-text("Confirm payment")').click(); await admin.waitForLoadState();
   ok('office confirmed the balance payment', (await admin.content()).includes('applied to the oldest unpaid orders first'));
   await admin.goto(B + '/admin/books/orders/' + newestNo);
@@ -452,7 +469,7 @@ const BOOKS = [
   await admin.goto(B + '/admin/books/orders/' + olderNo);
   ok('older order fully paid and confirmed', money(await admin.locator('tr.is-total td').innerText()) === 0 && (await admin.locator('.admin-order-head').innerText()).includes('Confirmed'));
   await cust.goto(B + '/books/payments');
-  ok('customer now owes Rs. 100', money(await cust.locator('#make-payment p strong').first().innerText()) === 100);
+  ok('customer now owes Rs. 100', money(await cust.locator('.books-due-value').innerText()) === 100);
   // Statement PDF.
   const custPdf = await cust.context().request.get(B + '/books/statement');
   const pdfBody = await custPdf.body();
@@ -489,10 +506,7 @@ const BOOKS = [
   const gone = await admin.context().request.get(B + '/admin/books/orders/' + cancelNo); ok('removed order page is gone for the office', gone.status() === 404);
   const goneC = await cust.context().request.get(B + '/books/orders/' + cancelNo); ok('removed order page is gone for the customer', goneC.status() === 404);
   await cust.goto(B + '/books/orders'); ok('removed order not in my orders', !(await cust.locator('main').innerText()).includes('BK-' + cancelNo));
-  await cust.goto(B + '/books/payments');
-  const ledger2 = await cust.locator('.books-ledger tbody tr').last().innerText();
-  await admin.goto(B + '/admin/books/customer-accounts'); await admin.locator('tr', { hasText: 'DEMO Customer (test)' }).locator('a').first().click(); await admin.waitForLoadState();
-  ok('statement still equals the office balance', ledger2.includes((await admin.locator('.admin-summary .admin-stat').first().locator('.admin-stat-value').innerText()).trim()));
+  ok('still to pay still equals the office balance', await sameBalance());
   ok('no script errors ' + errors.join(' | '), errors.length === 0);
   console.log(results.join('\n'));
   console.log((results.filter(r => r.startsWith('FAIL')).length === 0 ? 'ALL PASSED' : 'SOME FAILED') + ' (' + results.length + ' checks)');

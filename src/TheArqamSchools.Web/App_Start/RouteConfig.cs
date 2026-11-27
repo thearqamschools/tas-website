@@ -49,6 +49,7 @@ namespace TheArqamSchools.Web
             routes.MapRoute("BooksOrders", "books/orders", new { controller = "Books", action = "Orders" }, new { httpMethod = get });
             routes.MapRoute("BooksEditPost", "books/orders/{orderNo}/edit", new { controller = "Books", action = "Submit" }, new { orderNo = @"\d{1,12}", httpMethod = post });
             routes.MapRoute("BooksDashboard", "books/dashboard", new { controller = "Books", action = "Dashboard" }, new { httpMethod = get });
+            routes.MapRoute("BooksMore", "books/more", new { controller = "Books", action = "More" }, new { httpMethod = get });
             routes.MapRoute("BooksPayments", "books/payments", new { controller = "Books", action = "Payments" }, new { httpMethod = get });
             routes.MapRoute("BooksPaymentsPost", "books/payments", new { controller = "Books", action = "PayBalance" }, new { httpMethod = post });
             routes.MapRoute("BooksStatement", "books/statement", new { controller = "Books", action = "Statement" }, new { httpMethod = get });

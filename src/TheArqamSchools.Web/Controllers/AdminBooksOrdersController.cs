@@ -84,7 +84,16 @@ namespace TheArqamSchools.Web.Controllers
         {
             var sub = BookPaymentSubmissionRepository.Get(id);
             if (sub == null) return HttpNotFound();
-            try { BookPaymentSubmissionRepository.Confirm(id, AdminAuth.Current(HttpContext).Id); }
+            decimal received;
+            var raw = (Request.Unvalidated.Form["Amount"] ?? "").Replace(",", "").Trim();
+            decimal? amount = null;
+            if (raw.Length > 0)
+            {
+                if (!decimal.TryParse(raw, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out received) || received <= 0)
+                    return SentError(sub, back, "Please enter the amount received, in rupees.");
+                amount = received;
+            }
+            try { BookPaymentSubmissionRepository.Confirm(id, AdminAuth.Current(HttpContext).Id, amount); }
             catch (BookOrderException ex) { return SentError(sub, back, ex.Message); }
             return SentDone(sub, back, "sentconfirmed");
         }
@@ -95,6 +104,7 @@ namespace TheArqamSchools.Web.Controllers
         /// </summary>
         private ActionResult SentDone(BookPaymentSubmission sub, string back, string notice)
         {
+            if (back == "home") return Redirect("/admin/books?notice=" + notice + "#sent");
             if (sub.OrderNo.HasValue)
                 return Redirect("/admin/books/orders/" + sub.OrderNo.Value.ToString(CultureInfo.InvariantCulture) + "?notice=" + notice + "#sent");
             return Redirect("/admin/books/customer-accounts/" + sub.CustomerId.ToString("D") + "?notice=" + notice + "#sent");
@@ -102,8 +112,9 @@ namespace TheArqamSchools.Web.Controllers
 
         private ActionResult SentError(BookPaymentSubmission sub, string back, string error)
         {
-            if (sub.OrderNo.HasValue) return OrderView(BookRepository.Order(sub.OrderNo.Value), null, null, error);
             TempData["BooksError"] = error;
+            if (back == "home") return Redirect("/admin/books#sent");
+            if (sub.OrderNo.HasValue) return OrderView(BookRepository.Order(sub.OrderNo.Value), null, null, error);
             return Redirect("/admin/books/customer-accounts/" + sub.CustomerId.ToString("D") + "#sent");
         }
 

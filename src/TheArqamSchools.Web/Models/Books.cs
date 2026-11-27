@@ -299,6 +299,11 @@ namespace TheArqamSchools.Web.Models
         public BookOrder Editing { get; set; }
         public IList<string> Errors { get; set; }
         public bool Preview { get; set; }
+        /// <summary>"form", "preview" or "payment" (notes 57-59).</summary>
+        public string Step { get; set; }
+        /// <summary>Still to pay, orders and their value, shown at the top of New order (note 56).</summary>
+        public TheArqamSchools.Web.Data.BookCustomerAccountRepository.Summary Summary { get; set; }
+        public IList<BookAccount> Accounts { get; set; }
     }
 
     // ---- Part 2: accounts, payments, office order list ---------------------------------------
@@ -327,6 +332,7 @@ namespace TheArqamSchools.Web.Models
         public long? OrderNo { get; set; }
         public Guid CustomerId { get; set; }
         public long CustomerNo { get; set; }
+        public string CustomerLabel { get { return BookFormat.CustomerLabel(CustomerNo); } }
         /// <summary>Part of a balance payment that became credit when it was confirmed.</summary>
         public decimal CreditAmount { get; set; }
         public Guid AccountId { get; set; }

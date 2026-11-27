@@ -1,0 +1,26 @@
+@using TheArqamSchools.Web.Helpers
+@{
+    // More (note 56): the customer's details and the less used pages, so the main menu stays short.
+    var c = ViewBag.Customer as BookCustomer;
+    var open = (int)ViewBag.OpenReturns;
+}
+<section class="section tone-white books books-app">
+    <div class="container books-wide">
+        @Html.Partial("~/Views/Books/_Who.cshtml", c)
+        <h1 class="books-title">More</h1>
+        <div class="books-me">
+            <p class="books-me-name">@c.Name</p>
+            <p class="books-me-meta">@c.CustomerLabel &middot; @Mobile.Format(c.Mobile)@if (!string.IsNullOrEmpty(c.CampusName)) { <text> &middot; @c.CampusName</text> }</p>
+            @if (!string.IsNullOrWhiteSpace(c.Address)) { <p class="books-me-meta">@c.Address</p> }
+        </div>
+        <ul class="books-menu">
+            <li><a href="/books/returns"><span>Return books</span>@if (open > 0) { <span class="books-count">@open open</span> }<span aria-hidden="true">&rsaquo;</span></a></li>
+            <li><a href="/books/statement">Statement (PDF)<span aria-hidden="true">&rsaquo;</span></a></li>
+            <li><a href="@Contact.TelUrl("041-2660265")">Call the office &middot; 041-2660265<span aria-hidden="true">&rsaquo;</span></a></li>
+            <li><a href="@Contact.WhatsAppUrl("0339-2406479")" target="_blank" rel="noopener">WhatsApp &middot; 0339-2406479<span class="sr-only"> (opens in a new tab)</span><span aria-hidden="true">&rsaquo;</span></a></li>
+            <li>
+                <form method="post" action="/books/signout">@Html.AntiForgeryToken()<button type="submit" class="books-menu-out">Sign out<span aria-hidden="true">&rsaquo;</span></button></form>
+            </li>
+        </ul>
+    </div>
+</section>

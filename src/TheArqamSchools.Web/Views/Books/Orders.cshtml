@@ -1,18 +1,15 @@
 @model IList<BookOrder>
 @using TheArqamSchools.Web.Helpers
 @{
+    // My orders (note 60): one card per order with its status and what is still to pay; tap a card to open it.
     var customer = ViewBag.Customer as BookCustomer;
     var pk = TimeSpan.FromHours(5);
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
 }
-<section class="page-header tone-warm">
-    <div class="container">
-        <h1 class="h1">My orders</h1>
-        <p class="lead">Your book orders, newest first.</p>
-    </div>
-</section>
-<section class="section tone-white books">
+<section class="section tone-white books books-app">
     <div class="container books-wide">
         @Html.Partial("~/Views/Books/_Who.cshtml", customer)
+        <h1 class="books-title">My orders</h1>
         @if (Model.Count == 0)
         {
             <div class="books-card"><p>You have no orders yet.</p><p><a class="btn btn-primary" href="/books/order">Order books</a></p></div>
@@ -22,16 +19,17 @@
             <ul class="books-history">
                 @foreach (var o in Model)
                 {
+                    var waiting = o.PendingPayments > 0 && o.Status == "new";
                     <li class="books-card books-history-item">
                         <div class="books-history-head">
                             <a class="books-order-link books-card-link" href="/books/orders/@o.OrderNo">@o.OrderLabel</a>
-                            <span class="books-status books-status-@o.Status">@o.CustomerStatusLabel</span>
+                            <span class="books-status books-status-@o.Status@(waiting ? " is-waiting" : "")">@(waiting ? "Payment being checked" : o.CustomerStatusLabel)</span>
                         </div>
-                        <p class="books-history-meta">@o.CreatedAt.ToOffset(pk).ToString("d MMMM yyyy", System.Globalization.CultureInfo.InvariantCulture) · @o.Lines.Sum(l => l.Quantity) books · <strong>@BookFormat.Money(o.CustomerTotal)</strong></p>
-                        @if (o.CustomerCanEdit) { <p class="books-history-hint">You can still change or cancel this order.</p> }
+                        <p class="books-history-meta">@o.CreatedAt.ToOffset(pk).ToString("d MMM yyyy", inv) &middot; @o.Lines.Sum(l => l.Quantity) books &middot; <strong>@BookFormat.Money(o.CustomerTotal)</strong>@if (o.Status != "cancelled" && o.Balance > 0) { <text> &middot; </text><span class="books-due">to pay @BookFormat.Money(o.Balance)</span> }</p>
                     </li>
                 }
             </ul>
         }
     </div>
 </section>
+<script src="~/Scripts/books.js?v=20261127a" defer></script>

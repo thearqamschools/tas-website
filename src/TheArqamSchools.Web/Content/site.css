@@ -1517,3 +1517,159 @@ body:has(.books) .wa-float { display: none; }
   }
 }
 .books-ref { white-space: nowrap; }
+
+/* ===== Books, simple flow (owner's notes 54-62, 27 November 2026) ===== */
+.books-app.section { padding-top: 16px; }
+.books-title { margin: 6px 0 12px; font-family: var(--sans); font-size: 1.375rem; font-weight: 700; line-height: 1.25; color: var(--ink); }
+.books-lead { margin: -4px 0 16px; color: var(--muted); }
+/* Menu: a row of tabs on computers, a tab bar at the bottom on phones. */
+.books-tabs { display: flex; gap: 6px; margin: 0 0 14px; padding: 4px; border-radius: 14px; background: var(--grey); }
+.books-tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 6px 10px; border-radius: 10px; color: var(--muted); font-weight: 600; font-size: .9375rem; text-decoration: none; }
+.books-tab .icon { flex: none; }
+.books-tab.is-current { background: #fff; color: var(--blue); box-shadow: 0 1px 3px rgba(15,23,42,.12); }
+@media (hover: hover) and (pointer: fine) { .books-tab:hover { color: var(--blue); } }
+.books-tab:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+@media (max-width: 47.99rem) {
+  .books-tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; margin: 0; padding: 0 0 env(safe-area-inset-bottom); gap: 0; border-radius: 0; background: #fff; border-top: 1px solid var(--line); box-shadow: 0 -4px 14px rgba(15,23,42,.06); }
+  .books-tab { flex-direction: column; gap: 2px; min-height: 60px; font-size: .6875rem; border-radius: 0; }
+  .books-tab.is-current { box-shadow: none; background: transparent; }
+  body:has(.books-tabs) { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+  body:has(.books-tabs) .wa-float { bottom: calc(80px + env(safe-area-inset-bottom)); }
+  .books-app .books-sticky { bottom: calc(60px + env(safe-area-inset-bottom)); }
+}
+/* Still to pay, at the top of New order. */
+.books-summary { display: flex; align-items: center; gap: 12px; margin: 0 0 8px; padding: 10px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--grey); }
+.books-summary > div:first-child { flex: 1; display: grid; line-height: 1.15; }
+.books-summary-label { font-size: .6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.books-summary-due { font-size: 1.25rem; color: var(--ink); }
+.books-summary.is-due { background: #fdeced; border-color: #f6c4c6; }
+.books-summary.is-due .books-summary-due { color: var(--red-700); }
+.books-summary-side { font-size: .8125rem; color: var(--muted); text-align: right; line-height: 1.35; }
+.books-summary-side strong { color: var(--ink); }
+.books-summary .btn-sm { min-height: 40px; padding: 8px 16px; }
+/* Class tabs and the whole-class button. */
+.books-classes { display: flex; gap: 6px; overflow-x: auto; margin: 0 -16px 10px; padding: 2px 16px 6px; scrollbar-width: none; }
+.books-classes::-webkit-scrollbar { display: none; }
+.books-class-chip { flex: none; min-height: 40px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--muted); font: inherit; font-size: .875rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.books-class-chip[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: #fff; }
+.books-class-chip:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+.has-class-tabs .books-class-group.is-hidden { display: none; }
+.has-class-tabs .books-class-group > legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.books-set { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 6px; padding: 12px 14px; border: 1.5px dashed var(--blue); border-radius: 12px; background: #fff; font: inherit; font-size: .9375rem; color: var(--ink); cursor: pointer; text-align: left; }
+.books-set strong { color: var(--blue); white-space: nowrap; }
+/* Book rows with Add / - n + */
+.books-app .books-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+.books-app .books-row-name { flex: 1; display: grid; font-weight: 600; line-height: 1.3; }
+.books-app .books-row-name .books-row-price { font-weight: 500; color: var(--muted); font-size: .875rem; }
+.books-qty { display: flex; align-items: center; flex: none; }
+.books-qty input { width: 3rem; height: 40px; text-align: center; border: 1px solid var(--blue); border-inline: 0; border-radius: 0; font: inherit; font-weight: 700; -moz-appearance: textfield; background: #eef0f9; }
+.books-qty input::-webkit-outer-spin-button, .books-qty input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.books-qty-btn { width: 40px; height: 40px; border: 1px solid var(--blue); background: #fff; color: var(--blue); font: inherit; font-size: 1.25rem; font-weight: 700; cursor: pointer; }
+.books-qty-minus { border-radius: 10px 0 0 10px; }
+.books-qty-plus { border-radius: 0 10px 10px 0; }
+.books-qty-add { height: 40px; padding: 0 18px; border: 1px solid var(--blue); border-radius: 10px; background: #fff; color: var(--blue); font: inherit; font-weight: 700; cursor: pointer; }
+.books-qty:not(.has-qty) .books-qty-btn, .books-qty:not(.has-qty) input { display: none; }
+.books-qty.has-qty .books-qty-add { display: none; }
+.books-qty button:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; position: relative; }
+/* Check your order. */
+.books-review { display: grid; gap: 14px; }
+@media (min-width: 56rem) { .books-review { grid-template-columns: 1.3fr 1fr; align-items: start; } }
+.books-lines td:first-child { font-weight: 600; }
+.books-lines .books-class { display: block; font-weight: 400; }
+.books-review-get { border: 0; margin: 0; padding: 0; }
+.books-review-get legend { font-weight: 700; margin-bottom: 8px; padding: 0; }
+.books-actions--stack { display: grid; gap: 8px; margin-top: 16px; }
+@media (min-width: 40rem) { .books-actions--stack { grid-template-columns: auto auto; justify-content: start; } .books-actions--stack .btn-primary { order: 2; } }
+/* Payment choice (bank accounts, cash) and the receipt. */
+.books-pay-total { margin: 0 0 2px; font-size: 1rem; color: var(--muted); }
+.books-pay-total strong { display: block; font-size: 1.75rem; line-height: 1.2; color: var(--ink); }
+.books-pay-lead { margin: 0 0 12px; color: var(--muted); font-size: .9375rem; }
+.books-pay-choice { border: 0; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
+@media (min-width: 48rem) { .books-pay-choice { grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); } }
+.books-pay-opt { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; background: #fff; cursor: pointer; }
+.books-pay-opt:has(input:checked) { border-color: var(--blue); background: #eef0f9; }
+.books-pay-opt.is-disabled { opacity: .6; cursor: not-allowed; }
+.books-pay-opt input { flex: none; width: 20px; height: 20px; margin-top: 2px; accent-color: var(--blue); }
+.books-pay-body { flex: 1; display: grid; gap: 1px; min-width: 0; overflow-wrap: anywhere; }
+.books-pay-name { font-weight: 700; color: var(--ink); }
+.books-pay-acc { font-weight: 800; color: var(--blue); font-size: 1.0625rem; letter-spacing: .02em; }
+.books-pay-sub { font-size: .8125rem; color: var(--muted); }
+.books-copy { flex: none; align-self: center; min-height: 36px; padding: 4px 12px; border: 1px solid var(--blue); border-radius: 8px; background: #fff; color: var(--blue); font: inherit; font-size: .8125rem; font-weight: 700; cursor: pointer; }
+.books-receipt { margin: 0 0 14px; }
+.books-receipt-label { margin: 0 0 6px; font-weight: 700; }
+.books-receipt-label span { font-weight: 400; color: var(--muted); }
+.books-receipt-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.books-receipt-btn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 8px; border: 1.5px dashed var(--blue); border-radius: 12px; color: var(--blue); font-weight: 700; cursor: pointer; text-align: center; }
+.books-file { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.books-file:focus-visible + .books-receipt-btn { outline: 3px solid var(--blue); outline-offset: 2px; }
+.books-receipt-btns { position: relative; }
+.books-receipt-name { margin: 6px 0 0; font-weight: 600; color: var(--success); overflow-wrap: anywhere; }
+.books-receipt-name:empty { display: none; }
+.books-receipt .form-note { margin-top: 4px; }
+.books-btn-block { width: 100%; }
+.books-later { margin: 10px 0 0; text-align: center; color: var(--muted); font-size: .9375rem; }
+.books-link-btn { border: 0; background: none; padding: 4px; font: inherit; color: var(--blue); text-decoration: underline; cursor: pointer; }
+/* One order: heading, tracking line, buttons side by side. */
+.books-order-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.books-order-head .books-title { margin-bottom: 0; }
+.books-order-meta { margin: 2px 0 12px; color: var(--muted); font-size: .9375rem; }
+.books-status.is-waiting { background: #fef3c7; color: #92400e; }
+.books-track { list-style: none; display: flex; margin: 0 0 16px; padding: 0; counter-reset: none; }
+.books-track li { flex: 1; position: relative; text-align: center; font-size: .75rem; font-weight: 600; color: var(--muted); }
+.books-track li::before { content: ""; display: block; width: 18px; height: 18px; margin: 0 auto 4px; border-radius: 50%; border: 2px solid var(--line); background: #fff; position: relative; z-index: 1; }
+.books-track li + li::after { content: ""; position: absolute; top: 8px; right: 50%; width: 100%; height: 2px; background: var(--line); }
+.books-track li.is-done { color: var(--success); }
+.books-track li.is-done::before { background: var(--success); border-color: var(--success); }
+.books-track li.is-done::after { background: var(--success); }
+.books-track li.is-current { color: var(--blue); }
+.books-track li.is-current::before { border: 5px solid var(--blue); }
+.books-actions--pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.books-actions--pair form { margin: 0; }
+.books-actions--pair .btn { width: 100%; }
+.books-due { color: var(--red-700); font-weight: 700; }
+.books-sent-line { margin: 0 0 6px; font-size: .9375rem; }
+.books-sent-line.books-sent-pending strong { color: #92400e; }
+.books-sent-line.books-sent-confirmed strong { color: var(--success); }
+.books-sent-line.books-sent-rejected strong { color: var(--red-700); }
+/* Payments: still to pay, Pay now, recent entries. */
+.books-due-box { margin: 0 0 18px; padding: 16px; border-radius: 16px; text-align: center; border: 1px solid var(--line); background: var(--grey); }
+.books-due-box.is-due { background: #fdeced; border-color: #f6c4c6; }
+.books-due-label { margin: 0; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.books-due-value { margin: 2px 0 8px; font-size: 2rem; font-weight: 800; line-height: 1.2; color: var(--ink); }
+.books-due-box.is-due .books-due-value { color: var(--red-700); }
+.books-due-box.is-ok .books-due-value { color: var(--success); }
+.books-due-note { margin: 0 0 10px; font-size: .875rem; color: var(--muted); }
+.books-paynow { text-align: left; }
+.books-paynow > summary { list-style: none; cursor: pointer; }
+.books-paynow > summary::-webkit-details-marker { display: none; }
+.books-paynow[open] > summary { display: none; }
+.books-paynow .books-pay-form { margin-top: 4px; }
+.books-recent-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.books-recent-head .h3 { margin: 0; }
+.books-recent { list-style: none; margin: 0; padding: 0; }
+.books-recent li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.books-recent-ic { flex: none; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-weight: 800; background: #eef0f9; color: var(--blue); }
+.books-recent-ic.is-p { background: #e8f6ec; color: var(--success); }
+.books-recent-ic.is-w { background: #fef3c7; color: #92400e; }
+.books-recent-ic.is-x { background: #fdeced; color: var(--red-700); }
+.books-recent-main { flex: 1; min-width: 0; display: grid; line-height: 1.3; font-weight: 600; }
+.books-recent-main small { font-weight: 400; color: var(--muted); font-size: .8125rem; overflow-wrap: anywhere; }
+.books-recent-amt { flex: none; font-weight: 700; white-space: nowrap; }
+.books-recent-amt.is-minus { color: var(--success); }
+/* More. */
+.books-me { margin: 0 0 8px; padding: 14px 16px; border-radius: 14px; background: #eef0f9; }
+.books-me p { margin: 0; }
+.books-me-name { font-weight: 700; font-size: 1.0625rem; }
+.books-me-meta { color: var(--muted); font-size: .9375rem; }
+.books-menu { list-style: none; margin: 0; padding: 0; }
+.books-menu a, .books-menu-out { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 56px; padding: 12px 4px; border: 0; border-bottom: 1px solid var(--line); background: none; font: inherit; font-weight: 600; font-size: 1rem; color: var(--ink); text-decoration: none; text-align: left; cursor: pointer; }
+.books-menu a > span:last-child, .books-menu-out > span { color: var(--muted); font-size: 1.25rem; }
+.books-menu form { margin: 0; }
+.books-menu-out { color: var(--red-700); }
+.books-count { margin-left: auto; margin-right: 8px; padding: 2px 8px; border-radius: 999px; background: #fef3c7; color: #92400e; font-size: .75rem; font-weight: 700; }
+.books-app .books-rows { margin: 0; padding: 0; list-style: none; }
+.books-app .books-row { display: flex; grid-template-columns: none; align-items: center; gap: 12px; padding: 10px 12px; margin: 0 0 6px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.books-app .books-row.is-chosen { border-color: var(--blue); background: #eef0f9; }
+.books-app .books-row-name { flex: 1; min-width: 0; display: grid; gap: 2px; margin: 0; }
+.books-app .books-row-name .books-row-price { display: block; text-align: left; justify-self: start; grid-column: auto; }
+.books-app .books-qty input { height: 40px; min-height: 40px; box-sizing: border-box; padding: 0 4px; }

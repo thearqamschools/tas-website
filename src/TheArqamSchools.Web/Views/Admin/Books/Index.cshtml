@@ -5,6 +5,9 @@
 }
 <div class="admin-page-head"><h1>Books</h1><a href="/books" target="_blank" rel="noopener">Open the order page</a></div>
 @Html.Partial("~/Views/Admin/Books/_Tabs.cshtml", "home")
+@if (TempData["BooksError"] is string) { <div class="admin-alert admin-alert--error" role="alert"><p>@TempData["BooksError"]</p></div> }
+@if (Request.QueryString["notice"] == "sentconfirmed") { <div class="admin-alert admin-alert--success" role="status"><p>Payment confirmed and recorded.</p></div> }
+@if (Request.QueryString["notice"] == "sentrejected") { <div class="admin-alert admin-alert--success" role="status"><p>Payment marked as not accepted. A message for the customer is ready under Messages.</p></div> }
 @{ var td = TheArqamSchools.Web.Data.BookCustomerAccountRepository.GetToDo(); }
 <section class="admin-card" aria-labelledby="todo-h">
     <h2 id="todo-h">Books: work to do</h2>
@@ -17,6 +20,19 @@
         <a class="@(td.OverdueCustomers > 0 ? "has-work" : null)" href="/admin/books/reports?kind=aging"><strong>@td.OverdueCustomers</strong>Customers overdue</a>
     </div>
 </section>
+
+@{ var toCheck = TheArqamSchools.Web.Data.BookPaymentSubmissionRepository.Pending(30); var canPay = TheArqamSchools.Web.Infrastructure.Auth.AdminAuth.Current(Context).Can("books.payments"); }
+@if (toCheck.Count > 0)
+{
+    <section class="admin-card" id="sent" aria-labelledby="tocheck-h">
+        <h2 id="tocheck-h">Payments to check (@toCheck.Count)</h2>
+        <p class="admin-muted">Open the receipt, check the money in the bank, enter the amount on the receipt and confirm. Oldest first.</p>
+        @foreach (var sp in toCheck)
+        {
+            @Html.Partial("~/Views/Admin/Books/_SentPayment.cshtml", sp, new ViewDataDictionary { { "CanPay", canPay }, { "Back", "home" } })
+        }
+    </section>
+}
 
 <div class="admin-stats">
     <a class="admin-stat" href="/admin/books/items"><p class="admin-stat-value">@ViewBag.ItemCount</p><p class="admin-stat-label">books on sale</p></a>

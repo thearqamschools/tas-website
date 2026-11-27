@@ -1,134 +1,112 @@
 @model BookOrder
 @using TheArqamSchools.Web.Helpers
 @{
+    // One order (owner's notes 58-61, 27 November 2026): status, a tracking line, the books, Change / Cancel side by
+    // side, and the payment (bank or cash, receipt, no amount typed).
     var customer = ViewBag.Customer as BookCustomer;
     var pk = TimeSpan.FromHours(5);
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
     var accounts = (ViewBag.Accounts as IList<BookAccount>) ?? new List<BookAccount>();
     var submissions = (ViewBag.Submissions as IList<BookPaymentSubmission>) ?? new List<BookPaymentSubmission>();
+    var paid = Request.QueryString["paid"];
+    var payError = TempData["BooksPayError"] as string;
+    var waiting = submissions.Any(x => x.Status == "pending");
+    // Tracking line: Placed, Payment, Packed, Ready (or Delivered / Collected).
+    var paidDone = Model.Status != "new" || Model.PaidTotal > 0;
+    var packedDone = Model.Status == "packed" || Model.Status == "delivered" || Model.Status == "collected";
+    var readyDone = Model.Status == "delivered" || Model.Status == "collected";
+    var steps = new[]
+    {
+        new { Text = "Placed", Done = true },
+        new { Text = waiting && !paidDone ? "Payment check" : "Payment", Done = paidDone },
+        new { Text = "Packed", Done = packedDone },
+        new { Text = Model.Status == "delivered" ? "Delivered" : Model.Status == "collected" ? "Collected" : Model.Fulfilment == "delivery" ? "Delivered" : "Collected", Done = readyDone }
+    };
+    var current = steps.Select((x, i) => new { x, i }).Where(t => !t.x.Done).Select(t => t.i).DefaultIfEmpty(-1).First();
 }
-<section class="page-header tone-warm">
-    <div class="container">
-        <h1 class="h1">Order @Model.OrderLabel</h1>
-        <p class="lead">@Model.CreatedAt.ToOffset(pk).ToString("dddd, d MMMM yyyy", System.Globalization.CultureInfo.InvariantCulture)</p>
-    </div>
-</section>
-<section class="section tone-white books">
+<section class="section tone-white books books-app">
     <div class="container books-wide">
         @Html.Partial("~/Views/Books/_Who.cshtml", customer)
         @if ((bool)ViewBag.Placed)
         {
-            <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p><strong>Thank you. Your order @Model.OrderLabel has been placed.</strong> Our office will check it and contact you. Please keep the order number.</p></div>
+            <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p><strong>Order @Model.OrderLabel placed.</strong>
+                @(paid == "bank" ? "We will check your payment and confirm the order." : paid == "cash" ? "Please pay " + BookFormat.Money(Model.Balance) + " in cash at the office or when the books are delivered." : "You can pay any time from this page or Payments.")</p></div>
         }
-        @if ((bool)ViewBag.Changed)
+        @if (Request.QueryString["cash"] == "true")
         {
-            <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p>Your changes to order @Model.OrderLabel have been saved.</p></div>
+            <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p>Please pay @BookFormat.Money(Model.Balance) in cash at the office or when the books are delivered.</p></div>
         }
-        @if (ViewBag.Cancelled == true)
+        @if ((bool)ViewBag.Changed) { <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p>Your changes to order @Model.OrderLabel have been saved.</p></div> }
+        @if (ViewBag.Cancelled == true) { <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p>Order @Model.OrderLabel has been cancelled.</p></div> }
+        @if ((bool)(ViewBag.Sent ?? false)) { <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p>Thank you. Your payment has been sent. The office will check the receipt.</p></div> }
+        @if (ViewBag.Error != null || payError != null) { <div class="alert alert-error" role="alert" tabindex="-1" data-focus><p>@(ViewBag.Error ?? payError)</p></div> }
+
+        <div class="books-order-head">
+            <h1 class="books-title">@Model.OrderLabel</h1>
+            <span class="books-status books-status-@Model.Status@(waiting && Model.Status == "new" ? " is-waiting" : "")">@(waiting && Model.Status == "new" ? "Payment being checked" : Model.CustomerStatusLabel)</span>
+        </div>
+        <p class="books-order-meta">@Model.CreatedAt.ToOffset(pk).ToString("d MMMM yyyy", inv) &middot; @(Model.Fulfilment == "delivery" ? "Delivery to " + Model.DeliveryAddress : "Pick up from the office")</p>
+        @if (Model.Status != "cancelled")
         {
-            <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p>Order @Model.OrderLabel has been cancelled.</p></div>
-        }
-        @if (ViewBag.Error != null)
-        {
-            <div class="alert alert-error" role="alert" tabindex="-1" data-focus><p>@ViewBag.Error</p></div>
+            <ol class="books-track" aria-label="Order progress">
+                @for (var i = 0; i < steps.Length; i++)
+                {
+                    <li class="@(steps[i].Done ? "is-done" : i == current ? "is-current" : null)" @(i == current ? "aria-current=step" : null)>@steps[i].Text</li>
+                }
+            </ol>
         }
         <div class="books-card">
-            <p class="books-detail-status"><span class="books-status books-status-@Model.Status">@Model.CustomerStatusLabel</span> <span>@BookFormat.FulfilmentLabel(Model.Fulfilment)@if (Model.Fulfilment == "delivery") { <text>: @Model.DeliveryAddress</text> }</span></p>
-            <table class="books-table">
-                <thead><tr><th scope="col">Book</th><th scope="col" class="num">Qty</th><th scope="col" class="num">Price</th><th scope="col" class="num">Total</th></tr></thead>
+            <table class="books-table books-lines">
                 <tbody>
                     @foreach (var l in Model.Lines)
                     {
-                        <tr><td><span class="books-class">@l.ClassName</span> @l.ItemName</td><td class="num">@l.Quantity</td><td class="num">@BookFormat.Money(l.UnitPrice)</td><td class="num">@BookFormat.Money(l.LineTotal)</td></tr>
+                        <tr><td>@l.ItemName <span class="books-class">@l.ClassName</span></td><td class="num">&times; @l.Quantity</td><td class="num">@BookFormat.Money(l.LineTotal)</td></tr>
                     }
                 </tbody>
                 <tfoot>
                     @if (Model.CreditApplied > 0)
                     {
-                        <tr><th scope="row" colspan="3">Books</th><td class="num">@BookFormat.Money(Model.Subtotal)</td></tr>
-                        <tr><th scope="row" colspan="3">Your credit</th><td class="num">&minus; @BookFormat.Money(Model.CreditApplied)</td></tr>
+                        <tr><th scope="row" colspan="2">Books</th><td class="num">@BookFormat.Money(Model.Subtotal)</td></tr>
+                        <tr><th scope="row" colspan="2">Your credit</th><td class="num">&minus; @BookFormat.Money(Model.CreditApplied)</td></tr>
                     }
-                    <tr class="books-total-row"><th scope="row" colspan="3">Total</th><td class="num">@BookFormat.Money(Model.CustomerTotal)</td></tr>
+                    <tr class="books-total-row"><th scope="row" colspan="2">Total</th><td class="num">@BookFormat.Money(Model.CustomerTotal)</td></tr>
+                    @if (Model.Status != "cancelled" && Model.Balance > 0 && Model.Balance != Model.CustomerTotal) { <tr><th scope="row" colspan="2">Still to pay</th><td class="num books-due">@BookFormat.Money(Model.Balance)</td></tr> }
                 </tfoot>
             </table>
-            @if (Model.EditCount > 0) { <p class="form-note">This order was changed @Model.EditCount @(Model.EditCount == 1 ? "time" : "times").</p> }
         </div>
-        <div class="books-actions books-actions--row">
-            <a class="btn btn-outline" href="/books/orders">All my orders</a>
-            @if (Model.CustomerCanEdit)
-            {
-                <a class="btn btn-primary" href="/books/orders/@Model.OrderNo/edit">Change this order</a>
+        @if (Model.CustomerCanEdit)
+        {
+            <div class="books-actions books-actions--pair">
+                <a class="btn btn-outline" href="/books/orders/@Model.OrderNo/edit">Change order</a>
                 <form method="post" action="/books/orders/@Model.OrderNo/cancel" class="books-inline-form" data-confirm-submit="Cancel order @Model.OrderLabel? This cannot be undone.">
                     @Html.AntiForgeryToken()
                     <div class="hp" aria-hidden="true"><label for="bc-website">Website</label><input id="bc-website" name="website" type="text" tabindex="-1" autocomplete="off" /></div>
-                    <button type="submit" class="btn btn-outline btn-danger">Cancel this order</button>
+                    <button type="submit" class="btn btn-outline btn-danger">Cancel order</button>
                 </form>
-            }
-        </div>
-        @if (Model.CustomerCanEdit) { <p class="form-note">You can change or cancel this order until you send a payment.</p> }
-        @if (!Model.CustomerCanEdit && Model.Status != "cancelled") { <p class="form-note">This order can no longer be changed online. For any change, please contact the office.</p> }
+            </div>
+            <p class="form-note">You can change or cancel this order until you send a payment.</p>
+        }
 
-        @if (Model.Status != "cancelled" && (Model.CustomerCanPay || submissions.Count > 0))
+        @if (Model.Status != "cancelled" && (Model.Balance > 0 || submissions.Count > 0))
         {
             <section class="books-card books-pay" id="payment" aria-labelledby="pay-h">
                 <h2 class="h3" id="pay-h">Payment</h2>
-                @if ((bool)(ViewBag.Sent ?? false))
+                @foreach (var sp in submissions)
                 {
-                    <div class="alert alert-success" role="status" tabindex="-1" data-focus>@Icons.Svg("check-circle", 22)<p>Thank you. Your payment has been sent. Our office will check the receipt and confirm your order.</p></div>
+                    <p class="books-sent-line books-sent-@sp.Status"><strong>@sp.StatusLabel</strong> &middot; @sp.AccountName &middot; @sp.CreatedAt.ToOffset(pk).ToString("d MMM", inv)@if (sp.Status == "confirmed") { <text> &middot; @BookFormat.Money(sp.Amount)</text> }@if (sp.Status == "rejected" && !string.IsNullOrEmpty(sp.RejectReason)) { <text> &middot; @sp.RejectReason</text> } &middot; <a href="/books/receipts/@sp.Id.ToString("D")" target="_blank" rel="noopener">View receipt</a></p>
                 }
-                @if (submissions.Count > 0)
+                @if (Model.Balance > 0 && Model.Status != "cancelled")
                 {
-                    <ul class="books-sent">
-                        @foreach (var sp in submissions)
-                        {
-                            <li class="books-sent-item books-sent-@sp.Status">
-                                <span><strong>@BookFormat.Money(sp.Amount)</strong> to @sp.AccountName · @sp.CreatedAt.ToOffset(pk).ToString("d MMM yyyy", System.Globalization.CultureInfo.InvariantCulture)</span>
-                                <span class="books-sent-status">@sp.StatusLabel</span>
-                                @if (sp.Status == "rejected" && !string.IsNullOrEmpty(sp.RejectReason)) { <span class="books-sent-reason">@sp.RejectReason</span> }
-                            </li>
-                        }
-                    </ul>
-                }
-                @if (Model.CustomerCanPay && accounts.Count > 0)
-                {
-                    <p>Still to pay: <strong>@BookFormat.Money(Model.Balance)</strong>. Please pay into one of these accounts, then tell us the amount and attach the receipt.</p>
+                    <p class="books-pay-total">Still to pay <strong>@BookFormat.Money(Model.Balance)</strong></p>
                     <form method="post" action="/books/orders/@Model.OrderNo/pay" enctype="multipart/form-data" class="books-pay-form" novalidate>
                         @Html.AntiForgeryToken()
                         <div class="hp" aria-hidden="true"><label for="bp-website">Website</label><input id="bp-website" name="website" type="text" tabindex="-1" autocomplete="off" /></div>
-                        <fieldset class="books-bank-choice">
-                            <legend>Bank account you paid into</legend>
-                            @for (var i = 0; i < accounts.Count; i++)
-                            {
-                                var a = accounts[i];
-                                <label class="books-bank">
-                                    <input type="radio" name="PayAccount" value="@a.Id.ToString("D")" @(accounts.Count == 1 ? "checked" : null) required />
-                                    <span class="books-bank-body">
-                                        <span class="books-bank-name">@a.Name</span>
-                                        @if (!string.IsNullOrEmpty(a.AccountNumber)) { <span class="books-bank-number">@a.AccountNumber</span> }
-                                        @if (!string.IsNullOrEmpty(a.AccountTitle)) { <span>Account title: @a.AccountTitle</span> }
-                                        @if (!string.IsNullOrEmpty(a.Iban)) { <span>IBAN: @a.Iban</span> }
-                                    </span>
-                                </label>
-                            }
-                        </fieldset>
-                        <div class="books-pay-fields">
-                            <div class="field">
-                                <label for="bp-amount">Amount paid (Rs.)</label>
-                                <input id="bp-amount" name="PayAmount" type="text" inputmode="decimal" autocomplete="off" placeholder="@Model.Balance.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" required />
-                            </div>
-                            <div class="field">
-                                <label for="bp-receipt">Receipt (photo or PDF, up to 10 MB)</label>
-                                <input id="bp-receipt" name="PayReceipt" type="file" accept="image/jpeg,image/png,application/pdf" required />
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Send payment</button>
+                        @Html.Partial("~/Views/Books/_PayOptions.cshtml", accounts, new ViewDataDictionary { { "Id", "bp" } })
+                        <button type="submit" class="btn btn-primary books-btn-block">Send payment</button>
                     </form>
-                }
-                else if (Model.Status != "cancelled" && Model.PendingPayments > 0)
-                {
-                    <p class="form-note">Our office is checking your payment. You will see here when it is confirmed.</p>
                 }
             </section>
         }
     </div>
 </section>
-<script src="~/Scripts/books.js?v=20261120b" defer></script>
+<script src="~/Scripts/books.js?v=20261127a" defer></script>
