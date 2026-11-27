@@ -20,6 +20,10 @@ const BOOKS = [
   const errors = []; admin.on('pageerror', e => errors.push(e.message)); admin.on('dialog', d => d.accept());
   await admin.goto(B + '/admin/login'); await admin.fill('#Email', EMAIL); await admin.fill('#Password', PASSWORD); await admin.click('text=Continue'); await admin.waitForLoadState();
   await admin.fill('#Code', totp(SECRET)); await admin.click('button[type=submit]'); await admin.waitForLoadState();
+  // Order actions: the next step is a button at the top; the others are under More (30 November 2026).
+  const adminAct = async text => { const btn = admin.locator('button:has-text("' + text + '")').first();
+    if (!(await btn.isVisible())) { const more = admin.locator('.admin-order-actions details.admin-more > summary'); if (await more.count()) await more.first().click(); }
+    await btn.click(); };
 
   // --- Books, stock and customers -----------------------------------------------------------
   const itemUrl = {};
@@ -123,7 +127,7 @@ const BOOKS = [
   ok('customer cancelled a new order', (await cust.content()).includes('has been cancelled') && (await status()).includes('Cancelled'));
   await placeOrder([['DEMO Rhymes Book', 1]]);
   const checkedNo = no();
-  await admin.goto(B + '/admin/books/orders/' + checkedNo); await admin.click('button:has-text("Confirm order")'); await admin.waitForLoadState();
+  await admin.goto(B + '/admin/books/orders/' + checkedNo); await adminAct('Confirm order'); await admin.waitForLoadState();
   await cust.goto(B + '/books/orders/' + checkedNo);
   ok('no change or cancel after the office checks', (await cust.locator('button:has-text("Cancel order")').count()) === 0 && (await cust.locator('a:has-text("Change order")').count()) === 0);
   await cust.goto(B + '/books/orders/' + checkedNo + '/edit'); ok('edit page closed after checked', cust.url().endsWith('/books/orders/' + checkedNo));
@@ -134,7 +138,7 @@ const BOOKS = [
     return p.text();
   }, checkedNo);
   ok('cancel refused by the server after checked', forced.includes('can no longer be cancelled'));
-  await admin.goto(B + '/admin/books/orders/' + checkedNo); await admin.click('button:has-text("Cancel order")'); await admin.waitForLoadState();
+  await admin.goto(B + '/admin/books/orders/' + checkedNo); await adminAct('Cancel order'); await admin.waitForLoadState();
 
   // --- Customer pays by bank transfer and attaches the receipt; the office confirms or rejects -----------------
   await admin.goto(B + '/admin/books/accounts'); { const f = admin.locator('form', { hasText: 'Add an account' });
@@ -165,7 +169,7 @@ const BOOKS = [
   await admin.evaluate(() => { const s = document.getElementById('AccountId'); const o = [...s.options].find(x => x.text.includes('DEMO Customer Bank')); s.value = o.value; });
   await admin.click('button:has-text("Save payment")'); await admin.waitForLoadState();
   ok('no manual payment while a customer payment waits', (await admin.content()).includes('so the same money is not counted twice'));
-  await admin.goto(B + '/admin/books/orders/' + payNo); await admin.click('button:has-text("Cancel order")'); await admin.waitForLoadState();
+  await admin.goto(B + '/admin/books/orders/' + payNo); await adminAct('Cancel order'); await admin.waitForLoadState();
   ok('office cannot cancel while a customer payment waits', (await admin.content()).includes('Please confirm or reject it first'));
   ok('office cannot change books while a customer payment waits', (await admin.locator('a:has-text("Change books")').count()) === 0);
   await admin.goto(B + '/admin/books/orders/' + payNo);
@@ -185,7 +189,10 @@ const BOOKS = [
   await cust.goto(B + '/books/orders/' + payNo);
   ok('customer sees confirmed', (await status()).includes('Confirmed') && (await cust.locator('#payment').innerText()).includes('Confirmed'));
   await admin.goto(B + '/admin/books/orders');
-  ok('orders list has campus column', (await admin.locator('thead').first().innerText()).toUpperCase().includes('CAMPUS'));
+  ok('orders list shows the campus with the customer', (await admin.locator('.admin-table tbody').first().innerText()).includes('DEMO Campus'));
+  ok('quick filters with counts', (await admin.locator('.admin-quick > a').count()) === 7 && (await admin.locator('.admin-quick > a[aria-current=page]').innerText()).startsWith('All'));
+  await admin.goto(B + '/admin/books/orders?view=done');
+  ok('Done filter lists only delivered or collected orders', (await admin.locator('.admin-table tbody tr').count()) === 0 || (await admin.locator('.admin-table tbody .admin-status').allInnerTexts()).every(t => /Delivered|Collected/.test(t)));
   // total now 12×350 + 3×320 = 5,160
 
   // --- Office: order page, payments, stock -----------------------------------------------------
@@ -225,9 +232,9 @@ const BOOKS = [
   const r1 = await admin.context().request.get(B + receipt); ok('receipt visible to admin', r1.status() === 200 && r1.headers()['content-type'].startsWith('image/jpeg'));
   const r2 = await cust.context().request.get(B + receipt, { maxRedirects: 0 }); ok('receipt not visible to others', r2.status() !== 200);
   ok('cancel not offered after payment', (await admin.locator('button:has-text("Cancel order")').count()) === 0);
-  await admin.click('button:has-text("Confirm order")'); await admin.waitForLoadState();
-  await admin.click('button:has-text("Mark as packed")'); await admin.waitForLoadState();
-  await admin.click('button:has-text("Mark as delivered")'); await admin.waitForLoadState();
+  await adminAct('Confirm order'); await admin.waitForLoadState();
+  await adminAct('Mark as packed'); await admin.waitForLoadState();
+  await adminAct('Mark as delivered'); await admin.waitForLoadState();
   ok('status delivered', (await admin.locator('.admin-order-head').innerText()).includes('Delivered'));
   await admin.screenshot({ path: OUT + '/admin-order.png', fullPage: true });
 
@@ -254,9 +261,9 @@ const BOOKS = [
   ok('payment refused when stock is short', (await admin.content()).includes('not enough stock'));
   ok('nothing taken when refused', (await stockOf('DEMO Rhymes Book')) === 2);
   await admin.goto(B + '/admin/books/orders/' + officeNo);
-  await admin.click('button:has-text("Mark as delivered")').catch(() => {});
+  await adminAct('Mark as delivered').catch(() => {});
   ok('pick-up order cannot be marked delivered', (await admin.locator('button:has-text("Mark as delivered")').count()) === 0);
-  await admin.click('button:has-text("Cancel order")'); await admin.waitForLoadState();
+  await adminAct('Cancel order'); await admin.waitForLoadState();
   ok('unpaid order can be cancelled', (await admin.locator('.admin-order-head').innerText()).includes('Cancelled'));
 
   // --- Books handed over before any payment: stock comes off then, and not again at payment --------
@@ -264,7 +271,7 @@ const BOOKS = [
   await admin.fill('#' + await admin.locator('tr', { hasText: 'DEMO Colours and Shapes' }).locator('input').getAttribute('id'), '2');
   await admin.click('button:has-text("Place order")'); await admin.waitForLoadState();
   const thirdNo = Number((admin.url().match(/orders\/(\d+)/) || [])[1]);
-  await admin.click('button:has-text("Mark as collected")'); await admin.waitForLoadState();
+  await adminAct('Mark as collected'); await admin.waitForLoadState();
   ok('collected before payment takes stock (30-2=28)', (await stockOf('DEMO Colours and Shapes')) === 28);
   await admin.goto(B + '/admin/books/orders/' + thirdNo);
   ok('no backwards status buttons', (await admin.locator('button:has-text("Confirm order")').count()) === 0);
@@ -312,7 +319,7 @@ const BOOKS = [
   await admin.click('button:has-text("Save payment")'); await admin.waitForLoadState();
   const balanceOf = async () => money(await admin.locator('tr', { hasText: 'Balance' }).last().locator('td').innerText());
   ok('discount order balance 500', (await balanceOf()) === 500);
-  await admin.click('button:has-text("Mark as collected")'); await admin.waitForLoadState();   // only received books can come back
+  await adminAct('Mark as collected'); await admin.waitForLoadState();   // only received books can come back
   // M2: a refund is only paid beyond what the customer still owes on other orders (owes nothing else here).
   const tooEarly = new Date(Date.now() + 5 * 3600e3 + 3 * 86400e3).toISOString().slice(0, 10);
   await admin.goto(returnUrl); await rq('DEMO Alphabet Book', 2); await admin.fill('#ReturnedOn', tooEarly);
@@ -356,7 +363,7 @@ const BOOKS = [
   await admin.goto(B + '/admin/books/customer-accounts');
   ok('customer accounts list shows the number', /C-\d{4}/.test(await admin.locator('table').innerText()));
   await admin.goto(B + '/admin/books');
-  ok('work-to-do list on the overview', (await admin.content()).includes('Books: work to do') && (await admin.content()).includes('Messages to send'));
+  ok('Today page: queues and work lists', (await admin.locator('.admin-queue').count()) === 4 && (await admin.locator('#topack').count()) === 1 && (await admin.locator('#ready').count()) === 1);
 
   // --- Reports ----------------------------------------------------------------------------------
   const today = new Date(Date.now() + 5 * 3600e3).toISOString().slice(0, 10);
@@ -485,7 +492,7 @@ const BOOKS = [
   ok('statement needs the customer to be signed in', anonPdf.status() === 302);
   // Messages tab with filters.
   await admin.goto(B + '/admin/books');
-  ok('Messages tab after Reports', (await admin.locator('.admin-tabs').innerText()).replace(/\s+/g, ' ').includes('Reports Messages'));
+  ok('tabs: Today, Orders, Customers, Books & stock, Reports, More (with Messages)', (await admin.locator('.admin-books-bar .admin-tabs > a').allInnerTexts()).join('|') === 'Today|Orders|Customers|Books & stock|Reports' && (await admin.locator('.admin-tabs-more a:has-text("Messages")').count()) === 1);
   await admin.goto(B + '/admin/books/messages?status=all&kind=payment_received&q=' + encodeURIComponent(cNo));
   const msgList = admin.locator('.admin-msg');
   ok('messages filtered by customer and kind', (await msgList.count()) >= 2 && (await admin.locator('.admin-msg p strong').allInnerTexts()).every(t => t === 'Payment received'));
@@ -506,7 +513,7 @@ const BOOKS = [
   ok('no remove button on a paid order', (await admin.locator('button:has-text("Remove this order")').count()) === 0);
   await admin.goto(B + '/admin/books/orders/' + cancelNo);
   await admin.screenshot({ path: OUT + '/admin-remove-order.png', fullPage: true });
-  await admin.locator('button:has-text("Remove this order")').click(); await admin.waitForLoadState();
+  await adminAct('Remove this order'); await admin.waitForLoadState();
   ok('cancelled order removed', (await admin.content()).includes('The cancelled order was removed'));
   ok('removed order not in the list', !(await admin.locator('.admin-table').innerText()).includes('BK-' + cancelNo));
   const gone = await admin.context().request.get(B + '/admin/books/orders/' + cancelNo); ok('removed order page is gone for the office', gone.status() === 404);

@@ -266,3 +266,12 @@ tools/compile-check/      Mono C# compile check with stub MVC/Dapper types (does
   (order and balance). The office must type the amount on the receipt when confirming (`Confirm(id, actor, received,
   allowCredit)`, written inside the confirm transaction); extra on a balance payment becomes credit only when ticked.
 - Session state is off (`Web.config`): never use TempData; pass messages in the address.
+
+## Books admin, simpler (owner's request, 30 November 2026)
+
+- `Views/Admin/Books/_Tabs.cshtml`: Today, Orders, Customers, Books & stock, Reports, More (Customer accounts, Messages,
+  Return requests, Payment accounts), plus one search box (`/admin/books/find`) and "+ New order" on every Books page.
+- Today (`Index.cshtml`): queues and work lists (`_WorkList.cshtml`) with one button each; status buttons there post
+  `back=home`. Orders: quick filters `?view=tocheck|new|topack|ready|unpaid|done` (`BookOrderRepository.ViewCounts`).
+  Order page: one next-step button, "+ Payment", and More (print, PDF, other statuses, change books, return, cancel,
+  remove); two columns. The customer order form keeps classes one after the other with quantity boxes (no tabs).

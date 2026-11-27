@@ -252,6 +252,7 @@
     <Content Include="Views\Admin\Books\Messages.cshtml" />
     <Content Include="Views\Admin\Books\_Message.cshtml" />
     <Content Include="Views\Admin\Books\_SentPayment.cshtml" />
+    <Content Include="Views\Admin\Books\_WorkList.cshtml" />
     <Content Include="Views\Admin\Books\ReturnRequests.cshtml" />
     <Content Include="Views\Admin\Books\ReturnRequest.cshtml" />
     <Content Include="Views\Admin\Books\Orders.cshtml" />

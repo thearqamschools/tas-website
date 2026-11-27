@@ -390,3 +390,65 @@ body.invoice-page { display: block; background: var(--grey); font-family: var(--
 /* Receipt preview next to a payment to check (27 November 2026). */
 .admin-receipt-thumb { display: inline-block; margin: .25rem 0 .5rem; border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden; background: var(--grey); }
 .admin-receipt-thumb img { display: block; max-width: 220px; max-height: 160px; object-fit: contain; }
+
+/* ===== Books admin, simpler (owner's request, 30 November 2026) ===== */
+.admin-back { margin: 0 0 .25rem; }
+.admin-order-top { align-items: center; flex-wrap: wrap; gap: .75rem; }
+.admin-order-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.admin-order-actions form { margin: 0; }
+.admin-more { position: relative; }
+.admin-more > summary { list-style: none; cursor: pointer; }
+.admin-more > summary::-webkit-details-marker { display: none; }
+.admin-more-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; min-width: 220px; padding: .375rem; background: var(--white); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: 0 12px 28px rgba(15,23,42,.14); display: grid; }
+.admin-more-menu form { margin: 0; }
+.admin-more-menu a, .admin-more-menu button { display: block; width: 100%; padding: .5rem .75rem; border: 0; border-radius: var(--r-sm); background: none; font: inherit; font-size: .9375rem; color: var(--ink); text-align: left; text-decoration: none; cursor: pointer; }
+.admin-more-menu a:hover, .admin-more-menu button:hover { background: var(--grey); }
+.admin-more-menu .is-danger { color: var(--red, #dc2626); }
+.admin-track { list-style: none; display: flex; margin: .25rem 0 1.25rem; padding: 0; max-width: 46rem; }
+.admin-track li { flex: 1; position: relative; text-align: center; font-size: .8125rem; font-weight: 600; color: var(--muted); }
+.admin-track li::before { content: ""; display: block; width: 16px; height: 16px; margin: 0 auto 4px; border-radius: 50%; border: 2px solid var(--line); background: var(--white); position: relative; z-index: 1; }
+.admin-track li + li::after { content: ""; position: absolute; top: 7px; right: 50%; width: 100%; height: 2px; background: var(--line); }
+.admin-track li.is-done { color: #047857; }
+.admin-track li.is-done::before { background: #047857; border-color: #047857; }
+.admin-track li.is-done::after { background: #047857; }
+.admin-track li.is-current { color: var(--blue); }
+.admin-track li.is-current::before { border: 5px solid var(--blue); }
+.admin-order-grid { display: grid; gap: 1rem; align-items: start; }
+@media (min-width: 64rem) { .admin-order-grid { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); } }
+.admin-order-main > .admin-card, .admin-order-side > .admin-card { margin-top: 0; margin-bottom: 1rem; }
+.admin-details--tight { grid-template-columns: 7rem 1fr; }
+.admin-books-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1rem; margin: 0 0 1.25rem; }
+.admin-books-bar .admin-tabs { margin: 0; }
+.admin-tabs-more > summary { display: inline-flex; align-items: center; }
+.admin-tabs-more .admin-more-menu { left: 0; right: auto; }
+.admin-books-tools { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.admin-books-search { display: flex; gap: .375rem; margin: 0; }
+.admin-books-search input { width: 18rem; max-width: 60vw; }
+.admin-books-bar .admin-tabs { overflow: visible; flex-wrap: wrap; padding-bottom: 0; }
+.admin-tabs-more > summary { min-height: 44px; padding: .5rem .875rem; border: 1px solid var(--line); border-radius: 999px; background: var(--white); color: var(--ink); font-size: .9375rem; cursor: pointer; list-style: none; }
+.admin-tabs-more > summary[aria-current="page"] { background: var(--blue); border-color: var(--blue); color: var(--white); }
+.admin-quick { display: flex; flex-wrap: wrap; align-items: center; gap: .375rem; margin: 0 0 1rem; }
+.admin-quick > a, .admin-quick-dates > summary { display: inline-flex; align-items: center; gap: .375rem; min-height: 38px; padding: .375rem .875rem; border: 1px solid var(--line); border-radius: 999px; background: var(--white); color: var(--ink); text-decoration: none; font-size: .875rem; font-weight: 600; cursor: pointer; list-style: none; }
+.admin-quick > a span { color: var(--muted); font-weight: 500; }
+.admin-quick > a[aria-current="page"] { background: var(--ink); border-color: var(--ink); color: var(--white); }
+.admin-quick > a[aria-current="page"] span { color: rgba(255,255,255,.75); }
+.admin-dates-form { padding: .75rem; gap: .5rem; min-width: 240px; }
+.admin-dates-form .admin-field { margin: 0; }
+.admin-queues { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: .75rem; margin: 0 0 .5rem; }
+.admin-queue { display: grid; padding: 1rem; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--white); color: var(--muted); font-weight: 600; text-decoration: none; }
+.admin-queue strong { font-size: 1.75rem; line-height: 1.1; color: var(--ink); }
+.admin-queue.is-hot { background: #fdeced; border-color: #f6c4c6; }
+.admin-queue.is-hot strong { color: var(--red, #dc2626); }
+.admin-queue-more { margin: 0 0 1.25rem; font-size: .875rem; color: var(--muted); }
+.admin-count { display: inline-block; margin-left: .375rem; padding: 0 .5rem; border-radius: 999px; background: #fdeced; color: var(--red, #dc2626); font-size: .75rem; vertical-align: middle; }
+.admin-count--blue { background: var(--blue-50, #eef2fb); color: var(--blue); }
+.admin-work { list-style: none; margin: 0; padding: 0; }
+.admin-work li { display: flex; align-items: center; gap: 1rem; padding: .75rem 0; border-top: 1px solid var(--line); }
+.admin-work li:first-child { border-top: 0; }
+.admin-work form { margin: 0; }
+.admin-work-main { flex: 1; min-width: 0; display: grid; color: var(--ink); text-decoration: none; }
+.admin-work-main span { font-size: .875rem; color: var(--muted); }
+@media (hover: hover) { .admin-work-main:hover strong { text-decoration: underline; } }
+.admin-books-search input { min-height: 44px; padding: .5rem .75rem; border: 1px solid #94a3b8; border-radius: var(--r-sm); font: inherit; font-size: .9375rem; background: var(--white); }
+.admin-books-search input:focus-visible { outline: 3px solid var(--blue); outline-offset: 1px; }
+.admin-order-main .admin-table td:first-child { white-space: nowrap; }

@@ -7,7 +7,7 @@
     var pk = TimeSpan.FromHours(5);
 }
 <div class="admin-page-head"><h1>Return requests</h1></div>
-@Html.Partial("~/Views/Admin/Books/_Tabs.cshtml", "customer-accounts")
+@Html.Partial("~/Views/Admin/Books/_Tabs.cshtml", "return-requests")
 <nav class="admin-subtabs" aria-label="Status">
     @foreach (var v in new[] { new[] { "", "All" }, new[] { "requested", "New" }, new[] { "approved", "Approved, books to come" }, new[] { "received", "Received" }, new[] { "rejected", "Not approved" } })
     {

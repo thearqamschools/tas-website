@@ -106,6 +106,8 @@ namespace TheArqamSchools.Web.Models
         public int SentPayments { get; set; }
         /// <summary>Payments the customer has sent that the office has not checked yet.</summary>
         public int PendingPayments { get; set; }
+        /// <summary>Number of books in the order (Orders list only).</summary>
+        public int BookCount { get; set; }
         public DateTimeOffset? StockTakenAt { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public IList<BookOrderLine> Lines { get; set; }
@@ -382,6 +384,8 @@ namespace TheArqamSchools.Web.Models
 
     public class BookOrderFilter
     {
+        /// <summary>Quick filter (30 November 2026): tocheck, new, topack, ready, unpaid, done; empty for all.</summary>
+        public string View { get; set; }
         public string Status { get; set; }
         public string Payment { get; set; }
         public DateTime? From { get; set; }

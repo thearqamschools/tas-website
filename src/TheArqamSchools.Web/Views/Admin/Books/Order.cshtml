@@ -16,53 +16,76 @@
         next.Add(o.Fulfilment == "delivery" ? new KeyValuePair<string, string>("delivered", "Mark as delivered") : new KeyValuePair<string, string>("collected", "Mark as collected"));
         if (o.PaidTotal == 0 && o.DiscountTotal == 0) { next.Add(new KeyValuePair<string, string>("cancelled", "Cancel order")); }
     }
+    // Owner's request (30 November 2026): one big "next step" button; the other actions under More.
+    var primary = next.FirstOrDefault(n => n.Key != "cancelled");
+    var others = next.Where(n => n.Key != "cancelled" && n.Key != primary.Key).ToList();
+    var canCancel = next.Any(n => n.Key == "cancelled");
+    var done = o.Status == "delivered" || o.Status == "collected";
+    var steps = new[]
+    {
+        new { Text = "Placed", Done = true },
+        new { Text = "Confirmed", Done = o.Status != "new" },
+        new { Text = "Packed", Done = o.Status == "packed" || done },
+        new { Text = o.Fulfilment == "delivery" ? "Delivered" : "Collected", Done = done }
+    };
+    var current = steps.Select((x, i) => new { x, i }).Where(t => !t.x.Done).Select(t => t.i).DefaultIfEmpty(-1).First();
 }
-<p><a href="/admin/books/orders">&larr; Book orders</a></p>
-<div class="admin-page-head">
+<p class="admin-back"><a href="/admin/books/orders">&larr; Orders</a></p>
+<div class="admin-page-head admin-order-top">
     <div class="admin-order-head">
-        <h1>Order @o.OrderLabel</h1>
-        <span class="admin-status admin-status--@(o.Status == "new" ? "new" : o.Status == "cancelled" ? "spam" : (o.Status == "delivered" || o.Status == "collected") ? "closed" : "in_progress")">@BookFormat.StatusLabel(o.Status)</span>
+        <h1>@o.OrderLabel</h1>
+        <span class="admin-status admin-status--@(o.Status == "new" ? "new" : o.Status == "cancelled" ? "spam" : done ? "closed" : "in_progress")">@BookFormat.StatusLabel(o.Status)</span>
         <span class="admin-status">@o.PaymentStatus</span>
+        @if (o.Status != "cancelled" && o.Balance > 0) { <span class="admin-tag admin-tag--warn">@BookFormat.Money(o.Balance) to pay</span> }
     </div>
-    <div class="admin-status-buttons">
-        <a class="admin-button admin-button--secondary" href="/admin/books/orders/@o.OrderNo/invoice" target="_blank" rel="noopener">Print invoice</a>
-        <a class="admin-button admin-button--secondary" href="/admin/books/orders/@o.OrderNo/invoice-pdf">Download PDF</a>
+    <div class="admin-order-actions">
+        @if (Model.CanOrders && primary.Key != null)
+        {
+            <form method="post" action="/admin/books/orders/@o.OrderNo/status">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="status" value="@primary.Key" />
+                <button type="submit" class="admin-button">@primary.Value &rarr;</button>
+            </form>
+        }
+        @if (Model.CanPay && o.Status != "cancelled" && o.Balance > 0) { <a class="admin-button admin-button--secondary" href="#payment">+ Payment</a> }
+        <details class="admin-more">
+            <summary class="admin-button admin-button--secondary">More &#9662;</summary>
+            <div class="admin-more-menu">
+                <a href="/admin/books/orders/@o.OrderNo/invoice" target="_blank" rel="noopener">Print invoice</a>
+                <a href="/admin/books/orders/@o.OrderNo/invoice-pdf">Download PDF</a>
+                @if (Model.CanOrders)
+                {
+                    foreach (var n in others)
+                    {
+                        <form method="post" action="/admin/books/orders/@o.OrderNo/status">@Html.AntiForgeryToken()<input type="hidden" name="status" value="@n.Key" /><button type="submit">@n.Value</button></form>
+                    }
+                    if (o.OfficeCanEdit) { <a href="/admin/books/orders/@o.OrderNo/edit">Change books</a> }
+                }
+                <a href="/admin/books/customer-accounts/@o.CustomerId.ToString("D")/return">Record a return</a>
+                <a href="/admin/books/customer-accounts/@o.CustomerId.ToString("D")">Customer account</a>
+                @if (Model.CanOrders && canCancel)
+                {
+                    <form method="post" action="/admin/books/orders/@o.OrderNo/status">@Html.AntiForgeryToken()<input type="hidden" name="status" value="cancelled" /><button type="submit" class="is-danger" data-confirm="Cancel order @o.OrderLabel?">Cancel order</button></form>
+                }
+                @if (Model.CanRemove)
+                {
+                    <form method="post" action="/admin/books/orders/@o.OrderNo/remove">@Html.AntiForgeryToken()<button type="submit" class="is-danger" data-confirm="Remove cancelled order @o.OrderLabel? It will be hidden everywhere (kept in the database).">Remove this order</button></form>
+                }
+            </div>
+        </details>
     </div>
 </div>
 @if (Model.Notice != null) { <div class="admin-alert admin-alert--success" role="status"><p>@Model.Notice</p></div> }
 @if (Model.Error != null) { <div class="admin-alert admin-alert--error" role="alert"><p>@Model.Error</p></div> }
 
-<section class="admin-card">
-    <dl class="admin-details">
-        <dt>Customer</dt><dd><a href="/admin/books/customers/@o.CustomerId.ToString("D")">@o.CustomerName</a> · @Mobile.Format(o.CustomerMobile)@if (!string.IsNullOrEmpty(o.CampusName)) { <text> · @o.CampusName</text> }</dd>
-        <dt>Placed</dt><dd>@o.CreatedAt.ToOffset(pk).ToString("dddd, d MMMM yyyy, h:mm tt", inv) · @(o.Source == "office" ? "by the office" : "on the website")</dd>
-        <dt>@BookFormat.FulfilmentLabel(o.Fulfilment)</dt><dd>@(o.Fulfilment == "delivery" ? o.DeliveryAddress : "The customer collects the books.")</dd>
-        <dt>Stock</dt><dd>@(o.StockTakenAt.HasValue ? "Taken off on " + o.StockTakenAt.Value.ToOffset(pk).ToString("d MMM yyyy", inv) + "." : "Not taken yet (taken at the first payment, or when the books are delivered or collected).")</dd>
-    </dl>
-    @if (Model.CanOrders && next.Count > 0)
-    {
-        <div class="admin-status-buttons">
-            @foreach (var n in next)
-            {
-                <form method="post" action="/admin/books/orders/@o.OrderNo/status">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="status" value="@n.Key" />
-                    <button type="submit" class="admin-button@(n.Key == "cancelled" ? " admin-button--secondary admin-danger" : n.Key == "checked" || n.Key == "packed" ? "" : " admin-button--secondary")" data-confirm="@(n.Key == "cancelled" ? "Cancel order " + o.OrderLabel + "?" : null)">@n.Value</button>
-                </form>
-            }
-            @if (o.OfficeCanEdit) { <a class="admin-button admin-button--secondary" href="/admin/books/orders/@o.OrderNo/edit">Change books</a> }
-        </div>
-    }
-    @if (Model.CanRemove)
-    {
-        <form method="post" action="/admin/books/orders/@o.OrderNo/remove" class="admin-remove-order">
-            @Html.AntiForgeryToken()
-            <p class="admin-muted">This cancelled order has no payment, stock or return. A Super Admin can remove it: it is then hidden from all lists, reports and the customer's pages (kept in the database, not deleted).</p>
-            <button type="submit" class="admin-button admin-button--secondary admin-danger" data-confirm="Remove cancelled order @o.OrderLabel? It will be hidden everywhere.">Remove this order</button>
-        </form>
-    }
-</section>
-
+@if (o.Status != "cancelled")
+{
+    <ol class="admin-track" aria-label="Order progress">
+        @for (var i = 0; i < steps.Length; i++) { <li class="@(steps[i].Done ? "is-done" : i == current ? "is-current" : null)">@steps[i].Text</li> }
+    </ol>
+}
+<div class="admin-order-grid">
+<div class="admin-order-main">
 <section class="admin-card">
     <h2>Books</h2>
     <div class="admin-table-wrap">
@@ -87,17 +110,6 @@
     </table>
 </section>
 
-@if (Model.Submissions != null && Model.Submissions.Count > 0)
-{
-    <section class="admin-card" id="sent" aria-labelledby="sent-h">
-        <h2 id="sent-h">Payments sent by the customer</h2>
-        <p class="admin-muted">Open the receipt and check that the money has arrived in the account. Confirm records the payment (and takes the books off stock at the first payment) and confirms the order.</p>
-        @foreach (var sp in Model.Submissions)
-        {
-            @Html.Partial("~/Views/Admin/Books/_SentPayment.cshtml", sp, new ViewDataDictionary { { "CanPay", Model.CanPay }, { "Back", "order" } })
-        }
-    </section>
-}
 <section class="admin-card" id="payments">
     <h2>Payments</h2>
     @if (Model.Payments.Count == 0)
@@ -214,6 +226,30 @@
     <p class="admin-hint">Returns are recorded per customer, because the books may come from several orders: <a href="/admin/books/customer-accounts/@o.CustomerId.ToString("D")/return">Record a return for @o.CustomerName</a>.</p>
 </section>
 
+</div>
+<aside class="admin-order-side">
+    <section class="admin-card">
+        <h2>Customer</h2>
+        <dl class="admin-details admin-details--tight">
+            <dt>Name</dt><dd><a href="/admin/books/customer-accounts/@o.CustomerId.ToString("D")">@o.CustomerName</a></dd>
+            <dt>Mobile</dt><dd>@Mobile.Format(o.CustomerMobile) &middot; <a href="@Contact.WhatsAppUrl(o.CustomerMobile)" target="_blank" rel="noopener">WhatsApp</a></dd>
+            @if (!string.IsNullOrEmpty(o.CampusName)) { <dt>Campus</dt><dd>@o.CampusName</dd> }
+            <dt>Gets books</dt><dd>@(o.Fulfilment == "delivery" ? "Delivery: " + o.DeliveryAddress : "Pick up from the office")</dd>
+            <dt>Placed</dt><dd>@o.CreatedAt.ToOffset(pk).ToString("d MMM yyyy, h:mm tt", inv) &middot; @(o.Source == "office" ? "by the office" : "on the website")</dd>
+            <dt>Stock</dt><dd>@(o.StockTakenAt.HasValue ? "Taken off on " + o.StockTakenAt.Value.ToOffset(pk).ToString("d MMM yyyy", inv) : "Not taken yet (at the first payment)")</dd>
+        </dl>
+    </section>
+@if (Model.Submissions != null && Model.Submissions.Count > 0)
+{
+    <section class="admin-card" id="sent" aria-labelledby="sent-h">
+        <h2 id="sent-h">Payments sent by the customer</h2>
+        <p class="admin-muted">Open the receipt and check that the money has arrived in the account. Confirm records the payment (and takes the books off stock at the first payment) and confirms the order.</p>
+        @foreach (var sp in Model.Submissions)
+        {
+            @Html.Partial("~/Views/Admin/Books/_SentPayment.cshtml", sp, new ViewDataDictionary { { "CanPay", Model.CanPay }, { "Back", "order" } })
+        }
+    </section>
+}
 @if (o.Edits != null && o.Edits.Count > 0)
 {
     <section class="admin-card">
@@ -229,6 +265,8 @@
         </ul>
     </section>
 }
+</aside>
+</div>
 <script src="/Scripts/admin-form.js?v=20261120c" defer></script>
 @functions {
     static IEnumerable<string> EditLines(string json)

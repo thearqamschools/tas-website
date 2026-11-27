@@ -1,12 +1,34 @@
 @model string
-@* Tabs of the Books area. *@
-<nav class="admin-tabs" aria-label="Books">
-    <a href="/admin/books" @(Model == "home" ? "aria-current=page" : null)>Overview</a>
-    <a href="/admin/books/orders" @(Model == "orders" ? "aria-current=page" : null)>Orders</a>
-    <a href="/admin/books/items" @(Model == "items" ? "aria-current=page" : null)>Books &amp; stock</a>
-    <a href="/admin/books/customers" @(Model == "customers" ? "aria-current=page" : null)>Customers</a>
-    <a href="/admin/books/customer-accounts" @(Model == "customer-accounts" ? "aria-current=page" : null)>Customer Accounts</a>
-    <a href="/admin/books/accounts" @(Model == "accounts" ? "aria-current=page" : null)>Payment Accounts</a>
-    <a href="/admin/books/reports" @(Model == "reports" ? "aria-current=page" : null)>Reports</a>
-    <a href="/admin/books/messages" @(Model == "messages" ? "aria-current=page" : null)>Messages</a>
-</nav>
+@* Books menu (owner's request, 30 November 2026): Today, Orders, Customers, Books & stock, Reports, and More for the
+   less used pages; one search box (barcode, order number, mobile or name) and "+ New order" on every Books page. *@
+@{
+    var canOrders = TheArqamSchools.Web.Infrastructure.Auth.AdminAuth.Current(Context).Can("books.orders");
+    var inMore = Model == "accounts" || Model == "messages" || Model == "return-requests";
+    Func<string, string, string, IHtmlString> tab = (key, href, text) => new HtmlString("<a href=\"" + href + "\"" + (Model == key ? " aria-current=\"page\"" : "") + ">" + HttpUtility.HtmlEncode(text) + "</a>");
+}
+<div class="admin-books-bar">
+    <nav class="admin-tabs" aria-label="Books">
+        @tab("home", "/admin/books", "Today")
+        @tab("orders", "/admin/books/orders", "Orders")
+        <a href="/admin/books/customers" @(Model == "customers" || Model == "customer-accounts" ? "aria-current=page" : null)>Customers</a>
+        @tab("items", "/admin/books/items", "Books & stock")
+        @tab("reports", "/admin/books/reports", "Reports")
+        <details class="admin-more admin-tabs-more">
+            <summary @(inMore ? "aria-current=page" : null)>More &#9662;</summary>
+            <div class="admin-more-menu">
+                <a href="/admin/books/customer-accounts">Customer accounts</a>
+                <a href="/admin/books/messages">Messages</a>
+                <a href="/admin/books/return-requests">Return requests</a>
+                <a href="/admin/books/accounts">Payment accounts</a>
+            </div>
+        </details>
+    </nav>
+    <div class="admin-books-tools">
+        <form method="get" action="/admin/books/find" class="admin-books-search" role="search">
+            <label for="books-find" class="sr-only">Find an order: scan the barcode, or type the order number, mobile or name</label>
+            <input type="search" id="books-find" name="code" maxlength="60" placeholder="Scan barcode, order no., mobile or name" autocomplete="off" />
+            <button type="submit" class="admin-button admin-button--secondary">Find</button>
+        </form>
+        @if (canOrders) { <a class="admin-button" href="/admin/books/orders/new">+ New order</a> }
+    </div>
+</div>

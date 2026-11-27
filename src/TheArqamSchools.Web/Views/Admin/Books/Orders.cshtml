@@ -8,31 +8,35 @@
     var pk = TimeSpan.FromHours(5);
     Func<DateTime?, string> d = x => x.HasValue ? x.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) : "";
 }
-<div class="admin-page-head"><h1>Book orders</h1>@if ((bool)ViewBag.CanOrders) { <a class="admin-button" href="/admin/books/orders/new">New order for a customer</a> }</div>
+<div class="admin-page-head"><h1>Orders</h1></div>
 @Html.Partial("~/Views/Admin/Books/_Tabs.cshtml", "orders")
 @if (Request.QueryString["notice"] == "removed") { <div class="admin-alert admin-alert--success" role="status"><p>The cancelled order was removed. It is hidden everywhere and kept in the database.</p></div> }
-<form method="get" action="/admin/books/find" class="admin-search admin-scan" role="search">
-    <label for="code">Scan the barcode or type the order ID</label>
-    <input type="search" id="code" name="code" placeholder="1001" maxlength="30" autocomplete="off" autofocus />
-    <button type="submit" class="admin-button">Open order</button>
-</form>
-<form method="get" action="/admin/books/orders" class="admin-filters admin-filters--orders">
-    <div class="admin-field"><label for="status">Status</label>
-        <select id="status" name="status"><option value="">All</option>@foreach (var s in BookOrderRepositoryStatuses()) { <option value="@s" @(f.Status == s ? "selected" : null)>@BookFormat.StatusLabel(s)</option> }</select></div>
-    <div class="admin-field"><label for="payment">Payment</label>
-        <select id="payment" name="payment">
-            <option value="">All</option>
-            <option value="pending" @(f.Payment == "pending" ? "selected" : null)>Pending</option>
-            <option value="part" @(f.Payment == "part" ? "selected" : null)>Part paid</option>
-            <option value="paid" @(f.Payment == "paid" ? "selected" : null)>Paid</option>
-            <option value="unpaid" @(f.Payment == "unpaid" ? "selected" : null)>Not fully paid</option>
-            <option value="tocheck" @(f.Payment == "tocheck" ? "selected" : null)>Sent by customer, to check</option>
-        </select></div>
-    <div class="admin-field"><label for="from">From</label><input type="date" id="from" name="from" value="@d(f.From)" /></div>
-    <div class="admin-field"><label for="to">To</label><input type="date" id="to" name="to" value="@d(f.To)" /></div>
-    <div class="admin-field"><label for="q">Mobile, name or order</label><input type="search" id="q" name="q" value="@f.Query" maxlength="60" /></div>
-    <div class="admin-filters-actions"><button type="submit" class="admin-button">Show</button> <a href="/admin/books/orders">Clear</a></div>
-</form>
+@{
+    var counts = ViewBag.Counts as IDictionary<string, int>;
+    var chips = new[] { new[] { "", "All" }, new[] { "tocheck", "Payment to check" }, new[] { "new", "New" }, new[] { "topack", "To pack" }, new[] { "ready", "Ready" }, new[] { "unpaid", "Unpaid" }, new[] { "done", "Done" } };
+    var cur = f.View ?? "";
+    var dated = f.From.HasValue || f.To.HasValue;
+    Func<string, string> href = v => "/admin/books/orders" + (v.Length > 0 ? "?view=" + v : "");
+}
+<nav class="admin-quick" aria-label="Show orders">
+    @foreach (var c in chips)
+    {
+        <a href="@href(c[0])" @(cur == c[0] && f.Query == null && !dated ? "aria-current=page" : null)>@c[1] <span>@counts[c[0]].ToString("N0")</span></a>
+    }
+    <details class="admin-more admin-quick-dates" @(dated ? "open" : null)>
+        <summary>Dates&hellip;</summary>
+        <form method="get" action="/admin/books/orders" class="admin-more-menu admin-dates-form">
+            @if (cur.Length > 0) { <input type="hidden" name="view" value="@cur" /> }
+            <div class="admin-field"><label for="from">From</label><input type="date" id="from" name="from" value="@d(f.From)" /></div>
+            <div class="admin-field"><label for="to">To</label><input type="date" id="to" name="to" value="@d(f.To)" /></div>
+            <button type="submit" class="admin-button">Show</button>
+        </form>
+    </details>
+</nav>
+@if (f.Query != null || dated)
+{
+    <p class="admin-muted">Showing @(f.Query != null ? "\"" + f.Query + "\"" : "") @(dated ? (d(f.From) + " to " + d(f.To)) : "") &middot; <a href="/admin/books/orders">Clear</a></p>
+}
 @if (Model.Count == 0)
 {
     <section class="admin-card"><p>No orders found.</p></section>
@@ -42,24 +46,18 @@ else
     <p class="admin-muted">@Model.Count.ToString("N0") orders@(Model.Count == 500 ? " (the newest 500; narrow the filters to see others)" : "")</p>
     <div class="admin-table-wrap admin-table-wrap--fit">
         <table class="admin-table admin-table--orders">
-            <thead><tr><th scope="col">Order</th><th scope="col">Date &amp; time</th><th scope="col">Customer</th><th scope="col">Campus</th><th scope="col">Get</th><th scope="col" class="num">Total</th><th scope="col" class="num">Paid</th><th scope="col" class="num">Balance</th><th scope="col">Status</th></tr></thead>
+            <thead><tr><th scope="col">Order</th><th scope="col">Customer</th><th scope="col">Books</th><th scope="col" class="num">Total</th><th scope="col" class="num">To pay</th><th scope="col">Status</th></tr></thead>
             <tbody>
                 @foreach (var o in Model)
                 {
                     <tr class="admin-row-link@(o.Status == "cancelled" ? " is-muted" : null)" data-href="/admin/books/orders/@o.OrderNo">
                         <td><a href="/admin/books/orders/@o.OrderNo"><strong>@o.OrderLabel</strong></a>
-                            @if (o.EditCount > 0 || o.Source == "office" || o.PendingPayments > 0)
-                            {
-                                <span class="admin-cell-sub">@if (o.PendingPayments > 0) { <span class="admin-tag admin-tag--warn">payment to check</span> }@if (o.EditCount > 0) { <span class="admin-tag">edited</span> }@if (o.Source == "office") { <span class="admin-tag">office</span> }</span>
-                            }</td>
-                        <td>@o.CreatedAt.ToOffset(pk).ToString("d MMM yyyy", System.Globalization.CultureInfo.InvariantCulture)<span class="admin-cell-sub">@o.CreatedAt.ToOffset(pk).ToString("h:mm tt", System.Globalization.CultureInfo.InvariantCulture)</span></td>
-                        <td>@o.CustomerName<span class="admin-cell-sub">@Mobile.Format(o.CustomerMobile)</span></td>
-                        <td>@o.CampusName</td>
-                        <td>@BookFormat.FulfilmentLabel(o.Fulfilment)</td>
-                        <td class="num">@BookFormat.Money(o.Subtotal)@if (o.DiscountTotal > 0) { <span class="admin-cell-sub">discount @BookFormat.Money(o.DiscountTotal)</span> }</td>
-                        <td class="num">@BookFormat.Money(o.PaidTotal)</td>
-                        <td class="num@(o.Balance > 0 && o.Status != "cancelled" ? " is-low" : "")">@BookFormat.Money(o.Balance)</td>
-                        <td><span class="admin-status admin-status--@StatusClass(o.Status)">@BookFormat.StatusLabel(o.Status)</span><span class="admin-cell-sub">@o.PaymentStatus</span></td>
+                            <span class="admin-cell-sub">@o.CreatedAt.ToOffset(pk).ToString("d MMM, h:mm tt", System.Globalization.CultureInfo.InvariantCulture)@if (o.Source == "office") { <text> &middot; office</text> }@if (o.EditCount > 0) { <text> &middot; edited</text> }</span></td>
+                        <td>@o.CustomerName<span class="admin-cell-sub">@Mobile.Format(o.CustomerMobile)@if (!string.IsNullOrEmpty(o.CampusName)) { <text> &middot; @o.CampusName</text> }</span></td>
+                        <td>@o.BookCount<span class="admin-cell-sub">@BookFormat.FulfilmentLabel(o.Fulfilment)</span></td>
+                        <td class="num">@BookFormat.Money(o.Subtotal)</td>
+                        <td class="num@(o.Balance > 0 && o.Status != "cancelled" ? " is-low" : "")">@(o.Status == "cancelled" ? "\u2013" : BookFormat.Money(Math.Max(0m, o.Balance)))</td>
+                        <td>@if (o.PendingPayments > 0 && o.Status != "cancelled") { <span class="admin-tag admin-tag--warn">payment to check</span> } else { <span class="admin-status admin-status--@StatusClass(o.Status)">@BookFormat.StatusLabel(o.Status)</span> }<span class="admin-cell-sub">@o.PaymentStatus</span></td>
                     </tr>
                 }
             </tbody>

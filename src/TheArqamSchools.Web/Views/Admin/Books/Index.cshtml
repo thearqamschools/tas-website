@@ -3,46 +3,59 @@
     ViewBag.Title = "Books";
     var low = ViewBag.LowStock as IList<BookItem>;
 }
-<div class="admin-page-head"><h1>Books</h1><a href="/books" target="_blank" rel="noopener">Open the order page</a></div>
+<div class="admin-page-head"><h1>Today</h1><a href="/books" target="_blank" rel="noopener">Open the order page</a></div>
 @Html.Partial("~/Views/Admin/Books/_Tabs.cshtml", "home")
 @if (!string.IsNullOrEmpty(Request.Unvalidated.QueryString["error"])) { <div class="admin-alert admin-alert--error" role="alert"><p>@Request.Unvalidated.QueryString["error"]</p></div> }
 @if (Request.QueryString["notice"] == "sentconfirmed") { <div class="admin-alert admin-alert--success" role="status"><p>Payment confirmed and recorded.</p></div> }
 @if (Request.QueryString["notice"] == "sentrejected") { <div class="admin-alert admin-alert--success" role="status"><p>Payment marked as not accepted. A message for the customer is ready under Messages.</p></div> }
-@{ var td = TheArqamSchools.Web.Data.BookCustomerAccountRepository.GetToDo(); }
-<section class="admin-card" aria-labelledby="todo-h">
-    <h2 id="todo-h">Books: work to do</h2>
-    <div class="admin-todo">
-        <a class="@(td.NewOrders > 0 ? "has-work" : null)" href="/admin/books/orders?status=new"><strong>@td.NewOrders</strong>New orders</a>
-        <a class="@(td.PaymentsToCheck > 0 ? "has-work" : null)" href="/admin/books/orders?payment=tocheck"><strong>@td.PaymentsToCheck</strong>Payments to check</a>
-        <a class="@(td.RefundsPending > 0 ? "has-work" : null)" href="/admin/books/customer-accounts"><strong>@td.RefundsPending</strong>Refunds to pay back</a>
-        <a class="@(td.ReturnRequests + td.ReturnsToReceive > 0 ? "has-work" : null)" href="/admin/books/return-requests"><strong>@(td.ReturnRequests + td.ReturnsToReceive)</strong>Return requests</a>
-        <a class="@(td.MessagesToSend > 0 ? "has-work" : null)" href="/admin/books/messages"><strong>@td.MessagesToSend</strong>Messages to send</a>
-        <a class="@(td.OverdueCustomers > 0 ? "has-work" : null)" href="/admin/books/reports?kind=aging"><strong>@td.OverdueCustomers</strong>Customers overdue</a>
-    </div>
-</section>
+@if (Request.QueryString["notice"] == "status") { <div class="admin-alert admin-alert--success" role="status"><p>Order BK-@Request.QueryString["no"] updated.</p></div> }
+@{
+    // Today (owner's request, 30 November 2026): the office's work in one place, each item with its own button.
+    var td = TheArqamSchools.Web.Data.BookCustomerAccountRepository.GetToDo();
+    var auth = TheArqamSchools.Web.Infrastructure.Auth.AdminAuth.Current(Context);
+    var canPay = auth.Can("books.payments");
+    var canOrders = auth.Can("books.orders");
+    var toCheck = TheArqamSchools.Web.Data.BookPaymentSubmissionRepository.Pending(30);
+    var newOrders = TheArqamSchools.Web.Data.BookOrderRepository.ByStatus("new", 30).Where(o => o.PendingPayments == 0).ToList();
+    var toPack = TheArqamSchools.Web.Data.BookOrderRepository.ByStatus("checked", 30);
+    var ready = TheArqamSchools.Web.Data.BookOrderRepository.ByStatus("packed", 30);
+    var pk = TimeSpan.FromHours(5);
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+<div class="admin-queues">
+    <a class="admin-queue@(td.PaymentsToCheck > 0 ? " is-hot" : "")" href="#sent"><strong>@td.PaymentsToCheck</strong>Payments to check</a>
+    <a class="admin-queue" href="#topack"><strong>@toPack.Count</strong>To pack</a>
+    <a class="admin-queue" href="#ready"><strong>@ready.Count</strong>Ready to collect / deliver</a>
+    <a class="admin-queue" href="/admin/books/messages"><strong>@td.MessagesToSend</strong>Messages to send</a>
+</div>
+<p class="admin-queue-more">
+    <a href="/admin/books/orders?view=new">@td.NewOrders new @(td.NewOrders == 1 ? "order" : "orders")</a> &middot;
+    <a href="/admin/books/return-requests">@(td.ReturnRequests + td.ReturnsToReceive) return @(td.ReturnRequests + td.ReturnsToReceive == 1 ? "request" : "requests")</a> &middot;
+    <a href="/admin/books/customer-accounts">@td.RefundsPending @(td.RefundsPending == 1 ? "refund" : "refunds") to pay back</a> &middot;
+    <a href="/admin/books/reports?kind=aging">@td.OverdueCustomers overdue @(td.OverdueCustomers == 1 ? "customer" : "customers")</a>
+</p>
 
-@{ var toCheck = TheArqamSchools.Web.Data.BookPaymentSubmissionRepository.Pending(30); var canPay = TheArqamSchools.Web.Infrastructure.Auth.AdminAuth.Current(Context).Can("books.payments"); }
 @if (toCheck.Count > 0)
 {
     <section class="admin-card" id="sent" aria-labelledby="tocheck-h">
-        <h2 id="tocheck-h">Payments to check (@td.PaymentsToCheck)</h2>
-        <p class="admin-muted">Open the receipt, check the money in the bank, enter the amount on the receipt and confirm. Oldest first.</p>
+        <h2 id="tocheck-h">Payments to check <span class="admin-count">@td.PaymentsToCheck</span></h2>
+        <p class="admin-muted">Open the receipt, check the money in the bank, type the amount on the receipt and confirm. Oldest first.</p>
         @foreach (var sp in toCheck)
         {
             @Html.Partial("~/Views/Admin/Books/_SentPayment.cshtml", sp, new ViewDataDictionary { { "CanPay", canPay }, { "Back", "home" } })
         }
     </section>
 }
-
-<div class="admin-stats">
-    <a class="admin-stat" href="/admin/books/items"><p class="admin-stat-value">@ViewBag.ItemCount</p><p class="admin-stat-label">books on sale</p></a>
-    <a class="admin-stat" href="/admin/books/customers"><p class="admin-stat-value">@ViewBag.CustomerCount</p><p class="admin-stat-label">customers</p></a>
-    <a class="admin-stat@(low.Count > 0 ? " admin-stat--warn" : "")" href="/admin/books/items"><p class="admin-stat-value">@low.Count</p><p class="admin-stat-label">books at or below their minimum stock</p></a>
-</div>
+@Html.Partial("~/Views/Admin/Books/_WorkList.cshtml", toPack, new ViewDataDictionary { { "Id", "topack" }, { "Title", "To pack" }, { "Empty", "Nothing to pack." }, { "Act", "pack" }, { "CanOrders", canOrders } })
+@Html.Partial("~/Views/Admin/Books/_WorkList.cshtml", ready, new ViewDataDictionary { { "Id", "ready" }, { "Title", "Ready to collect / deliver" }, { "Empty", "Nothing waiting to be collected or delivered." }, { "Act", "handover" }, { "CanOrders", canOrders } })
+@if (newOrders.Count > 0)
+{
+    @Html.Partial("~/Views/Admin/Books/_WorkList.cshtml", newOrders, new ViewDataDictionary { { "Id", "neworders" }, { "Title", "New orders waiting for payment" }, { "Empty", "" }, { "Act", "confirm" }, { "CanOrders", canOrders } })
+}
 @if (low.Count > 0)
 {
     <section class="admin-card">
-        <h2>Low stock</h2>
+        <h2>Low stock <span class="admin-count">@low.Count</span></h2>
         <ul class="admin-list">
             @foreach (var b in low)
             {
@@ -51,15 +64,5 @@
         </ul>
     </section>
 }
-@if ((int)ViewBag.NeverStocked > 0)
-{
-    <p class="admin-muted">@ViewBag.NeverStocked book(s) have no stock entered yet; they are not listed as low stock. Customers see a book only when it has stock.</p>
-}
-<section class="admin-card">
-    <h2>How it works</h2>
-    <ol class="admin-steps">
-        <li>Add the books with their class, vendor, purchase price, retail price and discount (the sale price is worked out), then add the stock received and, if needed, the book's minimum stock level.</li>
-        <li>Register each customer (a branch, a book shop or anyone else) with the mobile number, name, campus and address.</li>
-        <li>Customers open <strong>Books</strong> on the website, enter that mobile number and place their order.</li>
-    </ol>
-</section>
+<p class="admin-muted">@ViewBag.ItemCount books on sale &middot; @ViewBag.CustomerCount <span>customers</span>@if ((int)ViewBag.NeverStocked > 0) { <text> &middot; @ViewBag.NeverStocked book(s) with no stock entered yet (customers see a book only when it has stock)</text> }</p>
+<script src="/Scripts/admin-form.js?v=20261120c" defer></script>

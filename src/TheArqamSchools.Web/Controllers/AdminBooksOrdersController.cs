@@ -22,17 +22,26 @@ namespace TheArqamSchools.Web.Controllers
         // ---- Order list and order page ----------------------------------------------------
 
         [HttpGet]
-        public ActionResult Orders(string status, string payment, string from, string to)
+        public ActionResult Orders(string view, string status, string payment, string from, string to)
         {
             var q = Request.Unvalidated.QueryString["q"];
+            // Quick filters (30 November 2026); the older status / payment addresses still work.
+            if (view == "tocheck") payment = "tocheck";
+            else if (view == "new") status = "new";
+            else if (view == "topack") status = "checked";
+            else if (view == "ready") status = "packed";
+            else if (view == "unpaid") payment = "unpaid";
+            else if (view != "done") view = payment == "tocheck" ? "tocheck" : status == "new" ? "new" : payment == "unpaid" ? "unpaid" : null;
             var f = new BookOrderFilter
             {
+                View = view,
                 Status = BookOrderRepository.Statuses.Contains(status) ? status : null,
                 Payment = new[] { "pending", "part", "paid", "unpaid", "tocheck" }.Contains(payment) ? payment : null,
                 From = ParseDate(from), To = ParseDate(to),
                 Query = Trim(q) == null ? null : (Trim(q).Length > 60 ? Trim(q).Substring(0, 60) : Trim(q))
             };
             ViewBag.Filter = f;
+            ViewBag.Counts = BookOrderRepository.ViewCounts();
             ViewBag.CanOrders = AdminAuth.Current(HttpContext).Can("books.orders");
             return View("~/Views/Admin/Books/Orders.cshtml", BookOrderRepository.List(f));
         }
@@ -149,11 +158,14 @@ namespace TheArqamSchools.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AdminAuthorize("books.orders")]
-        public ActionResult OrderStatus(long orderNo, string status)
+        public ActionResult OrderStatus(long orderNo, string status, string back)
         {
             var o = BookRepository.Order(orderNo);
             if (o == null) return HttpNotFound();
             var error = BookOrderRepository.SetStatus(orderNo, status, AdminAuth.Current(HttpContext).Id);
+            // From the Today page, go back there (fixed address only).
+            if (back == "home")
+                return Redirect("/admin/books?" + (error != null ? "error=" + Uri.EscapeDataString(o.OrderLabel + ": " + error) : "notice=status&no=" + orderNo.ToString(CultureInfo.InvariantCulture)));
             if (error != null) return OrderView(o, null, null, error);
             return Redirect("/admin/books/orders/" + orderNo.ToString(CultureInfo.InvariantCulture) + "?notice=status");
         }

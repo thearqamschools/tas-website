@@ -65,6 +65,7 @@ namespace TheArqamSchools.Web.Data
         {
             var where = new List<string> { "o.archived_at IS NULL" };   // removed cancelled orders (Database/28) are never listed
             if (!string.IsNullOrEmpty(f.Status)) where.Add("o.status = @Status");
+            if (f.View == "done") where.Add("o.status IN (N'delivered', N'collected')");
             if (f.Payment == "pending") where.Add("o.paid_total = 0 AND o.discount_total = 0 AND o.status <> N'cancelled'");
             else if (f.Payment == "part") where.Add("(o.paid_total > 0 OR o.discount_total > 0) AND " + BalanceSql + " > 0");
             else if (f.Payment == "paid") where.Add("(o.paid_total > 0 OR o.discount_total > 0) AND " + BalanceSql + " <= 0");
@@ -85,7 +86,8 @@ namespace TheArqamSchools.Web.Data
                     SELECT TOP (500) o.id, o.order_no, o.customer_id, c.name AS customer_name, c.mobile AS customer_mobile, c.campus_name,
                            o.fulfilment, o.delivery_address, o.status, o.source, o.subtotal, o.discount_total, o.credit_applied, o.paid_total,
                            o.returned_total, o.refunded_total, o.edit_count, o.stock_taken_at, o.created_at,
-                           (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE (s.order_id = o.id OR (s.order_id IS NULL AND s.customer_id = o.customer_id)) AND s.status = N'pending') AS pending_payments
+                           (SELECT COUNT(*) FROM dbo.book_payment_submissions s WHERE (s.order_id = o.id OR (s.order_id IS NULL AND s.customer_id = o.customer_id)) AND s.status = N'pending') AS pending_payments,
+                           (SELECT COALESCE(SUM(l.quantity), 0) FROM dbo.book_order_lines l WHERE l.order_id = o.id) AS book_count
                     FROM dbo.book_orders o JOIN dbo.book_customers c ON c.id = o.customer_id" +
                     (where.Count > 0 ? " WHERE " + string.Join(" AND ", where) : "") + " ORDER BY o.created_at DESC",
                     new
@@ -121,6 +123,33 @@ namespace TheArqamSchools.Web.Data
                 AuditLog.Write(db, tx, actorId, "update", "book_orders", o.Id.ToString(), new { order_no = o.OrderNo, status = o.Status, archived = true, removed_by_super_admin = true });
                 tx.Commit();
             }
+        }
+
+        /// <summary>How many orders each quick filter on the Orders page shows (removed orders never count).</summary>
+        public static IDictionary<string, int> ViewCounts()
+        {
+            using (var db = Db.Open())
+            {
+                var r = db.QuerySingle(@"
+                    SELECT (SELECT COUNT(*) FROM dbo.book_orders WHERE archived_at IS NULL) AS total,
+                           (SELECT COUNT(*) FROM dbo.book_orders o WHERE o.archived_at IS NULL AND EXISTS (SELECT 1 FROM dbo.book_payment_submissions s WHERE (s.order_id = o.id OR (s.order_id IS NULL AND s.customer_id = o.customer_id)) AND s.status = N'pending')) AS tocheck,
+                           (SELECT COUNT(*) FROM dbo.book_orders WHERE archived_at IS NULL AND status = N'new') AS new_orders,
+                           (SELECT COUNT(*) FROM dbo.book_orders WHERE archived_at IS NULL AND status = N'checked') AS topack,
+                           (SELECT COUNT(*) FROM dbo.book_orders WHERE archived_at IS NULL AND status = N'packed') AS ready,
+                           (SELECT COUNT(*) FROM dbo.book_orders o WHERE o.archived_at IS NULL AND o.status <> N'cancelled' AND " + BalanceSql + @" > 0) AS unpaid,
+                           (SELECT COUNT(*) FROM dbo.book_orders WHERE archived_at IS NULL AND status IN (N'delivered', N'collected')) AS done");
+                return new Dictionary<string, int>
+                {
+                    { "", (int)r.total }, { "tocheck", (int)r.tocheck }, { "new", (int)r.new_orders }, { "topack", (int)r.topack },
+                    { "ready", (int)r.ready }, { "unpaid", (int)r.unpaid }, { "done", (int)r.done }
+                };
+            }
+        }
+
+        /// <summary>Orders to pack (confirmed) or ready to hand over (packed), oldest first, for the Today page.</summary>
+        public static IList<BookOrder> ByStatus(string status, int max)
+        {
+            return List(new BookOrderFilter { Status = status }).OrderBy(o => o.CreatedAt).Take(max).ToList();
         }
 
         /// <summary>Numbers for the dashboard: orders waiting to be checked, and orders not fully paid.</summary>
