@@ -254,3 +254,15 @@ tools/compile-check/      Mono C# compile check with stub MVC/Dapper types (does
   `Content/admin.css` place the photo with the same container-unit formula (needs the photo's width/height in the JSON).
   The admin preview sizes (1024x520, 1366x616, 1920x623) are the hero's measured sizes with the current text; if the hero
   text or height changes, measure again and update `_ContentFields.cshtml`. The original file is never changed.
+
+## Simple Books flow (owner's notes 54-62, 27 November 2026)
+
+- Customer pages: New order is the start page (`/books/dashboard` redirects there); steps form -> preview (Pick up /
+  Delivery) -> payment (`_PayOptions.cshtml`: bank accounts or Cash, receipt from camera or file) which places the
+  order; "Place order, pay later" places it without payment. Menu `_Who.cshtml` is a tab bar (bottom on phones):
+  New order, My orders, Payments, More (`/books/more`). No page-header greeting and no footer admissions band
+  (`ViewBag.HideFooterCta` in `BooksController.OnActionExecuting`).
+- Customers never type a payment amount: a payment is taken as what is still to pay less payments already waiting
+  (order and balance). The office must type the amount on the receipt when confirming (`Confirm(id, actor, received,
+  allowCredit)`, written inside the confirm transaction); extra on a balance payment becomes credit only when ticked.
+- Session state is off (`Web.config`): never use TempData; pass messages in the address.

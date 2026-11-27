@@ -212,3 +212,9 @@ admin inbox, campus and page editing, on a phone and a computer.
 - 24 November 2026: site only (commit a227a9b, no database change): Lahore head office WhatsApp button on Campuses,
   Facebook-style photo Adjust that matches the website (notes 52; photos adjusted before this should be adjusted again),
   My statement fits phone screens (note 53). `/`, `/campuses`, `/books`, `/about`, `/admin/login` answered 200.
+- 27 November 2026: site only (commit 5e5bfbf, no database change): the simple Books flow (owner's notes 54-62): New
+  order as the start page, check screen with Pick up / Delivery, payment step that places the order (bank + receipt,
+  cash, or pay later, no amount typed), tracking line, Payments / More pages, tab bar on phones; the office types the
+  amount on the receipt when confirming and sees "Payments to check" on the Books overview. Errors after a redirect now
+  travel in the address (session state is off, so TempData never worked). `/`, `/campuses`, `/books`, `/about`,
+  `/admin/login` answered 200; the signed-in Books pages send signed-out visitors to `/books`.
