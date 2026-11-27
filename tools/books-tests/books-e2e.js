@@ -91,7 +91,7 @@ const BOOKS = [
   const status = async () => (await cust.locator('.books-order-head .books-status').innerText());
   await q('DEMO English Reader 1', 10); await q('DEMO Alphabet Book', 5); await cust.waitForTimeout(150);
   ok('live total 10×350 + 5×260 = 4,800', money(await cust.locator('[data-books-total]').innerText()) === 4800);
-  ok('steppers instead of number boxes', (await cust.locator('.books-qty-add').count()) > 0 && (await cust.locator('.books-class-chip').count()) > 1);
+  ok('all classes one after the other with quantity boxes, no class tabs or whole-set button', (await cust.locator('.books-class-group legend').count()) > 1 && (await cust.locator('.books-class-chip, .books-set, .books-qty-add').count()) === 0 && (await cust.locator('.books-row input[type=number]').first().isVisible()));
   await cust.screenshot({ path: OUT + '/m-order-form.png', fullPage: true });
   await q('DEMO Maths 1', 5); await go('.books-sticky button:has-text("Continue")');
   ok('Pick up / Delivery asked on the check screen', (await cust.locator('.books-review-get').count()) === 1 && (await cust.locator('button:has-text("Continue to payment")').count()) === 1 && (await cust.locator('button:has-text("Change order")').count()) === 1);

@@ -2,7 +2,8 @@
 @using System.Globalization
 @using TheArqamSchools.Web.Helpers
 @{
-    // New order (owner's notes 56-59, 27 November 2026): 1. choose books (class tabs, whole set, + / -),
+    // New order (owner's notes 56-59, 27 November 2026; owner's note of 30 November: classes one after the other with
+    // quantity boxes as before, no class tabs or whole-set button): 1. choose books,
     // 2. check the order and choose Pick up or Delivery, 3. payment (bank or cash, receipt) which places the order.
     var editing = Model.Editing;
     var action = editing == null ? "/books/order" : "/books/orders/" + editing.OrderNo.ToString(CultureInfo.InvariantCulture) + "/edit";
@@ -14,8 +15,6 @@
     var canDeliver = !string.IsNullOrWhiteSpace(Model.Customer.Address);
     var step = Model.Step ?? "form";
     var title = step == "payment" ? "Payment" : step == "preview" ? (editing == null ? "Check your order" : "Check your changes") : (editing == null ? "New order" : "Change order " + editing.OrderLabel);
-    // The class shown first: the first one with a chosen book, else the first class.
-    var firstClass = groups.Select(g => g.Key).FirstOrDefault(k => groups.First(g => g.Key == k).Any(i => qty(i.Id) > 0)) ?? (groups.Count > 0 ? groups[0].Key : null);
     var s = Model.Summary;
 }
 <section class="section tone-white books books-app">
@@ -102,27 +101,20 @@
                 {
                     <div class="books-card"><p>No books are available to order at the moment. Please check again later or contact the office.</p></div>
                 }
-                if (groups.Count > 1)
-                {
-                    <div class="books-classes" role="group" aria-label="Class" data-books-classes hidden>
-                        @foreach (var g in groups)
-                        {
-                            <button type="button" class="books-class-chip" data-class="@g.Key" aria-pressed="@(g.Key == firstClass ? "true" : "false")">@g.Key</button>
-                        }
-                    </div>
-                }
                 foreach (var g in groups)
                 {
-                    <fieldset class="books-class-group" data-class-group="@g.Key">
+                    <fieldset class="books-class-group">
                         <legend>@g.Key</legend>
-                        @if (g.Count() > 1) { <button type="button" class="books-set" data-add-set hidden><span>Whole @g.Key set &middot; @g.Count() books</span><strong>+ Add all</strong></button> }
+                        <div class="books-row books-row--head" aria-hidden="true"><span>Book</span><span class="num">Price</span><span class="num-c">Quantity</span><span class="num">Total</span></div>
                         <ul class="books-rows">
                             @foreach (var i in g)
                             {
                                 var id = "q_" + i.Id.ToString("N");
                                 <li class="books-row">
-                                    <label for="@id" class="books-row-name">@i.Name<span class="books-row-price">@BookFormat.Money(i.SalePrice)</span></label>
+                                    <label for="@id" class="books-row-name">@i.Name</label>
+                                    <span class="books-row-price">@BookFormat.Money(i.SalePrice)</span>
                                     <input type="number" id="@id" name="@id" value="@(qty(i.Id) > 0 ? qty(i.Id).ToString(CultureInfo.InvariantCulture) : "")" min="0" max="@BookRepositoryMax()" inputmode="numeric" placeholder="0" data-price="@i.SalePrice.ToString(CultureInfo.InvariantCulture)" aria-label="Quantity of @i.Name, @g.Key" />
+                                    <output class="books-row-total" for="@id" data-line-total>@(qty(i.Id) > 0 ? BookFormat.Money(i.SalePrice * qty(i.Id)) : "")</output>
                                 </li>
                             }
                         </ul>
@@ -141,7 +133,7 @@
         </form>
     </div>
 </section>
-<script src="~/Scripts/books.js?v=20261127b" defer></script>
+<script src="~/Scripts/books.js?v=20261130a" defer></script>
 @functions {
     static int BookRepositoryMax() { return TheArqamSchools.Web.Data.BookRepository.MaxQuantityPerBook; }
 }
